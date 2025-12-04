@@ -1,2 +1,2 @@
-﻿using var game = new CPUgame.Game1();
+﻿using var game = new CPUgame.GameField();
 game.Run();

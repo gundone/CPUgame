@@ -12,7 +12,7 @@ using Microsoft.Xna.Framework.Input;
 
 namespace CPUgame;
 
-public class Game1 : Game
+public class GameField : Game
 {
     private GraphicsDeviceManager _graphics;
     private SpriteBatch _spriteBatch = null!;
@@ -38,6 +38,9 @@ public class Game1 : Game
     private KeyboardState _prevKeyboard;
     private Component? _draggingComponent;
     private Point _dragOffset;
+    private bool _isDraggingMultiple;
+    private Point _multiDragStart;
+    private Dictionary<Component, Point>? _multiDragOffsets;
     private Pin? _wireStartPin;
     private Pin? _hoveredPin;
     private bool _isDraggingWire;
@@ -60,11 +63,16 @@ public class Game1 : Game
     private Point _panStartMouse;
     private Vector2 _panStartCamera;
 
+    // Selection rectangle
+    private bool _isSelecting;
+    private Point _selectionStart;
+    private Point _selectionEnd;
+
     // Screen dimensions
     private int ScreenWidth => GraphicsDevice?.Viewport.Width ?? _graphics.PreferredBackBufferWidth;
     private int ScreenHeight => GraphicsDevice?.Viewport.Height ?? _graphics.PreferredBackBufferHeight;
 
-    public Game1()
+    public GameField()
     {
         _graphics = new GraphicsDeviceManager(this)
         {
@@ -239,30 +247,59 @@ public class Game1 : Game
             }
         }
 
-        // Handle panning with middle mouse button, right mouse button, or left click on empty space
+        // Handle panning with middle mouse button or right mouse button
         bool middlePressed = mouse.MiddleButton == ButtonState.Pressed;
         bool middleJustPressed = middlePressed && _prevMouse.MiddleButton == ButtonState.Released;
         bool rightPressed = mouse.RightButton == ButtonState.Pressed;
         bool rightJustPressed = rightPressed && _prevMouse.RightButton == ButtonState.Released;
 
-        // Check if clicking on empty space (not on component or pin) for left-button panning
+        // Check if clicking on empty space for selection rectangle
         var worldMousePos = ScreenToWorldPoint(mousePos);
         bool clickedOnEmpty = !_toolbox.ContainsPoint(mousePos) &&
                               !_userComponentsToolbox.ContainsPoint(mousePos) &&
                               _circuit.GetComponentAt(worldMousePos.X, worldMousePos.Y) == null &&
                               _circuit.GetPinAt(worldMousePos.X, worldMousePos.Y) == null;
-        bool leftPanStart = mouseJustPressed && clickedOnEmpty && !_toolbox.IsDraggingItem && !_userComponentsToolbox.IsDraggingItem;
 
-        if ((middleJustPressed || rightJustPressed || leftPanStart) && !_toolbox.ContainsPoint(mousePos) && !_userComponentsToolbox.ContainsPoint(mousePos))
+        // Start panning with middle or right mouse button
+        if ((middleJustPressed || rightJustPressed) && !_toolbox.ContainsPoint(mousePos) && !_userComponentsToolbox.ContainsPoint(mousePos))
         {
             _isPanning = true;
             _panStartMouse = mousePos;
             _panStartCamera = _cameraOffset;
         }
 
+        // Start selection rectangle with left mouse button on empty space
+        if (mouseJustPressed && clickedOnEmpty && !_toolbox.IsDraggingItem && !_userComponentsToolbox.IsDraggingItem && !_isPanning)
+        {
+            _isSelecting = true;
+            _selectionStart = worldMousePos;
+            _selectionEnd = worldMousePos;
+
+            // Clear previous selection if not holding Ctrl
+            ctrl = keyboard.IsKeyDown(Keys.LeftControl) || keyboard.IsKeyDown(Keys.RightControl);
+            if (!ctrl)
+            {
+                _circuit.ClearSelection();
+                _selectedWire = null;
+            }
+        }
+
+        // Update selection rectangle
+        if (_isSelecting)
+        {
+            _selectionEnd = worldMousePos;
+
+            if (mouseJustReleased)
+            {
+                // Select all components within the rectangle
+                SelectComponentsInRect(_selectionStart, _selectionEnd);
+                _isSelecting = false;
+            }
+        }
+
         if (_isPanning)
         {
-            if (middlePressed || rightPressed || mousePressed)
+            if (middlePressed || rightPressed)
             {
                 float deltaX = (mousePos.X - _panStartMouse.X) / _zoom;
                 float deltaY = (mousePos.Y - _panStartMouse.Y) / _zoom;
@@ -335,7 +372,7 @@ public class Game1 : Game
         }
 
         // Update cursor based on drag state
-        if (_isPanning || _draggingComponent != null)
+        if (_isPanning || _draggingComponent != null || _isDraggingMultiple)
         {
             Mouse.SetCursor(MouseCursor.SizeAll);
         }
@@ -596,6 +633,27 @@ public class Game1 : Game
         return _circuit.Components.Where(c => c.IsSelected).ToList();
     }
 
+    private void SelectComponentsInRect(Point start, Point end)
+    {
+        // Normalize rectangle
+        int minX = Math.Min(start.X, end.X);
+        int maxX = Math.Max(start.X, end.X);
+        int minY = Math.Min(start.Y, end.Y);
+        int maxY = Math.Max(start.Y, end.Y);
+
+        foreach (var component in _circuit.Components)
+        {
+            // Check if component is within selection rectangle
+            bool intersects = component.X < maxX && component.X + component.Width > minX &&
+                              component.Y < maxY && component.Y + component.Height > minY;
+
+            if (intersects)
+            {
+                component.IsSelected = true;
+            }
+        }
+    }
+
     private void HandleBusInputResize(BusInput busInput, KeyboardState keyboard)
     {
         bool shift = keyboard.IsKeyDown(Keys.LeftShift) || keyboard.IsKeyDown(Keys.RightShift);
@@ -668,16 +726,31 @@ public class Game1 : Game
                 var keyboard = Keyboard.GetState();
                 bool ctrl = keyboard.IsKeyDown(Keys.LeftControl) || keyboard.IsKeyDown(Keys.RightControl);
 
-                if (!ctrl)
+                // Check if clicking on an already selected component (for multi-drag)
+                if (component.IsSelected && GetSelectedElements().Count > 1)
                 {
-                    _circuit.ClearSelection();
+                    // Start multi-component drag
+                    _isDraggingMultiple = true;
+                    _multiDragStart = mousePos;
+                    _multiDragOffsets = new Dictionary<Component, Point>();
+                    foreach (var selected in GetSelectedElements())
+                    {
+                        _multiDragOffsets[selected] = new Point(selected.X, selected.Y);
+                    }
                 }
+                else
+                {
+                    if (!ctrl)
+                    {
+                        _circuit.ClearSelection();
+                    }
 
-                component.IsSelected = !component.IsSelected || !ctrl;
+                    component.IsSelected = !component.IsSelected || !ctrl;
 
-                // Start dragging
-                _draggingComponent = component;
-                _dragOffset = new Point(mousePos.X - component.X, mousePos.Y - component.Y);
+                    // Start single component dragging
+                    _draggingComponent = component;
+                    _dragOffset = new Point(mousePos.X - component.X, mousePos.Y - component.Y);
+                }
             }
             else
             {
@@ -697,7 +770,7 @@ public class Game1 : Game
             }
         }
 
-        // Drag component
+        // Drag single component
         if (_draggingComponent != null && mousePressed)
         {
             var gridSize = _renderer.GridSize;
@@ -705,9 +778,27 @@ public class Game1 : Game
             _draggingComponent.Y = ((mousePos.Y - _dragOffset.Y) / gridSize) * gridSize;
         }
 
+        // Drag multiple components
+        if (_isDraggingMultiple && mousePressed && _multiDragOffsets != null)
+        {
+            var gridSize = _renderer.GridSize;
+            int deltaX = mousePos.X - _multiDragStart.X;
+            int deltaY = mousePos.Y - _multiDragStart.Y;
+
+            foreach (var kvp in _multiDragOffsets)
+            {
+                var comp = kvp.Key;
+                var originalPos = kvp.Value;
+                comp.X = ((originalPos.X + deltaX) / gridSize) * gridSize;
+                comp.Y = ((originalPos.Y + deltaY) / gridSize) * gridSize;
+            }
+        }
+
         if (mouseJustReleased)
         {
             _draggingComponent = null;
+            _isDraggingMultiple = false;
+            _multiDragOffsets = null;
         }
     }
 
@@ -918,6 +1009,12 @@ public class Game1 : Game
                 worldMousePos);
         }
 
+        // Draw selection rectangle
+        if (_isSelecting)
+        {
+            DrawSelectionRectangle();
+        }
+
         _spriteBatch.End();
 
         // Draw UI elements without transform (screen space)
@@ -975,13 +1072,43 @@ public class Game1 : Game
         _spriteBatch.DrawString(_font, zoomText, new Vector2(8, _mainMenu.Height + 8), new Color(150, 150, 170));
     }
 
+    private void DrawSelectionRectangle()
+    {
+        int minX = Math.Min(_selectionStart.X, _selectionEnd.X);
+        int maxX = Math.Max(_selectionStart.X, _selectionEnd.X);
+        int minY = Math.Min(_selectionStart.Y, _selectionEnd.Y);
+        int maxY = Math.Max(_selectionStart.Y, _selectionEnd.Y);
+
+        var rect = new Rectangle(minX, minY, maxX - minX, maxY - minY);
+        var fillColor = new Color(70, 130, 180, 50);
+        var borderColor = new Color(70, 130, 180, 200);
+
+        // Fill
+        _spriteBatch.Draw(_renderer.Pixel, rect, fillColor);
+
+        // Border
+        int thickness = Math.Max(1, (int)(1 / _zoom));
+        _spriteBatch.Draw(_renderer.Pixel, new Rectangle(rect.X, rect.Y, rect.Width, thickness), borderColor);
+        _spriteBatch.Draw(_renderer.Pixel, new Rectangle(rect.X, rect.Bottom - thickness, rect.Width, thickness), borderColor);
+        _spriteBatch.Draw(_renderer.Pixel, new Rectangle(rect.X, rect.Y, thickness, rect.Height), borderColor);
+        _spriteBatch.Draw(_renderer.Pixel, new Rectangle(rect.Right - thickness, rect.Y, thickness, rect.Height), borderColor);
+    }
+
     private void DrawNamingDialog()
     {
         // Semi-transparent overlay
         _spriteBatch.Draw(_renderer.Pixel, new Rectangle(0, 0, ScreenWidth, ScreenHeight), new Color(0, 0, 0, 150));
 
-        // Dialog box
-        int dialogWidth = 300;
+        // Calculate dialog size based on text content
+        var titleText = LocalizationManager.Get("dialog.name_component");
+        var hintText = LocalizationManager.Get("dialog.name_hint");
+        var titleSize = _font.MeasureString(titleText);
+        var hintSize = _font.MeasureString(hintText);
+
+        // Dialog width based on longest text + padding
+        int minWidth = 300;
+        int contentWidth = Math.Max((int)titleSize.X, (int)hintSize.X) + 60;
+        int dialogWidth = Math.Max(minWidth, contentWidth);
         int dialogHeight = 120;
         int dialogX = (ScreenWidth - dialogWidth) / 2;
         int dialogY = (ScreenHeight - dialogHeight) / 2;
@@ -994,8 +1121,6 @@ public class Game1 : Game
         DrawDialogBorder(dialogRect, new Color(80, 80, 100), 2);
 
         // Title
-        var titleText = LocalizationManager.Get("dialog.name_component");
-        var titleSize = _font.MeasureString(titleText);
         _spriteBatch.DrawString(_font, titleText,
             new Vector2(dialogX + (dialogWidth - titleSize.X) / 2, dialogY + 10),
             new Color(220, 220, 230));
@@ -1012,8 +1137,6 @@ public class Game1 : Game
             new Color(220, 220, 230));
 
         // Hint text
-        var hintText = LocalizationManager.Get("dialog.name_hint");
-        var hintSize = _font.MeasureString(hintText);
         _spriteBatch.DrawString(_font, hintText,
             new Vector2(dialogX + (dialogWidth - hintSize.X) / 2, dialogY + dialogHeight - 30),
             new Color(150, 150, 170));

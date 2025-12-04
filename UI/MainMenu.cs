@@ -11,6 +11,7 @@ public class MainMenu
     private readonly List<MenuItem> _menuItems = new();
     private MenuItem? _openMenu;
     private int _hoveredSubmenuIndex = -1;
+    private SpriteFont? _font;
 
     private const int MenuHeight = 24;
     private const int SubmenuItemHeight = 26;
@@ -35,6 +36,18 @@ public class MainMenu
     {
         BuildMenu();
         LocalizationManager.LanguageChanged += BuildMenu;
+    }
+
+    public void SetFont(SpriteFont font)
+    {
+        _font = font;
+    }
+
+    private int GetTextWidth(string text)
+    {
+        if (_font != null)
+            return (int)_font.MeasureString(text).X;
+        return text.Length * 8; // Fallback
     }
 
     private void BuildMenu()
@@ -77,7 +90,7 @@ public class MainMenu
             int x = 0;
             foreach (var item in _menuItems)
             {
-                int itemWidth = (int)(item.Label.Length * 8) + 20;
+                int itemWidth = GetTextWidth(item.Label) + 20;
                 if (mousePos.X >= x && mousePos.X < x + itemWidth)
                 {
                     if (_openMenu == item)
@@ -149,13 +162,13 @@ public class MainMenu
         {
             if (item == menu)
                 break;
-            x += (int)(item.Label.Length * 8) + 20;
+            x += GetTextWidth(item.Label) + 20;
         }
 
         int width = 0;
         foreach (var sub in menu.SubItems)
         {
-            int itemWidth = (int)(sub.Label.Length * 8) + 40;
+            int itemWidth = GetTextWidth(sub.Label) + 40;
             if (itemWidth > width) width = itemWidth;
         }
         width = Math.Max(width, 150);
@@ -167,6 +180,10 @@ public class MainMenu
 
     public void Draw(SpriteBatch spriteBatch, Texture2D pixel, SpriteFont font, int screenWidth, Point mousePos)
     {
+        // Store font reference for width calculations
+        if (_font == null)
+            _font = font;
+
         // Draw menu bar background
         spriteBatch.Draw(pixel, new Rectangle(0, 0, screenWidth, MenuHeight), MenuBarColor);
 
@@ -174,7 +191,7 @@ public class MainMenu
         int x = 0;
         foreach (var item in _menuItems)
         {
-            int itemWidth = (int)(item.Label.Length * 8) + 20;
+            int itemWidth = GetTextWidth(item.Label) + 20;
             var itemRect = new Rectangle(x, 0, itemWidth, MenuHeight);
 
             bool isHovered = itemRect.Contains(mousePos) || _openMenu == item;
