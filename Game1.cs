@@ -26,6 +26,12 @@ public class Game1 : Game
     // Custom components library
     private readonly Dictionary<string, CircuitData> _customComponents = new();
     private readonly string _componentsFolder;
+    private Toolbox _userComponentsToolbox = null!;
+
+    // Text input dialog state
+    private bool _isNamingComponent;
+    private string _componentNameInput = "";
+    private List<Component>? _pendingComponentSelection;
 
     // Interaction state
     private MouseState _prevMouse;
@@ -115,12 +121,16 @@ public class Game1 : Game
         _spriteBatch = new SpriteBatch(GraphicsDevice);
         _renderer = new CircuitRenderer(GraphicsDevice);
         _toolbox = new Toolbox(ScreenWidth - 200, 60);
+        _userComponentsToolbox = new Toolbox(ScreenWidth - 200, 300, isUserComponents: true);
 
-        // Add loaded custom components to toolbox
+        // Add loaded custom components to user components toolbox
         foreach (var name in _customComponents.Keys)
         {
-            _toolbox.AddCustomComponent(name);
+            _userComponentsToolbox.AddCustomComponent(name);
         }
+
+        // Wire up delete event
+        _userComponentsToolbox.OnDeleteComponent += DeleteUserComponent;
 
         _font = Content.Load<SpriteFont>("DefaultFont");
         _renderer.SetFont(_font);
@@ -186,6 +196,16 @@ public class Game1 : Game
                 _statusMessage = LocalizationManager.Get("status.ready");
         }
 
+        // Handle naming dialog
+        if (_isNamingComponent)
+        {
+            HandleNamingDialogInput(keyboard);
+            _prevMouse = mouse;
+            _prevKeyboard = keyboard;
+            base.Update(gameTime);
+            return;
+        }
+
         // Update main menu
         _mainMenu.Update(mousePos, mouseJustPressed, mouseJustReleased, ScreenWidth);
 
@@ -228,11 +248,12 @@ public class Game1 : Game
         // Check if clicking on empty space (not on component or pin) for left-button panning
         var worldMousePos = ScreenToWorldPoint(mousePos);
         bool clickedOnEmpty = !_toolbox.ContainsPoint(mousePos) &&
+                              !_userComponentsToolbox.ContainsPoint(mousePos) &&
                               _circuit.GetComponentAt(worldMousePos.X, worldMousePos.Y) == null &&
                               _circuit.GetPinAt(worldMousePos.X, worldMousePos.Y) == null;
-        bool leftPanStart = mouseJustPressed && clickedOnEmpty && !_toolbox.IsDraggingItem;
+        bool leftPanStart = mouseJustPressed && clickedOnEmpty && !_toolbox.IsDraggingItem && !_userComponentsToolbox.IsDraggingItem;
 
-        if ((middleJustPressed || rightJustPressed || leftPanStart) && !_toolbox.ContainsPoint(mousePos))
+        if ((middleJustPressed || rightJustPressed || leftPanStart) && !_toolbox.ContainsPoint(mousePos) && !_userComponentsToolbox.ContainsPoint(mousePos))
         {
             _isPanning = true;
             _panStartMouse = mousePos;
@@ -256,13 +277,14 @@ public class Game1 : Game
         // Handle keyboard shortcuts
         HandleKeyboardShortcuts(keyboard, gameTime.ElapsedGameTime.TotalSeconds);
 
-        // Update toolbox first
+        // Update toolboxes
         _toolbox.Update(mousePos, mousePressed, mouseJustPressed, mouseJustReleased);
+        _userComponentsToolbox.Update(mousePos, mousePressed, mouseJustPressed, mouseJustReleased);
 
         // Convert mouse position to world coordinates for circuit interactions
         worldMousePos = ScreenToWorldPoint(mousePos);
 
-        // Check if dropping a component from toolbox
+        // Check if dropping a component from main toolbox
         if (mouseJustReleased && (_toolbox.DraggingTool != null || _toolbox.DraggingCustomComponent != null))
         {
             // Only place if dropping outside toolbox
@@ -273,8 +295,19 @@ public class Game1 : Game
             _toolbox.ClearDragState();
         }
 
+        // Check if dropping a component from user components toolbox
+        if (mouseJustReleased && _userComponentsToolbox.DraggingCustomComponent != null)
+        {
+            // Only place if dropping outside toolbox
+            if (!_userComponentsToolbox.ContainsPoint(mousePos))
+            {
+                PlaceComponentFromUserToolbox(worldMousePos);
+            }
+            _userComponentsToolbox.ClearDragState();
+        }
+
         // Don't process circuit interaction if dragging from toolbox or interacting with toolbox window
-        if (_toolbox.IsDraggingItem || _toolbox.IsDraggingWindow)
+        if (_toolbox.IsDraggingItem || _toolbox.IsDraggingWindow || _userComponentsToolbox.IsDraggingItem || _userComponentsToolbox.IsDraggingWindow)
         {
             // Cancel any wire operation
             if (_isDraggingWire)
@@ -283,7 +316,7 @@ public class Game1 : Game
                 _wireStartPin = null;
             }
         }
-        else if (!_toolbox.ContainsPoint(mousePos))
+        else if (!_toolbox.ContainsPoint(mousePos) && !_userComponentsToolbox.ContainsPoint(mousePos))
         {
             // Update hovered pin (use world coordinates)
             _hoveredPin = _circuit.GetPinAt(worldMousePos.X, worldMousePos.Y);
@@ -306,7 +339,7 @@ public class Game1 : Game
         {
             Mouse.SetCursor(MouseCursor.SizeAll);
         }
-        else if (_toolbox.IsDraggingItem || _toolbox.IsDraggingWindow)
+        else if (_toolbox.IsDraggingItem || _toolbox.IsDraggingWindow || _userComponentsToolbox.IsDraggingItem || _userComponentsToolbox.IsDraggingWindow)
         {
             Mouse.SetCursor(MouseCursor.SizeAll);
         }
@@ -461,9 +494,9 @@ public class Game1 : Game
             return;
         }
 
-        // Check for inputs and outputs
-        int inputs = selected.Count(c => c is InputSwitch);
-        int outputs = selected.Count(c => c is OutputLed);
+        // Check for inputs and outputs (BusInput and BusOutput)
+        int inputs = selected.Count(c => c is BusInput);
+        int outputs = selected.Count(c => c is BusOutput);
 
         if (inputs == 0 || outputs == 0)
         {
@@ -471,8 +504,18 @@ public class Game1 : Game
             return;
         }
 
-        // Create a name based on timestamp
-        var name = $"Custom_{DateTime.Now:HHmmss}";
+        // Store selection and show naming dialog
+        _pendingComponentSelection = selected;
+        _componentNameInput = "";
+        _isNamingComponent = true;
+    }
+
+    private void FinishBuildingComponent(string name)
+    {
+        if (_pendingComponentSelection == null || _pendingComponentSelection.Count == 0)
+            return;
+
+        var selected = _pendingComponentSelection;
 
         // Create a new circuit with only selected components
         var subCircuit = new Circuit { Name = name };
@@ -489,6 +532,7 @@ public class Game1 : Game
                 Clock clk => new Clock(comp.X, comp.Y) { Frequency = clk.Frequency },
                 BusInput busIn => new BusInput(comp.X, comp.Y, busIn.BitCount, _renderer.GridSize) { Value = busIn.Value },
                 BusOutput busOut => new BusOutput(comp.X, comp.Y, busOut.BitCount, _renderer.GridSize),
+                CustomComponent custom => CreateCustomComponentClone(custom, comp.X, comp.Y),
                 _ => null
             };
 
@@ -526,13 +570,25 @@ public class Game1 : Game
             CircuitSerializer.SaveCustomComponent(subCircuit, name, filePath);
             var data = CircuitSerializer.LoadCustomComponentData(filePath);
             _customComponents[name] = data;
-            _toolbox.AddCustomComponent(name);
+            _userComponentsToolbox.AddCustomComponent(name);
             ShowStatus(LocalizationManager.Get("status.component_created", name));
         }
         catch (Exception ex)
         {
             ShowStatus(LocalizationManager.Get("status.component_failed", ex.Message));
         }
+
+        _pendingComponentSelection = null;
+    }
+
+    private CustomComponent? CreateCustomComponentClone(CustomComponent original, int x, int y)
+    {
+        if (_customComponents.TryGetValue(original.ComponentName, out var data))
+        {
+            var internalCircuit = CircuitSerializer.DeserializeCircuit(data, _customComponents);
+            return new CustomComponent(x, y, original.ComponentName, internalCircuit);
+        }
+        return null;
     }
 
     private List<Component> GetSelectedElements()
@@ -676,17 +732,136 @@ public class Game1 : Game
                 _ => null
             };
         }
-        else if (_toolbox.DraggingCustomComponent != null &&
-                 _customComponents.TryGetValue(_toolbox.DraggingCustomComponent, out var data))
-        {
-            var internalCircuit = CircuitSerializer.DeserializeCircuit(data, _customComponents);
-            newComponent = new CustomComponent(x, y, _toolbox.DraggingCustomComponent, internalCircuit);
-        }
 
         if (newComponent != null)
         {
+            // Apply global pin display setting to new Bus components
+            if (newComponent is BusInput busInput)
+                busInput.ShowPinValues = _showPinValues;
+            else if (newComponent is BusOutput busOutput)
+                busOutput.ShowPinValues = _showPinValues;
+
             _circuit.AddComponent(newComponent);
             ShowStatus(LocalizationManager.Get("status.placed", newComponent.Name));
+        }
+    }
+
+    private void PlaceComponentFromUserToolbox(Point mousePos)
+    {
+        var gridSize = _renderer.GridSize;
+        var x = (mousePos.X / gridSize) * gridSize;
+        var y = (mousePos.Y / gridSize) * gridSize;
+
+        if (_userComponentsToolbox.DraggingCustomComponent != null &&
+            _customComponents.TryGetValue(_userComponentsToolbox.DraggingCustomComponent, out var data))
+        {
+            var internalCircuit = CircuitSerializer.DeserializeCircuit(data, _customComponents);
+            var newComponent = new CustomComponent(x, y, _userComponentsToolbox.DraggingCustomComponent, internalCircuit);
+            _circuit.AddComponent(newComponent);
+            ShowStatus(LocalizationManager.Get("status.placed", newComponent.Name));
+        }
+    }
+
+    private void HandleNamingDialogInput(KeyboardState keyboard)
+    {
+        // Handle Escape to cancel
+        if (keyboard.IsKeyDown(Keys.Escape) && !_prevKeyboard.IsKeyDown(Keys.Escape))
+        {
+            _isNamingComponent = false;
+            _pendingComponentSelection = null;
+            _componentNameInput = "";
+            ShowStatus(LocalizationManager.Get("status.cancelled"));
+            return;
+        }
+
+        // Handle Enter to confirm
+        if (keyboard.IsKeyDown(Keys.Enter) && !_prevKeyboard.IsKeyDown(Keys.Enter))
+        {
+            if (!string.IsNullOrWhiteSpace(_componentNameInput))
+            {
+                // Validate name doesn't already exist
+                if (_customComponents.ContainsKey(_componentNameInput))
+                {
+                    ShowStatus(LocalizationManager.Get("status.name_exists"));
+                    return;
+                }
+
+                _isNamingComponent = false;
+                FinishBuildingComponent(_componentNameInput);
+                _componentNameInput = "";
+            }
+            return;
+        }
+
+        // Handle Backspace
+        if (keyboard.IsKeyDown(Keys.Back) && !_prevKeyboard.IsKeyDown(Keys.Back))
+        {
+            if (_componentNameInput.Length > 0)
+            {
+                _componentNameInput = _componentNameInput[..^1];
+            }
+            return;
+        }
+
+        // Handle character input
+        foreach (Keys key in keyboard.GetPressedKeys())
+        {
+            if (_prevKeyboard.IsKeyDown(key)) continue;
+
+            char? character = GetCharacterFromKey(key, keyboard);
+            if (character.HasValue && _componentNameInput.Length < 20)
+            {
+                _componentNameInput += character.Value;
+            }
+        }
+    }
+
+    private char? GetCharacterFromKey(Keys key, KeyboardState keyboard)
+    {
+        bool shift = keyboard.IsKeyDown(Keys.LeftShift) || keyboard.IsKeyDown(Keys.RightShift);
+
+        if (key >= Keys.A && key <= Keys.Z)
+        {
+            char c = (char)('a' + (key - Keys.A));
+            return shift ? char.ToUpper(c) : c;
+        }
+        if (key >= Keys.D0 && key <= Keys.D9 && !shift)
+        {
+            return (char)('0' + (key - Keys.D0));
+        }
+        if (key == Keys.Space)
+        {
+            return ' ';
+        }
+        if (key == Keys.OemMinus || key == Keys.Subtract)
+        {
+            return shift ? '_' : '-';
+        }
+
+        return null;
+    }
+
+    private void DeleteUserComponent(string name)
+    {
+        // Remove from custom components dictionary
+        _customComponents.Remove(name);
+
+        // Remove from toolbox
+        _userComponentsToolbox.RemoveCustomComponent(name);
+
+        // Delete the file
+        var filePath = Path.Combine(_componentsFolder, $"{name}.json");
+        if (File.Exists(filePath))
+        {
+            try
+            {
+                File.Delete(filePath);
+                ShowStatus(LocalizationManager.Get("status.component_deleted", name));
+            }
+            catch (Exception ex)
+            {
+                ShowStatus(LocalizationManager.Get("status.delete_failed", ex.Message));
+            }
         }
     }
 
@@ -754,6 +929,9 @@ public class Game1 : Game
         // Draw toolbox
         _toolbox.Draw(_spriteBatch, _renderer.Pixel, _font, Mouse.GetState().Position);
 
+        // Draw user components toolbox
+        _userComponentsToolbox.Draw(_spriteBatch, _renderer.Pixel, _font, Mouse.GetState().Position);
+
         // Draw status bar
         DrawStatusBar();
 
@@ -762,6 +940,12 @@ public class Game1 : Game
 
         // Draw main menu (always on top)
         _mainMenu.Draw(_spriteBatch, _renderer.Pixel, _font, ScreenWidth, Mouse.GetState().Position);
+
+        // Draw naming dialog if active
+        if (_isNamingComponent)
+        {
+            DrawNamingDialog();
+        }
 
         _spriteBatch.End();
 
@@ -789,5 +973,57 @@ public class Game1 : Game
     {
         var zoomText = $"Zoom: {_zoom:P0}";
         _spriteBatch.DrawString(_font, zoomText, new Vector2(8, _mainMenu.Height + 8), new Color(150, 150, 170));
+    }
+
+    private void DrawNamingDialog()
+    {
+        // Semi-transparent overlay
+        _spriteBatch.Draw(_renderer.Pixel, new Rectangle(0, 0, ScreenWidth, ScreenHeight), new Color(0, 0, 0, 150));
+
+        // Dialog box
+        int dialogWidth = 300;
+        int dialogHeight = 120;
+        int dialogX = (ScreenWidth - dialogWidth) / 2;
+        int dialogY = (ScreenHeight - dialogHeight) / 2;
+        var dialogRect = new Rectangle(dialogX, dialogY, dialogWidth, dialogHeight);
+
+        // Background
+        _spriteBatch.Draw(_renderer.Pixel, dialogRect, new Color(45, 45, 55));
+
+        // Border
+        DrawDialogBorder(dialogRect, new Color(80, 80, 100), 2);
+
+        // Title
+        var titleText = LocalizationManager.Get("dialog.name_component");
+        var titleSize = _font.MeasureString(titleText);
+        _spriteBatch.DrawString(_font, titleText,
+            new Vector2(dialogX + (dialogWidth - titleSize.X) / 2, dialogY + 10),
+            new Color(220, 220, 230));
+
+        // Input field background
+        var inputRect = new Rectangle(dialogX + 20, dialogY + 40, dialogWidth - 40, 30);
+        _spriteBatch.Draw(_renderer.Pixel, inputRect, new Color(30, 30, 40));
+        DrawDialogBorder(inputRect, new Color(100, 100, 120), 1);
+
+        // Input text with cursor
+        var displayText = _componentNameInput + "_";
+        _spriteBatch.DrawString(_font, displayText,
+            new Vector2(inputRect.X + 5, inputRect.Y + 5),
+            new Color(220, 220, 230));
+
+        // Hint text
+        var hintText = LocalizationManager.Get("dialog.name_hint");
+        var hintSize = _font.MeasureString(hintText);
+        _spriteBatch.DrawString(_font, hintText,
+            new Vector2(dialogX + (dialogWidth - hintSize.X) / 2, dialogY + dialogHeight - 30),
+            new Color(150, 150, 170));
+    }
+
+    private void DrawDialogBorder(Rectangle rect, Color color, int thickness)
+    {
+        _spriteBatch.Draw(_renderer.Pixel, new Rectangle(rect.X, rect.Y, rect.Width, thickness), color);
+        _spriteBatch.Draw(_renderer.Pixel, new Rectangle(rect.X, rect.Bottom - thickness, rect.Width, thickness), color);
+        _spriteBatch.Draw(_renderer.Pixel, new Rectangle(rect.X, rect.Y, thickness, rect.Height), color);
+        _spriteBatch.Draw(_renderer.Pixel, new Rectangle(rect.Right - thickness, rect.Y, thickness, rect.Height), color);
     }
 }

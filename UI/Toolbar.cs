@@ -19,12 +19,17 @@ public class Toolbox
     public Rectangle Bounds { get; private set; }
     public bool IsVisible { get; set; } = true;
     public bool IsDraggingWindow { get; private set; }
+    public bool IsUserComponentsToolbox { get; }
 
     // Drag-to-place state
     public bool IsDraggingItem { get; private set; }
     public ToolType? DraggingTool { get; private set; }
     public string? DraggingCustomComponent { get; private set; }
     public Point DragPosition { get; private set; }
+
+    // Delete mode for user components
+    public bool IsDeleteMode { get; private set; }
+    public string? HoveredComponentForDelete { get; private set; }
 
     private readonly List<ToolboxItem> _items = new();
     private readonly List<ToolboxItem> _customItems = new();
@@ -34,6 +39,7 @@ public class Toolbox
     private const int ItemHeight = 50;
     private const int Padding = 8;
     private const int TitleHeight = 24;
+    private const int DeleteButtonSize = 16;
 
     private static readonly Color BackgroundColor = new(45, 45, 55, 240);
     private static readonly Color TitleColor = new(55, 55, 65);
@@ -42,22 +48,31 @@ public class Toolbox
     private static readonly Color ItemNormalColor = new(60, 60, 75);
     private static readonly Color ItemHoverColor = new(80, 80, 100);
     private static readonly Color DragPreviewColor = new(70, 120, 180, 180);
+    private static readonly Color DeleteButtonColor = new(180, 60, 60);
+    private static readonly Color DeleteButtonHoverColor = new(220, 80, 80);
 
     public int BusInputBits { get; set; } = 4;
     public int BusOutputBits { get; set; } = 4;
 
-    public Toolbox(int x, int y)
+    public Toolbox(int x, int y, bool isUserComponents = false)
     {
-        // Built-in components
-        _items.Add(new ToolboxItem("NAND", ToolType.PlaceNand));
-        _items.Add(new ToolboxItem("Switch", ToolType.PlaceSwitch));
-        _items.Add(new ToolboxItem("LED", ToolType.PlaceLed));
-        _items.Add(new ToolboxItem("Clock", ToolType.PlaceClock));
-        _items.Add(new ToolboxItem("Input", ToolType.PlaceBusInput));
-        _items.Add(new ToolboxItem("Output", ToolType.PlaceBusOutput));
+        IsUserComponentsToolbox = isUserComponents;
+
+        if (!isUserComponents)
+        {
+            // Built-in components
+            _items.Add(new ToolboxItem("NAND", ToolType.PlaceNand));
+            _items.Add(new ToolboxItem("Switch", ToolType.PlaceSwitch));
+            _items.Add(new ToolboxItem("LED", ToolType.PlaceLed));
+            _items.Add(new ToolboxItem("Clock", ToolType.PlaceClock));
+            _items.Add(new ToolboxItem("Input", ToolType.PlaceBusInput));
+            _items.Add(new ToolboxItem("Output", ToolType.PlaceBusOutput));
+        }
 
         UpdateBounds(x, y);
     }
+
+    public bool HasCustomComponents => _customItems.Count > 0;
 
     private void UpdateBounds(int x, int y)
     {
@@ -83,11 +98,18 @@ public class Toolbox
         UpdateBounds(Bounds.X, Bounds.Y);
     }
 
+    // Event for delete button clicks
+    public event System.Action<string>? OnDeleteComponent;
+
     public void Update(Point mousePos, bool mousePressed, bool mouseJustPressed, bool mouseJustReleased)
     {
         if (!IsVisible) return;
 
+        // For user components toolbox, skip if no custom components
+        if (IsUserComponentsToolbox && !HasCustomComponents) return;
+
         DragPosition = mousePos;
+        HoveredComponentForDelete = null;
 
         // Handle releasing drag
         if (mouseJustReleased && IsDraggingItem)
@@ -127,7 +149,7 @@ public class Toolbox
             return;
         }
 
-        // Handle starting item drag
+        // Handle starting item drag or delete button click
         if (mouseJustPressed && Bounds.Contains(mousePos) && !IsDraggingWindow)
         {
             int index = 0;
@@ -136,6 +158,17 @@ public class Toolbox
                 var itemRect = GetItemRect(index);
                 if (itemRect.Contains(mousePos))
                 {
+                    // Check if clicking delete button (user components only)
+                    if (IsUserComponentsToolbox && item.IsCustom)
+                    {
+                        var deleteRect = GetDeleteButtonRect(itemRect);
+                        if (deleteRect.Contains(mousePos))
+                        {
+                            OnDeleteComponent?.Invoke(item.CustomName!);
+                            break;
+                        }
+                    }
+
                     IsDraggingItem = true;
                     if (item.IsCustom)
                     {
@@ -179,11 +212,19 @@ public class Toolbox
         return new Rectangle(x, y, ItemWidth, ItemHeight);
     }
 
-    public bool ContainsPoint(Point p) => IsVisible && Bounds.Contains(p);
+    public bool ContainsPoint(Point p)
+    {
+        if (!IsVisible) return false;
+        if (IsUserComponentsToolbox && !HasCustomComponents) return false;
+        return Bounds.Contains(p);
+    }
 
     public void Draw(SpriteBatch spriteBatch, Texture2D pixel, SpriteFont font, Point mousePos)
     {
         if (!IsVisible) return;
+
+        // For user components toolbox, hide if no custom components
+        if (IsUserComponentsToolbox && !HasCustomComponents) return;
 
         // Background
         spriteBatch.Draw(pixel, Bounds, BackgroundColor);
@@ -193,7 +234,7 @@ public class Toolbox
         spriteBatch.Draw(pixel, titleBar, TitleColor);
 
         // Title text
-        var titleText = "Toolbox";
+        var titleText = IsUserComponentsToolbox ? "User Components" : "Toolbox";
         var titleSize = font.MeasureString(titleText);
         spriteBatch.DrawString(font, titleText,
             new Vector2(Bounds.X + (Bounds.Width - titleSize.X) / 2, Bounds.Y + (TitleHeight - titleSize.Y) / 2),
@@ -221,6 +262,22 @@ public class Toolbox
                            itemRect.Y + (itemRect.Height - labelSize.Y) / 2),
                 TextColor);
 
+            // Draw delete button for user components toolbox items
+            if (IsUserComponentsToolbox && item.IsCustom)
+            {
+                var deleteRect = GetDeleteButtonRect(itemRect);
+                bool deleteHovered = deleteRect.Contains(mousePos);
+                spriteBatch.Draw(pixel, deleteRect, deleteHovered ? DeleteButtonHoverColor : DeleteButtonColor);
+
+                // Draw X
+                var xText = "X";
+                var xSize = font.MeasureString(xText);
+                spriteBatch.DrawString(font, xText,
+                    new Vector2(deleteRect.X + (deleteRect.Width - xSize.X) / 2,
+                               deleteRect.Y + (deleteRect.Height - xSize.Y) / 2),
+                    TextColor);
+            }
+
             index++;
         }
 
@@ -238,6 +295,15 @@ public class Toolbox
                            previewRect.Y + (previewRect.Height - labelSize.Y) / 2),
                 TextColor);
         }
+    }
+
+    private Rectangle GetDeleteButtonRect(Rectangle itemRect)
+    {
+        return new Rectangle(
+            itemRect.Right - DeleteButtonSize - 2,
+            itemRect.Y + 2,
+            DeleteButtonSize,
+            DeleteButtonSize);
     }
 
     private string GetToolLabel(ToolType? tool)

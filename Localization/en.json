@@ -34,9 +34,16 @@
   "status.load_failed": "Load failed: {0}",
   "status.no_saved_circuit": "No saved circuit found",
   "status.select_first": "Select components first (Ctrl+Click to multi-select)",
-  "status.need_inputs_outputs": "Component needs at least 1 Switch (input) and 1 LED (output)",
-  "status.component_created": "Created component '{0}' - available in toolbox",
+  "status.need_inputs_outputs": "Component needs at least 1 Input and 1 Output",
+  "status.component_created": "Created component '{0}' - available in User Components",
   "status.component_failed": "Failed to create component: {0}",
+  "status.cancelled": "Operation cancelled",
+  "status.name_exists": "A component with this name already exists",
+  "status.component_deleted": "Deleted component '{0}'",
+  "status.delete_failed": "Failed to delete component: {0}",
+
+  "dialog.name_component": "Enter Component Name",
+  "dialog.name_hint": "Press Enter to confirm, Escape to cancel",
 
   "help.shortcuts": "Ctrl+S: Save | Ctrl+O: Load | Ctrl+B: Build | Del: Delete | Ctrl+Scroll: Zoom | RMB: Pan",
   "help.drag": "Drag components from toolbox. Drag pins to wire. Del to delete."
