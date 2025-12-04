@@ -15,7 +15,7 @@ public class BusOutput : Component
 
     public int BitCount { get; private set; }
     public bool ShowPinValues { get; set; } = false;
-    private int _gridSize;
+    private readonly int _gridSize;
 
     public BusOutput(int x, int y, int bitCount = 4, int gridSize = 20) : base(x, y)
     {
@@ -75,7 +75,7 @@ public class BusOutput : Component
             {
                 // Convert input index to bit index (MSB at top, so index 0 = MSB)
                 int bitIndex = oldBitCount - 1 - i;
-                connectionsByBit[bitIndex] = Inputs[i].ConnectedTo;
+                connectionsByBit[bitIndex] = Inputs[i].ConnectedTo!;
             }
         }
 
@@ -119,7 +119,6 @@ public class BusOutput : Component
         var chars = new char[BitCount];
         for (int i = 0; i < BitCount; i++)
         {
-            int bitIndex = BitCount - 1 - i;
             bool isHigh = false;
             if (i < Inputs.Count)
             {

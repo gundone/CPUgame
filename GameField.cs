@@ -14,7 +14,7 @@ namespace CPUgame;
 
 public class GameField : Game
 {
-    private GraphicsDeviceManager _graphics;
+    private readonly GraphicsDeviceManager _graphics;
     private SpriteBatch _spriteBatch = null!;
     private SpriteFont _font = null!;
 
@@ -51,7 +51,7 @@ public class GameField : Game
     private double _statusTime;
 
     // Global display settings
-    private bool _showPinValues = false;
+    private bool _showPinValues;
 
     // Zoom/Camera
     private float _zoom = 1.0f;

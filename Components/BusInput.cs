@@ -16,7 +16,7 @@ public class BusInput : Component
     public int BitCount { get; private set; }
     public int Value { get; set; }
     public bool ShowPinValues { get; set; } = false;
-    private int _gridSize;
+    private readonly int _gridSize;
 
     public BusInput(int x, int y, int bitCount = 4, int gridSize = 20) : base(x, y)
     {
