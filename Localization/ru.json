@@ -1,0 +1,43 @@
+{
+  "app.title": "CPU Game - Симулятор цифровых схем",
+
+  "menu.file": "Файл",
+  "menu.file.new": "Новая схема",
+  "menu.file.load": "Загрузить схему",
+  "menu.file.save": "Сохранить схему",
+  "menu.file.exit": "Выход",
+
+  "menu.options": "Настройки",
+  "menu.options.language": "Язык",
+
+  "toolbox.title": "Компоненты",
+  "toolbox.nand": "И-НЕ",
+  "toolbox.switch": "Выключатель",
+  "toolbox.led": "Светодиод",
+  "toolbox.clock": "Генератор",
+  "toolbox.input": "Вход",
+  "toolbox.output": "Выход",
+
+  "component.in": "ВХ",
+  "component.out": "ВЫХ",
+  "component.clock": "ГЕН",
+
+  "status.ready": "Готов",
+  "status.wire_connected": "Провод подключён",
+  "status.wire_selected": "Провод выбран - Нажмите Del для отключения",
+  "status.wire_disconnected": "Провод отключён",
+  "status.placed": "Размещён {0}",
+  "status.deleted": "Удалено компонентов: {0}",
+  "status.saved": "Схема сохранена в {0}",
+  "status.loaded": "Схема загружена",
+  "status.save_failed": "Ошибка сохранения: {0}",
+  "status.load_failed": "Ошибка загрузки: {0}",
+  "status.no_saved_circuit": "Сохранённая схема не найдена",
+  "status.select_first": "Сначала выберите компоненты (Ctrl+Клик для множественного выбора)",
+  "status.need_inputs_outputs": "Компонент должен содержать минимум 1 выключатель (вход) и 1 светодиод (выход)",
+  "status.component_created": "Создан компонент '{0}' - доступен в панели",
+  "status.component_failed": "Не удалось создать компонент: {0}",
+
+  "help.shortcuts": "Ctrl+S: Сохранить | Ctrl+O: Загрузить | Ctrl+B: Собрать | Del: Удалить | Ctrl+Прокрутка: Масштаб | ПКМ: Перемещение",
+  "help.drag": "Перетащите компоненты из панели. Соедините выводы проводами. Del для удаления."
+}

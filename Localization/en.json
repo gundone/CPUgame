@@ -1,0 +1,43 @@
+{
+  "app.title": "CPU Game - Digital Circuit Simulator",
+
+  "menu.file": "File",
+  "menu.file.new": "New Circuit",
+  "menu.file.load": "Load Circuit",
+  "menu.file.save": "Save Circuit",
+  "menu.file.exit": "Exit",
+
+  "menu.options": "Options",
+  "menu.options.language": "Language",
+
+  "toolbox.title": "Toolbox",
+  "toolbox.nand": "NAND",
+  "toolbox.switch": "Switch",
+  "toolbox.led": "LED",
+  "toolbox.clock": "Clock",
+  "toolbox.input": "Input",
+  "toolbox.output": "Output",
+
+  "component.in": "IN",
+  "component.out": "OUT",
+  "component.clock": "CLK",
+
+  "status.ready": "Ready",
+  "status.wire_connected": "Wire connected",
+  "status.wire_selected": "Wire selected - Press Del to disconnect",
+  "status.wire_disconnected": "Wire disconnected",
+  "status.placed": "Placed {0}",
+  "status.deleted": "Deleted {0} component(s)",
+  "status.saved": "Circuit saved to {0}",
+  "status.loaded": "Circuit loaded",
+  "status.save_failed": "Save failed: {0}",
+  "status.load_failed": "Load failed: {0}",
+  "status.no_saved_circuit": "No saved circuit found",
+  "status.select_first": "Select components first (Ctrl+Click to multi-select)",
+  "status.need_inputs_outputs": "Component needs at least 1 Switch (input) and 1 LED (output)",
+  "status.component_created": "Created component '{0}' - available in toolbox",
+  "status.component_failed": "Failed to create component: {0}",
+
+  "help.shortcuts": "Ctrl+S: Save | Ctrl+O: Load | Ctrl+B: Build | Del: Delete | Ctrl+Scroll: Zoom | RMB: Pan",
+  "help.drag": "Drag components from toolbox. Drag pins to wire. Del to delete."
+}
