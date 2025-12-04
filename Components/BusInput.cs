@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using CPUgame.Core;
 using Microsoft.Xna.Framework.Input;
 
@@ -42,22 +43,80 @@ public class BusInput : Component
         }
     }
 
-    public void ResizeBits(bool increase)
+    /// <summary>
+    /// Resize the number of bits. Call with connectedInputPins to preserve wire connections.
+    /// </summary>
+    public void ResizeBits(bool increase, List<Pin>? connectedInputPins = null)
     {
         int currentIndex = Array.IndexOf(AllowedBitCounts, BitCount);
         if (currentIndex < 0) currentIndex = 2; // Default to 4
 
+        int newBitCount;
         if (increase && currentIndex < AllowedBitCounts.Length - 1)
         {
-            BitCount = AllowedBitCounts[currentIndex + 1];
-            Value &= (1 << BitCount) - 1; // Mask value to new bit count
-            SetupPins();
+            newBitCount = AllowedBitCounts[currentIndex + 1];
         }
         else if (!increase && currentIndex > 0)
         {
-            BitCount = AllowedBitCounts[currentIndex - 1];
-            Value &= (1 << BitCount) - 1; // Mask value to new bit count
-            SetupPins();
+            newBitCount = AllowedBitCounts[currentIndex - 1];
+        }
+        else
+        {
+            return; // No change
+        }
+
+        int oldBitCount = BitCount;
+
+        // Store connections: map from bit index to list of connected input pins
+        // Bit index is from LSB (0) to MSB (BitCount-1)
+        var connectionsByBit = new Dictionary<int, List<Pin>>();
+
+        if (connectedInputPins != null)
+        {
+            foreach (var inputPin in connectedInputPins)
+            {
+                if (inputPin.ConnectedTo != null && inputPin.ConnectedTo.Owner == this)
+                {
+                    // Find which output pin this is connected to
+                    int outputIndex = Outputs.IndexOf(inputPin.ConnectedTo);
+                    if (outputIndex >= 0)
+                    {
+                        // Convert to bit index (MSB at top, so index 0 = MSB)
+                        int bitIndex = oldBitCount - 1 - outputIndex;
+
+                        if (!connectionsByBit.ContainsKey(bitIndex))
+                            connectionsByBit[bitIndex] = new List<Pin>();
+                        connectionsByBit[bitIndex].Add(inputPin);
+
+                        // Disconnect
+                        inputPin.Disconnect();
+                    }
+                }
+            }
+        }
+
+        // Update bit count and recreate pins
+        BitCount = newBitCount;
+        Value &= (1 << BitCount) - 1; // Mask value to new bit count
+        SetupPins();
+
+        // Restore connections for pins that still exist
+        foreach (var kvp in connectionsByBit)
+        {
+            int bitIndex = kvp.Key;
+            if (bitIndex < BitCount)
+            {
+                // Convert bit index back to output index
+                int outputIndex = BitCount - 1 - bitIndex;
+                if (outputIndex >= 0 && outputIndex < Outputs.Count)
+                {
+                    foreach (var inputPin in kvp.Value)
+                    {
+                        inputPin.ConnectedTo = Outputs[outputIndex];
+                    }
+                }
+            }
+            // If bitIndex >= BitCount, the pin was removed and connections are lost
         }
     }
 
@@ -114,26 +173,11 @@ public class BusInput : Component
 
         bool shift = current.IsKeyDown(Keys.LeftShift) || current.IsKeyDown(Keys.RightShift);
 
-        // Toggle pin values display with V key
-        if (IsKeyJustPressed(Keys.V, current, previous))
-        {
-            ShowPinValues = !ShowPinValues;
-            return;
-        }
-
-        // Shift+/- to resize pin count
+        // Shift+/- resize is handled by Game1 with circuit context for wire preservation
+        // Skip +/- processing when shift is held
         if (shift)
         {
-            if (IsKeyJustPressed(Keys.OemPlus, current, previous) || IsKeyJustPressed(Keys.Add, current, previous))
-            {
-                ResizeBits(true);
-                return;
-            }
-            if (IsKeyJustPressed(Keys.OemMinus, current, previous) || IsKeyJustPressed(Keys.Subtract, current, previous))
-            {
-                ResizeBits(false);
-                return;
-            }
+            return;
         }
 
         // Toggle bits with number keys 0-9

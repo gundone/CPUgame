@@ -41,6 +41,9 @@ public class Game1 : Game
     private string _statusMessage = "";
     private double _statusTime;
 
+    // Global display settings
+    private bool _showPinValues = false;
+
     // Zoom/Camera
     private float _zoom = 1.0f;
     private const float MinZoom = 0.25f;
@@ -362,11 +365,32 @@ public class Game1 : Game
             return;
         }
 
+        // V - Toggle pin values display globally
+        if (keyboard.IsKeyDown(Keys.V) && !_prevKeyboard.IsKeyDown(Keys.V))
+        {
+            _showPinValues = !_showPinValues;
+            foreach (var comp in _circuit.Components)
+            {
+                if (comp is BusInput busInput)
+                    busInput.ShowPinValues = _showPinValues;
+                else if (comp is BusOutput busOutput)
+                    busOutput.ShowPinValues = _showPinValues;
+            }
+            return;
+        }
+
         // Apply commands to selected components (includes arrow key movement)
         var selected = GetSelectedElements();
         foreach (var element in selected)
         {
             element.GridSize = _renderer.GridSize;
+
+            // Handle BusInput resize specially - needs circuit context for wire preservation
+            if (element is BusInput busInput)
+            {
+                HandleBusInputResize(busInput, keyboard);
+            }
+
             element.ApplyCommand(keyboard, _prevKeyboard, deltaTime);
         }
     }
@@ -514,6 +538,31 @@ public class Game1 : Game
     private List<Component> GetSelectedElements()
     {
         return _circuit.Components.Where(c => c.IsSelected).ToList();
+    }
+
+    private void HandleBusInputResize(BusInput busInput, KeyboardState keyboard)
+    {
+        bool shift = keyboard.IsKeyDown(Keys.LeftShift) || keyboard.IsKeyDown(Keys.RightShift);
+        if (!shift) return;
+
+        bool increase = (IsKeyJustPressed(Keys.OemPlus, keyboard) || IsKeyJustPressed(Keys.Add, keyboard));
+        bool decrease = (IsKeyJustPressed(Keys.OemMinus, keyboard) || IsKeyJustPressed(Keys.Subtract, keyboard));
+
+        if (!increase && !decrease) return;
+
+        // Collect all input pins from the circuit that might be connected to this BusInput
+        var allInputPins = new List<Pin>();
+        foreach (var comp in _circuit.Components)
+        {
+            allInputPins.AddRange(comp.Inputs);
+        }
+
+        busInput.ResizeBits(increase, allInputPins);
+    }
+
+    private bool IsKeyJustPressed(Keys key, KeyboardState current)
+    {
+        return current.IsKeyDown(key) && !_prevKeyboard.IsKeyDown(key);
     }
 
     private void HandleMouseInteraction(Point mousePos, bool mouseJustPressed, bool mouseJustReleased, bool mousePressed)

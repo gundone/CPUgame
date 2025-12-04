@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using CPUgame.Core;
 using Microsoft.Xna.Framework.Input;
 
@@ -40,20 +41,62 @@ public class BusOutput : Component
         }
     }
 
+    /// <summary>
+    /// Resize the number of bits. Preserves wire connections for pins that still exist.
+    /// </summary>
     public void ResizeBits(bool increase)
     {
         int currentIndex = Array.IndexOf(AllowedBitCounts, BitCount);
         if (currentIndex < 0) currentIndex = 2; // Default to 4
 
+        int newBitCount;
         if (increase && currentIndex < AllowedBitCounts.Length - 1)
         {
-            BitCount = AllowedBitCounts[currentIndex + 1];
-            SetupPins();
+            newBitCount = AllowedBitCounts[currentIndex + 1];
         }
         else if (!increase && currentIndex > 0)
         {
-            BitCount = AllowedBitCounts[currentIndex - 1];
-            SetupPins();
+            newBitCount = AllowedBitCounts[currentIndex - 1];
+        }
+        else
+        {
+            return; // No change
+        }
+
+        int oldBitCount = BitCount;
+
+        // Store connections: map from bit index to connected output pin
+        // Bit index is from LSB (0) to MSB (BitCount-1)
+        var connectionsByBit = new Dictionary<int, Pin>();
+
+        for (int i = 0; i < Inputs.Count; i++)
+        {
+            if (Inputs[i].ConnectedTo != null)
+            {
+                // Convert input index to bit index (MSB at top, so index 0 = MSB)
+                int bitIndex = oldBitCount - 1 - i;
+                connectionsByBit[bitIndex] = Inputs[i].ConnectedTo;
+            }
+        }
+
+        // Update bit count and recreate pins
+        BitCount = newBitCount;
+        SetupPins();
+
+        // Restore connections for pins that still exist
+        foreach (var kvp in connectionsByBit)
+        {
+            int bitIndex = kvp.Key;
+            if (bitIndex < BitCount)
+            {
+                // Convert bit index back to input index
+                int inputIndex = BitCount - 1 - bitIndex;
+                if (inputIndex >= 0 && inputIndex < Inputs.Count)
+                {
+                    Inputs[inputIndex].ConnectedTo = kvp.Value;
+                }
+            }
+            // If bitIndex >= BitCount, the pin was removed and connections are lost
         }
     }
 
@@ -96,13 +139,6 @@ public class BusOutput : Component
     public override void ApplyCommand(KeyboardState current, KeyboardState previous, double deltaTime)
     {
         base.ApplyCommand(current, previous, deltaTime);
-
-        // Toggle pin values display with V key
-        if (IsKeyJustPressed(Keys.V, current, previous))
-        {
-            ShowPinValues = !ShowPinValues;
-            return;
-        }
 
         bool shift = current.IsKeyDown(Keys.LeftShift) || current.IsKeyDown(Keys.RightShift);
 
