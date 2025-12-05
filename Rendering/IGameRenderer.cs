@@ -10,6 +10,7 @@ public interface IGameRenderer
 {
     int GridSize { get; }
     Texture2D Pixel { get; }
+    float TitleFontScale { get; set; }
     void Initialize(GraphicsDevice graphicsDevice, SpriteFont font);
     void DrawWorld(SpriteBatch spriteBatch, Circuit circuit, CameraController camera, SelectionManager selection, IWireManager wireManager, Pin? hoveredPin, Point mousePos, int screenWidth, int screenHeight, bool isDraggingItem);
     void DrawUI(SpriteBatch spriteBatch, IToolboxManager toolboxManager, MainMenu mainMenu, IStatusService statusService, IDialogService dialogService, CameraController camera, Point mousePos, int screenWidth, int screenHeight, SpriteFont font);
@@ -22,6 +23,7 @@ public class GameRenderer : IGameRenderer
 
     public int GridSize => _circuitRenderer.GridSize;
     public Texture2D Pixel => _circuitRenderer.Pixel;
+    public float TitleFontScale { get; set; } = 0.8f;
 
     public void Initialize(GraphicsDevice graphicsDevice, SpriteFont font)
     {
@@ -34,6 +36,9 @@ public class GameRenderer : IGameRenderer
     {
         _circuitRenderer.DrawGrid(spriteBatch, camera.Offset.X, camera.Offset.Y, screenWidth, screenHeight, camera.Zoom);
         _circuitRenderer.DrawCircuit(spriteBatch, circuit, selection.SelectedWire);
+
+        // Draw component titles
+        DrawComponentTitles(spriteBatch, circuit);
 
         if (hoveredPin != null && !isDraggingItem)
         {
@@ -54,6 +59,32 @@ public class GameRenderer : IGameRenderer
         }
     }
 
+    private void DrawComponentTitles(SpriteBatch spriteBatch, Circuit circuit)
+    {
+        var titleColor = new Color(180, 180, 200);
+
+        foreach (var component in circuit.Components)
+        {
+            if (string.IsNullOrEmpty(component.Title))
+            {
+                continue;
+            }
+
+            var textSize = _font.MeasureString(component.Title) * TitleFontScale;
+            float x = component.X + (component.Width - textSize.X) / 2;
+            float y = component.Y + component.Height + 2;
+
+            spriteBatch.DrawString(_font, component.Title,
+                new Vector2(x, y),
+                titleColor,
+                0f,
+                Vector2.Zero,
+                TitleFontScale,
+                SpriteEffects.None,
+                0f);
+        }
+    }
+
     public void DrawUI(SpriteBatch spriteBatch, IToolboxManager toolboxManager, MainMenu mainMenu, IStatusService statusService, IDialogService dialogService, CameraController camera, Point mousePos, int screenWidth, int screenHeight, SpriteFont font)
     {
         DrawZoomIndicator(spriteBatch, camera.Zoom, mainMenu.Height);
@@ -62,9 +93,9 @@ public class GameRenderer : IGameRenderer
         DrawStatusBar(spriteBatch, statusService.Message, screenWidth, screenHeight);
         mainMenu.Draw(spriteBatch, Pixel, font, screenWidth, mousePos);
 
-        if (dialogService.IsNamingComponent)
+        if (dialogService.IsActive)
         {
-            DrawNamingDialog(spriteBatch, dialogService.ComponentNameInput, screenWidth, screenHeight);
+            DrawInputDialog(spriteBatch, dialogService.DialogTitle, dialogService.InputText, screenWidth, screenHeight);
         }
     }
 
@@ -105,13 +136,12 @@ public class GameRenderer : IGameRenderer
         spriteBatch.DrawString(_font, zoomText, new Vector2(8, menuHeight + 8), new Color(150, 150, 170));
     }
 
-    private void DrawNamingDialog(SpriteBatch spriteBatch, string nameInput, int screenWidth, int screenHeight)
+    private void DrawInputDialog(SpriteBatch spriteBatch, string title, string inputText, int screenWidth, int screenHeight)
     {
         spriteBatch.Draw(Pixel, new Rectangle(0, 0, screenWidth, screenHeight), new Color(0, 0, 0, 150));
 
-        var titleText = LocalizationManager.Get("dialog.name_component");
         var hintText = LocalizationManager.Get("dialog.name_hint");
-        var titleSize = _font.MeasureString(titleText);
+        var titleSize = _font.MeasureString(title);
         var hintSize = _font.MeasureString(hintText);
 
         int minWidth = 300;
@@ -125,7 +155,7 @@ public class GameRenderer : IGameRenderer
         spriteBatch.Draw(Pixel, dialogRect, new Color(45, 45, 55));
         DrawBorder(spriteBatch, dialogRect, new Color(80, 80, 100), 2);
 
-        spriteBatch.DrawString(_font, titleText,
+        spriteBatch.DrawString(_font, title,
             new Vector2(dialogX + (dialogWidth - titleSize.X) / 2, dialogY + 10),
             new Color(220, 220, 230));
 
@@ -133,7 +163,7 @@ public class GameRenderer : IGameRenderer
         spriteBatch.Draw(Pixel, inputRect, new Color(30, 30, 40));
         DrawBorder(spriteBatch, inputRect, new Color(100, 100, 120), 1);
 
-        var displayText = nameInput + "_";
+        var displayText = inputText + "_";
         spriteBatch.DrawString(_font, displayText,
             new Vector2(inputRect.X + 5, inputRect.Y + 5),
             new Color(220, 220, 230));

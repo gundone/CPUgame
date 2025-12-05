@@ -66,7 +66,8 @@ public static class CircuitSerializer
                 Id = id,
                 Type = GetComponentType(component),
                 X = component.X,
-                Y = component.Y
+                Y = component.Y,
+                Title = component.Title
             };
 
             if (component is InputSwitch sw)
@@ -139,6 +140,12 @@ public static class CircuitSerializer
 
             if (component != null)
             {
+                // Set title before adding to avoid auto-generation
+                if (!string.IsNullOrEmpty(compData.Title))
+                {
+                    component.Title = compData.Title;
+                }
+
                 circuit.AddComponent(component);
                 componentMap[compData.Id] = component;
             }
@@ -159,6 +166,9 @@ public static class CircuitSerializer
                 }
             }
         }
+
+        // Update counters to avoid duplicate titles for new components
+        circuit.UpdateCountersFromComponents();
 
         return circuit;
     }
@@ -193,6 +203,7 @@ public class ComponentData
     public string Type { get; set; } = "";
     public int X { get; set; }
     public int Y { get; set; }
+    public string? Title { get; set; }
     public bool? State { get; set; }
     public double? Frequency { get; set; }
     public string? CustomName { get; set; }

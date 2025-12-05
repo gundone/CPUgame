@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 
@@ -12,9 +13,20 @@ public class DesktopInputHandler : IInputHandler
     private KeyboardState _prevKeyboard;
     private bool _textInputActive;
 
+    // Double-click detection
+    private double _lastClickTime;
+    private Point _lastClickPosition;
+    private const double DoubleClickTime = 0.3; // 300ms
+    private const int DoubleClickDistance = 5;  // pixels
+
     public bool IsTextInputActive => _textInputActive;
 
     public void Update(InputState state)
+    {
+        Update(state, 0);
+    }
+
+    public void Update(InputState state, double deltaTime)
     {
         var mouse = Mouse.GetState();
         var keyboard = Keyboard.GetState();
@@ -26,6 +38,30 @@ public class DesktopInputHandler : IInputHandler
         state.PrimaryPressed = mouse.LeftButton == ButtonState.Pressed;
         state.PrimaryJustPressed = mouse.LeftButton == ButtonState.Pressed && _prevMouse.LeftButton == ButtonState.Released;
         state.PrimaryJustReleased = mouse.LeftButton == ButtonState.Released && _prevMouse.LeftButton == ButtonState.Pressed;
+
+        // Double-click detection
+        state.PrimaryDoubleClick = false;
+        if (state.PrimaryJustPressed)
+        {
+            double currentTime = _lastClickTime + deltaTime;
+            int dx = Math.Abs(mouse.X - _lastClickPosition.X);
+            int dy = Math.Abs(mouse.Y - _lastClickPosition.Y);
+
+            if (currentTime < DoubleClickTime && dx < DoubleClickDistance && dy < DoubleClickDistance)
+            {
+                state.PrimaryDoubleClick = true;
+                _lastClickTime = double.MaxValue; // Prevent triple-click
+            }
+            else
+            {
+                _lastClickTime = 0;
+                _lastClickPosition = new Point(mouse.X, mouse.Y);
+            }
+        }
+        else
+        {
+            _lastClickTime += deltaTime;
+        }
 
         // Secondary button (right mouse)
         state.SecondaryPressed = mouse.RightButton == ButtonState.Pressed;

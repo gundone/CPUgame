@@ -80,11 +80,19 @@ public class GameField : Game, IGameField
         _commandHandler.OnBuildComponent += () =>
         {
             _dialogService.StartNaming(_selection.GetSelectedComponents());
-            if (_dialogService.IsNamingComponent) _inputHandler.BeginTextInput();
+            if (_dialogService.IsActive)
+            {
+                _inputHandler.BeginTextInput();
+            }
         };
 
         _dialogService.OnNameConfirmed += (name, components) =>
             _componentBuilder.BuildComponent(name, components, _gameRenderer.GridSize);
+
+        _dialogService.OnTitleConfirmed += (component, newTitle) =>
+        {
+            component.Title = newTitle;
+        };
 
         _circuitManager.OnCircuitChanged += () => _selection = new SelectionManager(_circuitManager.Circuit);
 
@@ -124,18 +132,22 @@ public class GameField : Game, IGameField
             Window.Title = LocalizationManager.Get("app.title");
             _statusService.Show(LocalizationManager.Get("status.ready"));
         };
+        _mainMenu.OnTitleFontSizeChanged += scale =>
+        {
+            _gameRenderer.TitleFontScale = scale;
+        };
     }
 
     protected override void Update(GameTime gameTime)
     {
         _inputState.Clear();
-        _inputHandler.Update(_inputState);
+        _inputHandler.Update(_inputState, gameTime.ElapsedGameTime.TotalSeconds);
         var mousePos = _inputState.PointerPosition;
         var circuit = _circuitManager.Circuit;
 
         _statusService.Update(gameTime.ElapsedGameTime.TotalSeconds);
 
-        if (_dialogService.IsNamingComponent)
+        if (_dialogService.IsActive)
         {
             _dialogService.HandleInput(_inputState, _inputHandler);
             base.Update(gameTime);
@@ -197,23 +209,53 @@ public class GameField : Game, IGameField
     private void HandleCircuitInteraction(Point worldMousePos, Circuit circuit)
     {
         _wireManager.Update(circuit, worldMousePos, _inputState.PrimaryJustPressed, _inputState.PrimaryJustReleased);
-        if (_wireManager.IsDraggingWire) return;
+        if (_wireManager.IsDraggingWire)
+        {
+            return;
+        }
+
+        // Handle double-click for title editing
+        if (_inputState.PrimaryDoubleClick)
+        {
+            var component = circuit.GetComponentAt(worldMousePos.X, worldMousePos.Y);
+            if (component != null)
+            {
+                _dialogService.StartEditingTitle(component);
+                _inputHandler.BeginTextInput();
+                return;
+            }
+        }
 
         if (_inputState.PrimaryJustPressed)
         {
             var component = circuit.GetComponentAt(worldMousePos.X, worldMousePos.Y);
             if (component != null)
+            {
                 _selection.HandleComponentClick(component, _inputState.CtrlHeld, worldMousePos);
+            }
             else
             {
                 var wire = circuit.GetWireAt(worldMousePos.X, worldMousePos.Y);
-                if (wire != null) { _selection.HandleWireClick(wire); _statusService.Show(LocalizationManager.Get("status.wire_selected")); }
-                else _selection.HandleEmptyClick(_inputState.CtrlHeld);
+                if (wire != null)
+                {
+                    _selection.HandleWireClick(wire);
+                    _statusService.Show(LocalizationManager.Get("status.wire_selected"));
+                }
+                else
+                {
+                    _selection.HandleEmptyClick(_inputState.CtrlHeld);
+                }
             }
         }
 
-        if (_inputState.PrimaryPressed) _selection.UpdateDrag(worldMousePos, _gameRenderer.GridSize);
-        if (_inputState.PrimaryJustReleased) _selection.EndDrag();
+        if (_inputState.PrimaryPressed)
+        {
+            _selection.UpdateDrag(worldMousePos, _gameRenderer.GridSize);
+        }
+        if (_inputState.PrimaryJustReleased)
+        {
+            _selection.EndDrag();
+        }
     }
 
     protected override void Draw(GameTime gameTime)
@@ -224,7 +266,7 @@ public class GameField : Game, IGameField
         _gameRenderer.DrawWorld(_spriteBatch, _circuitManager.Circuit, _camera, _selection, _wireManager, _wireManager.HoveredPin, _inputState.PointerPosition, ScreenWidth, ScreenHeight, _toolboxManager.MainToolbox.IsDraggingItem);
         _spriteBatch.End();
 
-        _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
+        _spriteBatch.Begin(samplerState: SamplerState.LinearClamp);
         _gameRenderer.DrawUI(_spriteBatch, _toolboxManager, _mainMenu, _statusService, _dialogService, _camera, _inputState.PointerPosition, ScreenWidth, ScreenHeight, _font);
         _spriteBatch.End();
 

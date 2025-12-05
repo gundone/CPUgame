@@ -29,6 +29,7 @@ public class MainMenu
     public event Action? OnSaveCircuit;
     public event Action? OnExit;
     public event Action<string>? OnLanguageChanged;
+    public event Action<float>? OnTitleFontSizeChanged;
 
     public int Height => MenuHeight;
 
@@ -63,8 +64,19 @@ public class MainMenu
         fileMenu.SubItems.Add(new MenuItem(LocalizationManager.Get("menu.file.exit"), () => OnExit?.Invoke()));
         _menuItems.Add(fileMenu);
 
-        // Options menu - put languages directly in menu
+        // Options menu
         var optionsMenu = new MenuItem(LocalizationManager.Get("menu.options"));
+
+        // Add title font size header
+        optionsMenu.SubItems.Add(new MenuItem($"-- {LocalizationManager.Get("menu.options.titleFontSize")} --"));
+
+        // Add font size options
+        optionsMenu.SubItems.Add(new MenuItem(LocalizationManager.Get("menu.options.fontSmall"), () => OnTitleFontSizeChanged?.Invoke(0.6f)));
+        optionsMenu.SubItems.Add(new MenuItem(LocalizationManager.Get("menu.options.fontMedium"), () => OnTitleFontSizeChanged?.Invoke(0.8f)));
+        optionsMenu.SubItems.Add(new MenuItem(LocalizationManager.Get("menu.options.fontLarge"), () => OnTitleFontSizeChanged?.Invoke(1.0f)));
+        optionsMenu.SubItems.Add(new MenuItem(LocalizationManager.Get("menu.options.fontExtraLarge"), () => OnTitleFontSizeChanged?.Invoke(1.2f)));
+
+        optionsMenu.SubItems.Add(new MenuItem("-")); // Separator
 
         // Add language header
         optionsMenu.SubItems.Add(new MenuItem($"-- {LocalizationManager.Get("menu.options.language")} --"));
@@ -75,7 +87,9 @@ public class MainMenu
             var langCode = lang;
             var langName = LocalizationManager.GetLanguageName(lang);
             if (lang == LocalizationManager.CurrentLanguage)
+            {
                 langName = "* " + langName;
+            }
             optionsMenu.SubItems.Add(new MenuItem(langName, () => OnLanguageChanged?.Invoke(langCode)));
         }
 

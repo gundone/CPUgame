@@ -12,6 +12,7 @@ public class InputState
     public bool PrimaryPressed { get; set; }      // Left mouse / single touch
     public bool PrimaryJustPressed { get; set; }
     public bool PrimaryJustReleased { get; set; }
+    public bool PrimaryDoubleClick { get; set; }  // Double-click detected
     public bool SecondaryPressed { get; set; }    // Right mouse / two-finger tap
     public bool SecondaryJustPressed { get; set; }
     public bool MiddlePressed { get; set; }       // Middle mouse (desktop only)
@@ -57,6 +58,7 @@ public class InputState
     {
         PrimaryJustPressed = false;
         PrimaryJustReleased = false;
+        PrimaryDoubleClick = false;
         SecondaryJustPressed = false;
         MiddleJustPressed = false;
         ScrollDelta = 0;

@@ -14,6 +14,7 @@ public abstract class Component
     public int Width { get; protected set; } = 40;
     public int Height { get; protected set; } = 60;
     public string Name { get; protected set; } = "Component";
+    public string Title { get; set; } = "";
 
     public List<Pin> Inputs { get; } = new();
     public List<Pin> Outputs { get; } = new();

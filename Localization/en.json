@@ -9,6 +9,11 @@
 
   "menu.options": "Options",
   "menu.options.language": "Language",
+  "menu.options.titleFontSize": "Title Font Size",
+  "menu.options.fontSmall": "Small",
+  "menu.options.fontMedium": "Medium",
+  "menu.options.fontLarge": "Large",
+  "menu.options.fontExtraLarge": "Extra Large",
 
   "toolbox.title": "Toolbox",
   "toolbox.nand": "NAND",
@@ -44,6 +49,7 @@
 
   "dialog.name_component": "Enter Component Name",
   "dialog.name_hint": "Press Enter to confirm, Escape to cancel",
+  "dialog.edit_title": "Edit Component Title",
 
   "help.shortcuts": "Ctrl+S: Save | Ctrl+O: Load | Ctrl+B: Build | Del: Delete | Ctrl+Scroll: Zoom | RMB: Pan",
   "help.drag": "Drag components from toolbox. Drag pins to wire. Del to delete."

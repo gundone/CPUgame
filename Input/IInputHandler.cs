@@ -12,6 +12,11 @@ public interface IInputHandler
     void Update(InputState state);
 
     /// <summary>
+    /// Update input state with delta time for time-based detection (double-click)
+    /// </summary>
+    void Update(InputState state, double deltaTime);
+
+    /// <summary>
     /// Set the cursor appearance (desktop only, no-op on mobile)
     /// </summary>
     void SetCursor(CursorType cursor);

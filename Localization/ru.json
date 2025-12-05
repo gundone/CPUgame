@@ -9,6 +9,11 @@
 
   "menu.options": "Настройки",
   "menu.options.language": "Язык",
+  "menu.options.titleFontSize": "Размер шрифта названий",
+  "menu.options.fontSmall": "Маленький",
+  "menu.options.fontMedium": "Средний",
+  "menu.options.fontLarge": "Большой",
+  "menu.options.fontExtraLarge": "Очень большой",
 
   "toolbox.title": "Компоненты",
   "toolbox.nand": "И-НЕ",
@@ -44,6 +49,7 @@
 
   "dialog.name_component": "Введите имя компонента",
   "dialog.name_hint": "Enter для подтверждения, Escape для отмены",
+  "dialog.edit_title": "Изменить название компонента",
 
   "help.shortcuts": "Ctrl+S: Сохранить | Ctrl+O: Загрузить | Ctrl+B: Собрать | Del: Удалить | Ctrl+Прокрутка: Масштаб | ПКМ: Перемещение",
   "help.drag": "Перетащите компоненты из панели. Соедините выводы проводами. Del для удаления."

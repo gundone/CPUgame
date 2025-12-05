@@ -13,9 +13,57 @@ public class Circuit
 
     private const int MaxIterations = 1000; // Prevent infinite loops
 
+    // Component counters per type for auto-naming
+    private readonly Dictionary<string, int> _componentCounters = new();
+
     public void AddComponent(Component component)
     {
+        // Generate title if not set
+        if (string.IsNullOrEmpty(component.Title))
+        {
+            component.Title = GenerateTitle(component);
+        }
+
         Components.Add(component);
+    }
+
+    private string GenerateTitle(Component component)
+    {
+        string typeName = component.Name;
+
+        if (!_componentCounters.ContainsKey(typeName))
+        {
+            _componentCounters[typeName] = 0;
+        }
+
+        _componentCounters[typeName]++;
+        return $"{typeName}-{_componentCounters[typeName]}";
+    }
+
+    /// <summary>
+    /// Update counters when loading a circuit to avoid duplicate titles
+    /// </summary>
+    public void UpdateCountersFromComponents()
+    {
+        _componentCounters.Clear();
+
+        foreach (var component in Components)
+        {
+            string typeName = component.Name;
+
+            // Try to extract number from title
+            if (!string.IsNullOrEmpty(component.Title) && component.Title.StartsWith(typeName + "-"))
+            {
+                string numberPart = component.Title.Substring(typeName.Length + 1);
+                if (int.TryParse(numberPart, out int number))
+                {
+                    if (!_componentCounters.ContainsKey(typeName) || _componentCounters[typeName] < number)
+                    {
+                        _componentCounters[typeName] = number;
+                    }
+                }
+            }
+        }
     }
 
     public void RemoveComponent(Component component)
