@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using CPUgame.Core;
+using CPUgame.Input;
 using Microsoft.Xna.Framework.Input;
 
 namespace CPUgame.Components;
@@ -135,23 +136,24 @@ public class BusOutput : Component
         // Output just displays values, no computation needed
     }
 
+    /// <summary>
+    /// Handle commands from InputState.
+    /// </summary>
+    public void HandleCommands(InputState input)
+    {
+        // Resize with space / shift+space
+        if (input.ResizeIncreaseCommand)
+        {
+            ResizeBits(true);
+        }
+        else if (input.ResizeDecreaseCommand)
+        {
+            ResizeBits(false);
+        }
+    }
+
     public override void ApplyCommand(KeyboardState current, KeyboardState previous, double deltaTime)
     {
         base.ApplyCommand(current, previous, deltaTime);
-
-        bool shift = current.IsKeyDown(Keys.LeftShift) || current.IsKeyDown(Keys.RightShift);
-
-        // Shift+/- to resize pin count
-        if (shift)
-        {
-            if (IsKeyJustPressed(Keys.OemPlus, current, previous) || IsKeyJustPressed(Keys.Add, current, previous))
-            {
-                ResizeBits(true);
-            }
-            else if (IsKeyJustPressed(Keys.OemMinus, current, previous) || IsKeyJustPressed(Keys.Subtract, current, previous))
-            {
-                ResizeBits(false);
-            }
-        }
     }
 }

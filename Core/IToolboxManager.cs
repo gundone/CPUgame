@@ -12,7 +12,7 @@ public interface IToolboxManager
     void Initialize(int screenWidth, ComponentBuilder componentBuilder);
     void LoadCustomComponents(System.Collections.Generic.IEnumerable<string> componentNames);
     void Update(Point mousePos, bool primaryPressed, bool primaryJustPressed, bool primaryJustReleased);
-    bool HandleDrops(Point mousePos, Point worldMousePos, Circuit circuit, int gridSize, bool showPinValues, bool primaryJustReleased, IStatusService statusService, ComponentBuilder componentBuilder);
+    Component? HandleDrops(Point mousePos, Point worldMousePos, Circuit circuit, int gridSize, bool showPinValues, bool primaryJustReleased, IStatusService statusService, ComponentBuilder componentBuilder);
     void ClearDragState();
     bool ContainsPoint(Point pos);
 }
@@ -46,18 +46,17 @@ public class ToolboxManager : IToolboxManager
         UserToolbox.Update(mousePos, primaryPressed, primaryJustPressed, primaryJustReleased);
     }
 
-    public bool HandleDrops(Point mousePos, Point worldMousePos, Circuit circuit, int gridSize, bool showPinValues, bool primaryJustReleased, IStatusService statusService, ComponentBuilder componentBuilder)
+    public Component? HandleDrops(Point mousePos, Point worldMousePos, Circuit circuit, int gridSize, bool showPinValues, bool primaryJustReleased, IStatusService statusService, ComponentBuilder componentBuilder)
     {
-        if (!primaryJustReleased) return false;
+        if (!primaryJustReleased) return null;
 
-        bool handled = false;
+        Component? placedComponent = null;
 
         if (MainToolbox.DraggingTool != null || MainToolbox.DraggingCustomComponent != null)
         {
             if (!MainToolbox.ContainsPoint(mousePos))
             {
-                PlaceFromMainToolbox(worldMousePos, circuit, gridSize, showPinValues, statusService);
-                handled = true;
+                placedComponent = PlaceFromMainToolbox(worldMousePos, circuit, gridSize, showPinValues, statusService);
             }
             MainToolbox.ClearDragState();
         }
@@ -66,16 +65,15 @@ public class ToolboxManager : IToolboxManager
         {
             if (!UserToolbox.ContainsPoint(mousePos))
             {
-                PlaceFromUserToolbox(worldMousePos, circuit, gridSize, statusService, componentBuilder);
-                handled = true;
+                placedComponent = PlaceFromUserToolbox(worldMousePos, circuit, gridSize, statusService, componentBuilder);
             }
             UserToolbox.ClearDragState();
         }
 
-        return handled;
+        return placedComponent;
     }
 
-    private void PlaceFromMainToolbox(Point worldMousePos, Circuit circuit, int gridSize, bool showPinValues, IStatusService statusService)
+    private Component? PlaceFromMainToolbox(Point worldMousePos, Circuit circuit, int gridSize, bool showPinValues, IStatusService statusService)
     {
         var x = (worldMousePos.X / gridSize) * gridSize;
         var y = (worldMousePos.Y / gridSize) * gridSize;
@@ -101,9 +99,11 @@ public class ToolboxManager : IToolboxManager
             circuit.AddComponent(newComponent);
             statusService.Show(LocalizationManager.Get("status.placed", newComponent.Name));
         }
+
+        return newComponent;
     }
 
-    private void PlaceFromUserToolbox(Point worldMousePos, Circuit circuit, int gridSize, IStatusService statusService, ComponentBuilder componentBuilder)
+    private Component? PlaceFromUserToolbox(Point worldMousePos, Circuit circuit, int gridSize, IStatusService statusService, ComponentBuilder componentBuilder)
     {
         var x = (worldMousePos.X / gridSize) * gridSize;
         var y = (worldMousePos.Y / gridSize) * gridSize;
@@ -116,8 +116,11 @@ public class ToolboxManager : IToolboxManager
             {
                 circuit.AddComponent(newComponent);
                 statusService.Show(LocalizationManager.Get("status.placed", newComponent.Name));
+                return newComponent;
             }
         }
+
+        return null;
     }
 
     public void ClearDragState()

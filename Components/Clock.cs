@@ -1,5 +1,4 @@
 using CPUgame.Core;
-using Microsoft.Xna.Framework.Input;
 
 namespace CPUgame.Components;
 

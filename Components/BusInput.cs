@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using CPUgame.Core;
-using Microsoft.Xna.Framework.Input;
+using CPUgame.Input;
 
 namespace CPUgame.Components;
 
@@ -173,42 +173,38 @@ public class BusInput : Component
         }
     }
 
-    public override void ApplyCommand(KeyboardState current, KeyboardState previous, double deltaTime)
+    /// <summary>
+    /// Handle commands from InputState. Call with allInputPins to preserve wire connections on resize.
+    /// </summary>
+    public void HandleCommands(InputState input, List<Pin>? allInputPins = null)
     {
-        base.ApplyCommand(current, previous, deltaTime);
-
-        bool shift = current.IsKeyDown(Keys.LeftShift) || current.IsKeyDown(Keys.RightShift);
-
-        // Shift+/- resize is handled by Game1 with circuit context for wire preservation
-        // Skip +/- processing when shift is held
-        if (shift)
+        // Resize with space / shift+space
+        if (input.ResizeIncreaseCommand)
         {
-            return;
+            ResizeBits(true, allInputPins);
         }
-
-        // Toggle bits with number keys 0-9
-        for (int i = 0; i < Math.Min(BitCount, 10); i++)
+        else if (input.ResizeDecreaseCommand)
         {
-            Keys key = Keys.D0 + i;
-            if (IsKeyJustPressed(key, current, previous))
-            {
-                // Toggle bit (0 = LSB when BitCount <= 10)
-                int bitIndex = i;
-                if (bitIndex < BitCount)
-                {
-                    SetBit(bitIndex, !GetBit(bitIndex));
-                }
-            }
+            ResizeBits(false, allInputPins);
         }
-
-        // Increment/decrement with +/-
-        if (IsKeyJustPressed(Keys.OemPlus, current, previous) || IsKeyJustPressed(Keys.Add, current, previous))
+        // Increment/decrement value with +/-
+        else if (input.IncreaseCommand)
         {
             Value = (Value + 1) % (1 << BitCount);
         }
-        if (IsKeyJustPressed(Keys.OemMinus, current, previous) || IsKeyJustPressed(Keys.Subtract, current, previous))
+        else if (input.DecreaseCommand)
         {
             Value = (Value - 1 + (1 << BitCount)) % (1 << BitCount);
+        }
+
+        // Toggle bits with number keys 0-9
+        if (input.NumberInput.HasValue)
+        {
+            int bitIndex = input.NumberInput.Value - '0';
+            if (bitIndex >= 0 && bitIndex < BitCount)
+            {
+                ToggleBit(bitIndex);
+            }
         }
     }
 }

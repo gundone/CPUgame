@@ -64,8 +64,12 @@ public class DesktopInputHandler : IInputHandler
         // Component commands
         state.IncreaseCommand = IsKeyJustPressed(Keys.OemPlus, keyboard) || IsKeyJustPressed(Keys.Add, keyboard);
         state.DecreaseCommand = IsKeyJustPressed(Keys.OemMinus, keyboard) || IsKeyJustPressed(Keys.Subtract, keyboard);
-        state.ToggleCommand = IsKeyJustPressed(Keys.Space, keyboard);
+        state.ToggleCommand = !state.ShiftHeld && IsKeyJustPressed(Keys.Space, keyboard);
         state.NumberInput = GetNumberInput(keyboard);
+
+        // Resize commands (spacebar / shift+space for bus components)
+        state.ResizeIncreaseCommand = !state.ShiftHeld && IsKeyJustPressed(Keys.Space, keyboard);
+        state.ResizeDecreaseCommand = state.ShiftHeld && IsKeyJustPressed(Keys.Space, keyboard);
 
         _prevMouse = mouse;
         _prevKeyboard = keyboard;

@@ -47,6 +47,16 @@ public class SelectionManager
     public bool HasSelection => _circuit.Components.Any(c => c.IsSelected);
 
     /// <summary>
+    /// Select a single component, clearing any previous selection
+    /// </summary>
+    public void SelectComponent(Component component)
+    {
+        _circuit.ClearSelection();
+        SelectedWire = null;
+        component.IsSelected = true;
+    }
+
+    /// <summary>
     /// Start selection rectangle
     /// </summary>
     public void StartSelectionRect(Point worldPos, bool addToSelection)

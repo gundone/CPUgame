@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using CPUgame.Components;
 using CPUgame.Input;
@@ -92,37 +91,29 @@ public class CommandHandler : ICommandHandler
     private void ApplyComponentCommands(InputState input, SelectionManager selection, Circuit circuit, int gridSize)
     {
         var selected = selection.GetSelectedComponents();
+        var allInputPins = circuit.Components.SelectMany(c => c.Inputs).ToList();
+
         foreach (var element in selected)
         {
             element.GridSize = gridSize;
 
+            // Delegate to component-specific command handlers
             if (element is BusInput busInput)
             {
-                if (input.ShiftHeld && (input.IncreaseCommand || input.DecreaseCommand))
-                {
-                    var allInputPins = circuit.Components.SelectMany(c => c.Inputs).ToList();
-                    busInput.ResizeBits(input.IncreaseCommand, allInputPins);
-                }
-                else if (input.IncreaseCommand)
-                {
-                    busInput.Value = (busInput.Value + 1) % (1 << busInput.BitCount);
-                }
-                else if (input.DecreaseCommand)
-                {
-                    busInput.Value = (busInput.Value - 1 + (1 << busInput.BitCount)) % (1 << busInput.BitCount);
-                }
-
-                if (input.NumberInput.HasValue)
-                {
-                    busInput.ToggleBit(input.NumberInput.Value - '0');
-                }
+                busInput.HandleCommands(input, allInputPins);
+            }
+            else if (element is BusOutput busOutput)
+            {
+                busOutput.HandleCommands(input);
             }
 
+            // Movement commands
             if (input.MoveUp) element.Y -= element.GridSize;
             if (input.MoveDown) element.Y += element.GridSize;
             if (input.MoveLeft) element.X -= element.GridSize;
             if (input.MoveRight) element.X += element.GridSize;
 
+            // Toggle command for switches
             if (input.ToggleCommand && element is InputSwitch sw)
                 sw.IsOn = !sw.IsOn;
         }

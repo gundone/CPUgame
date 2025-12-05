@@ -50,6 +50,8 @@ public class InputState
     public bool DecreaseCommand { get; set; }     // - key or gesture
     public bool ToggleCommand { get; set; }       // Space or tap
     public char? NumberInput { get; set; }        // 0-9 for BusInput
+    public bool ResizeIncreaseCommand { get; set; }  // Space to increase bus size
+    public bool ResizeDecreaseCommand { get; set; }  // Shift+Space to decrease bus size
 
     public void Clear()
     {
@@ -75,6 +77,8 @@ public class InputState
         DecreaseCommand = false;
         ToggleCommand = false;
         NumberInput = null;
+        ResizeIncreaseCommand = false;
+        ResizeDecreaseCommand = false;
         PinchScale = 1f;
     }
 }

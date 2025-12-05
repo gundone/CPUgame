@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using CPUgame.Core;
-using Microsoft.Xna.Framework.Input;
 
 namespace CPUgame.Components;
 

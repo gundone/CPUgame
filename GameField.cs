@@ -1,9 +1,7 @@
-using System;
 using System.Linq;
 using CPUgame.Components;
 using CPUgame.Core;
 using CPUgame.Input;
-using CPUgame.Platform;
 using CPUgame.Rendering;
 using CPUgame.UI;
 using Microsoft.Xna.Framework;
@@ -177,7 +175,9 @@ public class GameField : Game, IGameField
         _toolboxManager.Update(mousePos, _inputState.PrimaryPressed, _inputState.PrimaryJustPressed, _inputState.PrimaryJustReleased);
 
         worldMousePos = _camera.ScreenToWorldPoint(mousePos);
-        _toolboxManager.HandleDrops(mousePos, worldMousePos, circuit, _gameRenderer.GridSize, _commandHandler.ShowPinValues, _inputState.PrimaryJustReleased, _statusService, _componentBuilder);
+        var placedComponent = _toolboxManager.HandleDrops(mousePos, worldMousePos, circuit, _gameRenderer.GridSize, _commandHandler.ShowPinValues, _inputState.PrimaryJustReleased, _statusService, _componentBuilder);
+        if (placedComponent != null)
+            _selection.SelectComponent(placedComponent);
 
         if (_toolboxManager.IsInteracting)
             _wireManager.Cancel();
