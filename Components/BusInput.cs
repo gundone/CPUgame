@@ -130,6 +130,12 @@ public class BusInput : Component
             Value &= ~(1 << bitIndex);
     }
 
+    public void ToggleBit(int bitIndex)
+    {
+        if (bitIndex < 0 || bitIndex >= BitCount) return;
+        SetBit(bitIndex, !GetBit(bitIndex));
+    }
+
     public bool GetBit(int bitIndex)
     {
         if (bitIndex < 0 || bitIndex >= BitCount) return false;
