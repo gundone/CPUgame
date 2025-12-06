@@ -30,6 +30,7 @@ public class MainMenu
     public event Action? OnExit;
     public event Action<string>? OnLanguageChanged;
     public event Action<float>? OnTitleFontSizeChanged;
+    public event Action? OnToggleTruthTable;
 
     public int Height => MenuHeight;
 
@@ -63,6 +64,11 @@ public class MainMenu
         fileMenu.SubItems.Add(new MenuItem("-")); // Separator
         fileMenu.SubItems.Add(new MenuItem(LocalizationManager.Get("menu.file.exit"), () => OnExit?.Invoke()));
         _menuItems.Add(fileMenu);
+
+        // View menu
+        var viewMenu = new MenuItem(LocalizationManager.Get("menu.view"));
+        viewMenu.SubItems.Add(new MenuItem(LocalizationManager.Get("menu.view.truthtable"), () => OnToggleTruthTable?.Invoke()));
+        _menuItems.Add(viewMenu);
 
         // Options menu
         var optionsMenu = new MenuItem(LocalizationManager.Get("menu.options"));

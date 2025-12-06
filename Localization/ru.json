@@ -7,6 +7,9 @@
   "menu.file.save": "Сохранить схему",
   "menu.file.exit": "Выход",
 
+  "menu.view": "Вид",
+  "menu.view.truthtable": "Таблица истинности",
+
   "menu.options": "Настройки",
   "menu.options.language": "Язык",
   "menu.options.titleFontSize": "Размер шрифта названий",
@@ -52,5 +55,12 @@
   "dialog.edit_title": "Изменить название компонента",
 
   "help.shortcuts": "Ctrl+S: Сохранить | Ctrl+O: Загрузить | Ctrl+B: Собрать | Del: Удалить | Ctrl+Прокрутка: Масштаб | ПКМ: Перемещение",
-  "help.drag": "Перетащите компоненты из панели. Соедините выводы проводами. Del для удаления."
+  "help.drag": "Перетащите компоненты из панели. Соедините выводы проводами. Del для удаления.",
+
+  "truthtable.title": "Таблица истинности",
+  "truthtable.inputs": "Входы",
+  "truthtable.outputs": "Выходы",
+  "truthtable.simulate": "Симуляция",
+  "truthtable.no_buses": "Добавьте шины ввода и вывода для генерации таблицы",
+  "truthtable.click_simulate": "Нажмите Симуляция для генерации таблицы"
 }

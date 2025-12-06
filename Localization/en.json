@@ -7,6 +7,9 @@
   "menu.file.save": "Save Circuit",
   "menu.file.exit": "Exit",
 
+  "menu.view": "View",
+  "menu.view.truthtable": "Truth Table",
+
   "menu.options": "Options",
   "menu.options.language": "Language",
   "menu.options.titleFontSize": "Title Font Size",
@@ -52,5 +55,12 @@
   "dialog.edit_title": "Edit Component Title",
 
   "help.shortcuts": "Ctrl+S: Save | Ctrl+O: Load | Ctrl+B: Build | Del: Delete | Ctrl+Scroll: Zoom | RMB: Pan",
-  "help.drag": "Drag components from toolbox. Drag pins to wire. Del to delete."
+  "help.drag": "Drag components from toolbox. Drag pins to wire. Del to delete.",
+
+  "truthtable.title": "Truth Table",
+  "truthtable.inputs": "Inputs",
+  "truthtable.outputs": "Outputs",
+  "truthtable.simulate": "Simulate",
+  "truthtable.no_buses": "Add Input and Output buses to generate truth table",
+  "truthtable.click_simulate": "Click Simulate to generate truth table"
 }

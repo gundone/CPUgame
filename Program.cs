@@ -18,6 +18,7 @@ services.AddSingleton<IWireManager, WireManager>();
 services.AddSingleton<ICommandHandler, CommandHandler>();
 services.AddSingleton<IToolboxManager, ToolboxManager>();
 services.AddSingleton<IGameRenderer, GameRenderer>();
+services.AddSingleton<ITruthTableService, TruthTableService>();
 
 // Game
 services.AddSingleton<IGameField, GameField>();

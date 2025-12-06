@@ -25,6 +25,7 @@ public class GameField : Game, IGameField
     private readonly ICommandHandler _commandHandler;
     private readonly IToolboxManager _toolboxManager;
     private readonly IGameRenderer _gameRenderer;
+    private readonly ITruthTableService _truthTableService;
 
     private CameraController _camera = null!;
     private SelectionManager _selection = null!;
@@ -37,7 +38,8 @@ public class GameField : Game, IGameField
 
     public GameField(IPlatformServices platformServices, IInputHandler inputHandler,
         IStatusService statusService, ICircuitManager circuitManager, IWireManager wireManager,
-        ICommandHandler commandHandler, IToolboxManager toolboxManager, IGameRenderer gameRenderer)
+        ICommandHandler commandHandler, IToolboxManager toolboxManager, IGameRenderer gameRenderer,
+        ITruthTableService truthTableService)
     {
         _platformServices = platformServices;
         _inputHandler = inputHandler;
@@ -47,6 +49,7 @@ public class GameField : Game, IGameField
         _commandHandler = commandHandler;
         _toolboxManager = toolboxManager;
         _gameRenderer = gameRenderer;
+        _truthTableService = truthTableService;
 
         _graphics = new GraphicsDeviceManager(this) { PreferredBackBufferWidth = 1280, PreferredBackBufferHeight = 720 };
         Content.RootDirectory = "Content";
@@ -120,6 +123,7 @@ public class GameField : Game, IGameField
         _gameRenderer.Initialize(GraphicsDevice, _font);
         _toolboxManager.Initialize(ScreenWidth, _componentBuilder);
         _toolboxManager.LoadCustomComponents(_circuitManager.CustomComponents.Keys);
+        _truthTableService.Initialize(ScreenWidth);
 
         _mainMenu = new MainMenu();
         _mainMenu.OnNewCircuit += _circuitManager.NewCircuit;
@@ -135,6 +139,10 @@ public class GameField : Game, IGameField
         _mainMenu.OnTitleFontSizeChanged += scale =>
         {
             _gameRenderer.TitleFontScale = scale;
+        };
+        _mainMenu.OnToggleTruthTable += () =>
+        {
+            _truthTableService.IsVisible = !_truthTableService.IsVisible;
         };
     }
 
@@ -157,19 +165,29 @@ public class GameField : Game, IGameField
         _mainMenu.Update(mousePos, _inputState.PrimaryJustPressed, _inputState.PrimaryJustReleased, ScreenWidth);
         if (_mainMenu.ContainsPoint(mousePos)) { base.Update(gameTime); return; }
 
+        // Update truth table window
+        _truthTableService.Update(mousePos, _inputState.PrimaryPressed, _inputState.PrimaryJustPressed, _inputState.PrimaryJustReleased, _inputState.ScrollDelta, circuit);
+        if (_truthTableService.ContainsPoint(mousePos)) { base.Update(gameTime); return; }
+
         if (_inputState.CtrlHeld && _inputState.ScrollDelta != 0)
+        {
             _camera.HandleZoom(_inputState.ScrollDelta, mousePos, _camera.ScreenToWorld);
+        }
 
         var worldMousePos = _camera.ScreenToWorldPoint(mousePos);
-        bool clickedOnEmpty = !_toolboxManager.ContainsPoint(mousePos) &&
+        bool clickedOnEmpty = !_toolboxManager.ContainsPoint(mousePos) && !_truthTableService.ContainsPoint(mousePos) &&
                               circuit.GetComponentAt(worldMousePos.X, worldMousePos.Y) == null &&
                               circuit.GetPinAt(worldMousePos.X, worldMousePos.Y) == null;
 
-        if ((_inputState.MiddleJustPressed || _inputState.SecondaryJustPressed) && !_toolboxManager.ContainsPoint(mousePos))
+        if ((_inputState.MiddleJustPressed || _inputState.SecondaryJustPressed) && !_toolboxManager.ContainsPoint(mousePos) && !_truthTableService.ContainsPoint(mousePos))
+        {
             _camera.StartPan(mousePos);
+        }
 
-        if (_inputState.PrimaryJustPressed && clickedOnEmpty && !_toolboxManager.IsInteracting && !_camera.IsPanning)
+        if (_inputState.PrimaryJustPressed && clickedOnEmpty && !_toolboxManager.IsInteracting && !_truthTableService.IsInteracting && !_camera.IsPanning)
+        {
             _selection.StartSelectionRect(worldMousePos, _inputState.CtrlHeld);
+        }
 
         if (_selection.IsSelecting)
         {
@@ -267,7 +285,7 @@ public class GameField : Game, IGameField
         _spriteBatch.End();
 
         _spriteBatch.Begin(samplerState: SamplerState.LinearClamp);
-        _gameRenderer.DrawUI(_spriteBatch, _toolboxManager, _mainMenu, _statusService, _dialogService, _camera, _inputState.PointerPosition, ScreenWidth, ScreenHeight, _font);
+        _gameRenderer.DrawUI(_spriteBatch, _toolboxManager, _mainMenu, _statusService, _dialogService, _truthTableService, _camera, _inputState.PointerPosition, ScreenWidth, ScreenHeight, _font);
         _spriteBatch.End();
 
         base.Draw(gameTime);

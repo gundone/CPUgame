@@ -13,7 +13,7 @@ public interface IGameRenderer
     float TitleFontScale { get; set; }
     void Initialize(GraphicsDevice graphicsDevice, SpriteFont font);
     void DrawWorld(SpriteBatch spriteBatch, Circuit circuit, CameraController camera, SelectionManager selection, IWireManager wireManager, Pin? hoveredPin, Point mousePos, int screenWidth, int screenHeight, bool isDraggingItem);
-    void DrawUI(SpriteBatch spriteBatch, IToolboxManager toolboxManager, MainMenu mainMenu, IStatusService statusService, IDialogService dialogService, CameraController camera, Point mousePos, int screenWidth, int screenHeight, SpriteFont font);
+    void DrawUI(SpriteBatch spriteBatch, IToolboxManager toolboxManager, MainMenu mainMenu, IStatusService statusService, IDialogService dialogService, ITruthTableService truthTableService, CameraController camera, Point mousePos, int screenWidth, int screenHeight, SpriteFont font);
 }
 
 public class GameRenderer : IGameRenderer
@@ -85,11 +85,12 @@ public class GameRenderer : IGameRenderer
         }
     }
 
-    public void DrawUI(SpriteBatch spriteBatch, IToolboxManager toolboxManager, MainMenu mainMenu, IStatusService statusService, IDialogService dialogService, CameraController camera, Point mousePos, int screenWidth, int screenHeight, SpriteFont font)
+    public void DrawUI(SpriteBatch spriteBatch, IToolboxManager toolboxManager, MainMenu mainMenu, IStatusService statusService, IDialogService dialogService, ITruthTableService truthTableService, CameraController camera, Point mousePos, int screenWidth, int screenHeight, SpriteFont font)
     {
         DrawZoomIndicator(spriteBatch, camera.Zoom, mainMenu.Height);
         toolboxManager.MainToolbox.Draw(spriteBatch, Pixel, font, mousePos);
         toolboxManager.UserToolbox.Draw(spriteBatch, Pixel, font, mousePos);
+        truthTableService.Draw(spriteBatch, Pixel, font, mousePos);
         DrawStatusBar(spriteBatch, statusService.Message, screenWidth, screenHeight);
         mainMenu.Draw(spriteBatch, Pixel, font, screenWidth, mousePos);
 
