@@ -277,7 +277,7 @@ public class TruthTableWindow
     }
 
     /// <summary>
-    /// Run simulation for all input combinations
+    /// Run simulation for all input combinations (sandbox) or level-defined combinations (level mode)
     /// </summary>
     public void SimulateTruthTable(Circuit circuit)
     {
@@ -294,16 +294,100 @@ public class TruthTableWindow
             return;
         }
 
-        // Limit input bits to prevent excessive computation
-        int effectiveInputBits = Math.Min(_totalInputBits, 16);
-        int totalCombinations = 1 << effectiveInputBits;
-
         // Get input and output components
         var inputBuses = circuit.Components.OfType<BusInput>().OrderBy(c => c.Y).ThenBy(c => c.X).ToList();
         var outputBuses = circuit.Components.OfType<BusOutput>().OrderBy(c => c.Y).ThenBy(c => c.X).ToList();
 
         // Store original input values to restore later
         var originalValues = inputBuses.Select(b => b.Value).ToList();
+
+        // In level mode, use only level-defined input combinations
+        if (_currentLevel != null)
+        {
+            SimulateLevelCombinations(circuit, inputBuses, outputBuses);
+        }
+        else
+        {
+            SimulateAllCombinations(circuit, inputBuses, outputBuses);
+        }
+
+        // Restore original input values
+        for (int i = 0; i < inputBuses.Count; i++)
+        {
+            inputBuses[i].Value = originalValues[i];
+        }
+
+        // Re-simulate to restore circuit state
+        circuit.Simulate();
+
+        IsSimulating = false;
+        RecalculateSize(circuit);
+    }
+
+    /// <summary>
+    /// Simulate only the input combinations defined in the current level's truth table
+    /// </summary>
+    private void SimulateLevelCombinations(Circuit circuit, List<BusInput> inputBuses, List<BusOutput> outputBuses)
+    {
+        if (_currentLevel == null)
+        {
+            return;
+        }
+
+        foreach (var levelEntry in _currentLevel.TruthTable)
+        {
+            // Set input values from level truth table entry
+            int bitOffset = 0;
+            foreach (var inputBus in inputBuses)
+            {
+                int busValue = 0;
+                for (int bit = inputBus.BitCount - 1; bit >= 0; bit--)
+                {
+                    if (bitOffset < levelEntry.Inputs.Count && levelEntry.Inputs[bitOffset])
+                    {
+                        busValue |= (1 << bit);
+                    }
+                    bitOffset++;
+                }
+                inputBus.Value = busValue;
+            }
+
+            // Simulate the circuit
+            circuit.Simulate();
+
+            // Read input values (from level entry)
+            var inputValues = new List<bool>(levelEntry.Inputs);
+
+            // Read output values from circuit
+            var outputValues = new List<bool>();
+            foreach (var outputBus in outputBuses)
+            {
+                for (int bit = outputBus.BitCount - 1; bit >= 0; bit--)
+                {
+                    int inputIndex = outputBus.BitCount - 1 - bit;
+                    if (inputIndex < outputBus.Inputs.Count)
+                    {
+                        outputValues.Add(outputBus.Inputs[inputIndex].Value == Signal.High);
+                    }
+                    else
+                    {
+                        outputValues.Add(false);
+                    }
+                }
+            }
+
+            _truthTableRows.Add(new TruthTableRow(inputValues, outputValues));
+        }
+    }
+
+    /// <summary>
+    /// Simulate all possible input combinations (sandbox mode)
+    /// </summary>
+    private void SimulateAllCombinations(Circuit circuit, List<BusInput> inputBuses, List<BusOutput> outputBuses)
+    {
+        // Limit input bits to prevent excessive computation
+        int effectiveInputBits = Math.Min(_totalInputBits, 16);
+        int totalCombinations = 1 << effectiveInputBits;
 
         for (int combo = 0; combo < totalCombinations; combo++)
         {
@@ -360,18 +444,6 @@ public class TruthTableWindow
 
             _truthTableRows.Add(new TruthTableRow(inputValues, outputValues));
         }
-
-        // Restore original input values
-        for (int i = 0; i < inputBuses.Count; i++)
-        {
-            inputBuses[i].Value = originalValues[i];
-        }
-
-        // Re-simulate to restore circuit state
-        circuit.Simulate();
-
-        IsSimulating = false;
-        RecalculateSize(circuit);
     }
 
     public void Update(Point mousePos, bool mousePressed, bool mouseJustPressed, bool mouseJustReleased, int scrollDelta, double deltaTime)

@@ -108,8 +108,8 @@ public class CircuitRenderer
         var start = new Vector2(from.WorldX, from.WorldY);
         var end = new Vector2(to.WorldX, to.WorldY);
 
-        // Draw wire with a bend for better visibility
-        var midX = (start.X + end.X) / 2;
+        // Calculate routing with offset to minimize overlapping
+        var midX = CalculateWireOffset(start, end);
         var mid1 = new Vector2(midX, start.Y);
         var mid2 = new Vector2(midX, end.Y);
 
@@ -121,9 +121,47 @@ public class CircuitRenderer
         _drawer.DrawLine(spriteBatch, mid2, end, color, thickness);
     }
 
+    /// <summary>
+    /// Calculate the X position for the vertical segment of a wire.
+    /// Uses pin positions to create unique offsets that spread out parallel wires.
+    /// </summary>
+    private float CalculateWireOffset(Vector2 start, Vector2 end)
+    {
+        float baseX = (start.X + end.X) / 2;
+        float distance = end.X - start.X;
+
+        // If wire is very short horizontally, use simple center
+        if (System.Math.Abs(distance) < GridSize * 2)
+        {
+            return baseX;
+        }
+
+        // Calculate offset based on both Y positions to create unique paths
+        // Use a hash-like approach: combine Y coordinates to get variety
+        float ySum = start.Y + end.Y;
+        float yDiff = start.Y - end.Y;
+
+        // Create offset factor based on Y positions (range: -0.3 to 0.3 of distance)
+        // Using modulo to keep offsets distributed
+        float offsetFactor = ((ySum % (GridSize * 10)) / (GridSize * 10)) - 0.5f;
+        offsetFactor *= 0.4f; // Scale down to 40% of range
+
+        // Add secondary offset based on Y difference for more separation
+        float secondaryOffset = ((yDiff % (GridSize * 5)) / (GridSize * 5)) * 0.2f;
+
+        // Calculate final offset, keeping wire within reasonable bounds
+        float offset = distance * (offsetFactor + secondaryOffset);
+
+        // Ensure the vertical segment stays between the two endpoints
+        float minX = System.Math.Min(start.X, end.X) + GridSize;
+        float maxX = System.Math.Max(start.X, end.X) - GridSize;
+
+        return System.Math.Clamp(baseX + offset, minX, maxX);
+    }
+
     public void DrawWirePreview(SpriteBatch spriteBatch, Vector2 start, Vector2 end)
     {
-        var midX = (start.X + end.X) / 2;
+        var midX = CalculateWireOffset(start, end);
         var mid1 = new Vector2(midX, start.Y);
         var mid2 = new Vector2(midX, end.Y);
 

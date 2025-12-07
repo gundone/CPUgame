@@ -1,0 +1,16 @@
+{
+  "id": "encoder",
+  "name": "4-to-2 Encoder",
+  "description": "Create a 4-to-2 encoder: convert one-hot 4-bit input to 2-bit binary output",
+  "fullDescription": "The encoder is the opposite of a decoder. It converts a one-hot input (where exactly one input is active) to its binary representation. A 4-to-2 encoder has 4 inputs (I3-I0) and 2 outputs. When I0 is HIGH, output is 00; when I1 is HIGH, output is 01; when I2 is HIGH, output is 10; when I3 is HIGH, output is 11. Encoders are used in keyboards, interrupt handling, and data compression circuits.",
+  "tier": 3,
+  "componentName": "encoder",
+  "inputCount": 4,
+  "outputCount": 2,
+  "truthTable": [
+    { "inputs": [false, false, false, true], "outputs": [false, false] },
+    { "inputs": [false, false, true, false], "outputs": [false, true] },
+    { "inputs": [false, true, false, false], "outputs": [true, false] },
+    { "inputs": [true, false, false, false], "outputs": [true, true] }
+  ]
+}

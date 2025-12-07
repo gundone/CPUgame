@@ -1,0 +1,16 @@
+{
+  "id": "decoder",
+  "name": "2-to-4 Decoder",
+  "description": "Create a 2-to-4 decoder: convert 2-bit binary input to one-hot 4-bit output",
+  "fullDescription": "The decoder converts a binary number to a one-hot code where exactly one output is HIGH. A 2-to-4 decoder has 2 inputs and 4 outputs. Input 00 activates output Y0, input 01 activates Y1, and so on. Decoders are essential in memory systems for address decoding, instruction decoding in CPUs, and seven-segment display drivers. Build it using AND gates and inverters - each output needs a unique combination of inputs.",
+  "tier": 3,
+  "componentName": "decoder",
+  "inputCount": 2,
+  "outputCount": 4,
+  "truthTable": [
+    { "inputs": [false, false], "outputs": [true, false, false, false] },
+    { "inputs": [false, true], "outputs": [false, true, false, false] },
+    { "inputs": [true, false], "outputs": [false, false, true, false] },
+    { "inputs": [true, true], "outputs": [false, false, false, true] }
+  ]
+}

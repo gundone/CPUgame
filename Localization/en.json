@@ -121,5 +121,17 @@
   "level.half_adder.description": "The half adder is the first step toward building a calculator! It adds two single bits and produces a Sum and a Carry output. The sum is 1 when inputs differ (that's XOR!), and carry is 1 when both inputs are 1 (that's AND!). Half adders are building blocks for full adders and multi-bit arithmetic units.",
 
   "level.full_adder.name": "Full Adder",
-  "level.full_adder.description": "The full adder extends the half adder by accepting a carry-in from a previous stage. This allows chaining multiple full adders to add numbers of any size! A 32-bit processor uses 32 full adders connected together. You can build it using two half adders and an OR gate for the carry-out."
+  "level.full_adder.description": "The full adder extends the half adder by accepting a carry-in from a previous stage. This allows chaining multiple full adders to add numbers of any size! A 32-bit processor uses 32 full adders connected together. You can build it using two half adders and an OR gate for the carry-out.",
+
+  "level.mux.name": "2-to-1 MUX",
+  "level.mux.description": "The multiplexer (MUX) is a data selector. It chooses one of multiple inputs and forwards it to the output. A 2-to-1 MUX has two data inputs (D0, D1), one select input (S), and one output. When S=0, output equals D0; when S=1, output equals D1. MUXes are everywhere in CPUs - used for data routing, ALU input selection, and building complex logic. You can build it using AND, OR, and INV gates.",
+
+  "level.demux.name": "1-to-2 DEMUX",
+  "level.demux.description": "The demultiplexer (DEMUX) is the opposite of a MUX. It takes one data input and routes it to one of multiple outputs based on a select signal. A 1-to-2 DEMUX has one data input (D), one select input (S), and two outputs (Y0, Y1). When S=0, Y0=D and Y1=0; when S=1, Y0=0 and Y1=D. DEMUXes are used for data distribution, memory address decoding, and signal routing in digital systems.",
+
+  "level.decoder.name": "2-to-4 Decoder",
+  "level.decoder.description": "The decoder converts a binary number to a one-hot code where exactly one output is HIGH. A 2-to-4 decoder has 2 inputs and 4 outputs. Input 00 activates output Y0, input 01 activates Y1, and so on. Decoders are essential in memory systems for address decoding, instruction decoding in CPUs, and seven-segment display drivers. Build it using AND gates and inverters - each output needs a unique combination of inputs.",
+
+  "level.encoder.name": "4-to-2 Encoder",
+  "level.encoder.description": "The encoder is the opposite of a decoder. It converts a one-hot input (where exactly one input is active) to its binary representation. A 4-to-2 encoder has 4 inputs (I3-I0) and 2 outputs. When I0 is HIGH, output is 00; when I1 is HIGH, output is 01; when I2 is HIGH, output is 10; when I3 is HIGH, output is 11. Encoders are used in keyboards, interrupt handling, and data compression circuits."
 }

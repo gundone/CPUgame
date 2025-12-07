@@ -1,0 +1,16 @@
+{
+  "id": "demux",
+  "name": "1-to-2 DEMUX",
+  "description": "Create a 1-to-2 demultiplexer: route data input to one of two outputs based on select signal",
+  "fullDescription": "The demultiplexer (DEMUX) is the opposite of a MUX. It takes one data input and routes it to one of multiple outputs based on a select signal. A 1-to-2 DEMUX has one data input (D), one select input (S), and two outputs (Y0, Y1). When S=0, Y0=D and Y1=0; when S=1, Y0=0 and Y1=D. DEMUXes are used for data distribution, memory address decoding, and signal routing in digital systems.",
+  "tier": 3,
+  "componentName": "demux",
+  "inputCount": 2,
+  "outputCount": 2,
+  "truthTable": [
+    { "inputs": [false, false], "outputs": [false, false] },
+    { "inputs": [false, true], "outputs": [true, false] },
+    { "inputs": [true, false], "outputs": [false, false] },
+    { "inputs": [true, true], "outputs": [false, true] }
+  ]
+}

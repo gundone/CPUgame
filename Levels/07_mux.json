@@ -1,0 +1,20 @@
+{
+  "id": "mux",
+  "name": "2-to-1 MUX",
+  "description": "Create a 2-to-1 multiplexer: select between two data inputs based on select signal",
+  "fullDescription": "The multiplexer (MUX) is a data selector. It chooses one of multiple inputs and forwards it to the output. A 2-to-1 MUX has two data inputs (D0, D1), one select input (S), and one output. When S=0, output equals D0; when S=1, output equals D1. MUXes are everywhere in CPUs - used for data routing, ALU input selection, and building complex logic. You can build it using AND, OR, and INV gates.",
+  "tier": 3,
+  "componentName": "mux",
+  "inputCount": 3,
+  "outputCount": 1,
+  "truthTable": [
+    { "inputs": [false, false, false], "outputs": [false] },
+    { "inputs": [false, false, true], "outputs": [false] },
+    { "inputs": [false, true, false], "outputs": [true] },
+    { "inputs": [false, true, true], "outputs": [true] },
+    { "inputs": [true, false, false], "outputs": [false] },
+    { "inputs": [true, false, true], "outputs": [true] },
+    { "inputs": [true, true, false], "outputs": [false] },
+    { "inputs": [true, true, true], "outputs": [true] }
+  ]
+}
