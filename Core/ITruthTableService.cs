@@ -15,6 +15,7 @@ public interface ITruthTableService
     List<TruthTableRow> TruthTableRows { get; }
     event Action? OnLevelPassed;
     void Initialize(int screenWidth);
+    void Show(Circuit circuit, SpriteFont font);
     void Update(Point mousePos, bool mousePressed, bool mouseJustPressed, bool mouseJustReleased, int scrollDelta, Circuit circuit, double deltaTime);
     void Draw(SpriteBatch spriteBatch, Texture2D pixel, SpriteFont font, Point mousePos);
     bool ContainsPoint(Point p);
@@ -113,6 +114,15 @@ public class TruthTableService : ITruthTableService
     {
         _window?.SetCurrentLevel(level);
         _wasLevelPassed = false;
+    }
+
+    public void Show(Circuit circuit, SpriteFont font)
+    {
+        if (_window != null)
+        {
+            _window.RecalculateSize(circuit, font);
+            _window.IsVisible = true;
+        }
     }
 
     public void Draw(SpriteBatch spriteBatch, Texture2D pixel, SpriteFont font, Point mousePos)

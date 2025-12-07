@@ -188,7 +188,7 @@ public class GameField : Game, IGameField
             if (_levelService.CurrentLevel != null)
             {
                 _truthTableService.SetCurrentLevel(_levelService.CurrentLevel);
-                _truthTableService.IsVisible = true;
+                _truthTableService.Show(_circuitManager.Circuit, _font);
             }
             _statusService.Show(LocalizationManager.Get("status.mode_levels"));
         };
@@ -220,7 +220,7 @@ public class GameField : Game, IGameField
                 _levelService.SetupLevelCircuit(_circuitManager.Circuit, _gameRenderer.GridSize);
                 _selection = new SelectionManager(_circuitManager.Circuit);
                 _truthTableService.SetCurrentLevel(_levelService.CurrentLevel);
-                _truthTableService.IsVisible = true;
+                _truthTableService.Show(_circuitManager.Circuit, _font);
             }
         };
 
@@ -230,6 +230,7 @@ public class GameField : Game, IGameField
             _toolboxManager.SetLevelModeFilter(true, _profileService.GetUnlockedComponents(_levelService));
             _levelService.SetMode(GameMode.Levels);
             _mainMenu.SetCurrentMode(GameMode.Levels);
+            _levelSelectionPopup.Show();
         };
 
         _truthTableService.OnLevelPassed += () =>
