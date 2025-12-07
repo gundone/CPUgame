@@ -7,6 +7,12 @@
   "menu.file.save": "Save Circuit",
   "menu.file.exit": "Exit",
 
+  "menu.game": "Game",
+  "menu.game.mode": "Mode",
+  "menu.game.sandbox": "Sandbox",
+  "menu.game.levels": "Levels",
+  "menu.game.selectlevel": "Select Level",
+
   "menu.view": "View",
   "menu.view.truthtable": "Truth Table",
 
@@ -60,7 +66,60 @@
   "truthtable.title": "Truth Table",
   "truthtable.inputs": "Inputs",
   "truthtable.outputs": "Outputs",
+  "truthtable.expected": "Expected",
   "truthtable.simulate": "Simulate",
+  "truthtable.stop": "Stop",
+  "truthtable.clear": "Clear",
   "truthtable.no_buses": "Add Input and Output buses to generate truth table",
-  "truthtable.click_simulate": "Click Simulate to generate truth table"
+  "truthtable.click_simulate": "Click Simulate to generate truth table",
+
+  "status.level_passed": "Level passed!",
+  "status.mode_sandbox": "Switched to Sandbox mode",
+  "status.mode_levels": "Switched to Levels mode",
+  "status.cannot_delete_level_components": "Cannot delete level input/output buses",
+  "status.profile_required": "Create a profile to play levels",
+
+  "profile.title": "Profile",
+  "profile.select": "Select Profile",
+  "profile.create": "Create Profile",
+  "profile.new": "New Profile",
+  "profile.name_hint": "Enter name and press Enter",
+  "profile.no_profiles": "No profiles found",
+  "profile.confirm": "OK",
+  "profile.cancel": "Cancel",
+
+  "levelselect.title": "Select Level",
+  "levelselect.tier": "Tier {0}",
+  "levelselect.locked": "Locked",
+  "levelselect.completed": "Completed",
+  "levelselect.close": "Close",
+
+  "level.start": "Start",
+  "level.completed": "Level Completed!",
+  "level.completed_message": "You completed: {0}",
+  "level.unlocked": "You unlocked: {0}",
+  "level.added_to_collection": "It will be added to your collection.",
+  "level.start_next": "Start the next level?",
+  "level.yes": "Yes",
+  "level.no": "No",
+  "level.ok": "OK",
+  "level.all_completed": "Congratulations! You completed all levels!",
+
+  "level.inv.name": "INV (NOT)",
+  "level.inv.description": "The inverter (NOT gate) is the simplest logic gate. It outputs the opposite of its input: when input is 0, output is 1, and vice versa. Inverters are fundamental building blocks used in almost every digital circuit, from flip-flops to complex processors. Build it using a single NAND gate by connecting both inputs together.",
+
+  "level.and.name": "AND",
+  "level.and.description": "The AND gate outputs 1 only when ALL inputs are 1. It's used for combining conditions - like checking if multiple requirements are met simultaneously. In processors, AND gates are used in address decoding, masking operations, and control logic. Hint: NAND is 'NOT AND', so to make AND, you need to invert the NAND output.",
+
+  "level.or.name": "OR",
+  "level.or.description": "The OR gate outputs 1 when ANY input is 1. It's essential for selecting between options or detecting if at least one condition is true. OR gates are used in interrupt handling, bus arbitration, and error detection circuits. Hint: Use De Morgan's law - OR can be built by inverting all inputs to a NAND gate.",
+
+  "level.xor.name": "XOR",
+  "level.xor.description": "The XOR (exclusive OR) gate outputs 1 when inputs are DIFFERENT. It's the heart of binary arithmetic - used to calculate the sum bit in adders. XOR is also used for parity checking, data encryption, and toggle operations. You can build it using the gates you've already created: AND, OR, and INV.",
+
+  "level.half_adder.name": "Half Adder",
+  "level.half_adder.description": "The half adder is the first step toward building a calculator! It adds two single bits and produces a Sum and a Carry output. The sum is 1 when inputs differ (that's XOR!), and carry is 1 when both inputs are 1 (that's AND!). Half adders are building blocks for full adders and multi-bit arithmetic units.",
+
+  "level.full_adder.name": "Full Adder",
+  "level.full_adder.description": "The full adder extends the half adder by accepting a carry-in from a previous stage. This allows chaining multiple full adders to add numbers of any size! A 32-bit processor uses 32 full adders connected together. You can build it using two half adders and an OR gate for the carry-out."
 }

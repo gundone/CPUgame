@@ -26,12 +26,18 @@ public class GameField : Game, IGameField
     private readonly IToolboxManager _toolboxManager;
     private readonly IGameRenderer _gameRenderer;
     private readonly ITruthTableService _truthTableService;
+    private readonly ILevelService _levelService;
+    private readonly IProfileService _profileService;
 
     private CameraController _camera = null!;
     private SelectionManager _selection = null!;
     private ComponentBuilder _componentBuilder = null!;
     private DialogService _dialogService = null!;
     private MainMenu _mainMenu = null!;
+    private ProfileDialog _profileDialog = null!;
+    private LevelSelectionPopup _levelSelectionPopup = null!;
+    private LevelDescriptionPopup _levelDescriptionPopup = null!;
+    private LevelCompletedPopup _levelCompletedPopup = null!;
 
     private int ScreenWidth => GraphicsDevice?.Viewport.Width ?? _graphics.PreferredBackBufferWidth;
     private int ScreenHeight => GraphicsDevice?.Viewport.Height ?? _graphics.PreferredBackBufferHeight;
@@ -39,7 +45,7 @@ public class GameField : Game, IGameField
     public GameField(IPlatformServices platformServices, IInputHandler inputHandler,
         IStatusService statusService, ICircuitManager circuitManager, IWireManager wireManager,
         ICommandHandler commandHandler, IToolboxManager toolboxManager, IGameRenderer gameRenderer,
-        ITruthTableService truthTableService)
+        ITruthTableService truthTableService, ILevelService levelService, IProfileService profileService)
     {
         _platformServices = platformServices;
         _inputHandler = inputHandler;
@@ -50,6 +56,8 @@ public class GameField : Game, IGameField
         _toolboxManager = toolboxManager;
         _gameRenderer = gameRenderer;
         _truthTableService = truthTableService;
+        _levelService = levelService;
+        _profileService = profileService;
 
         _graphics = new GraphicsDeviceManager(this) { PreferredBackBufferWidth = 1280, PreferredBackBufferHeight = 720 };
         Content.RootDirectory = "Content";
@@ -144,6 +152,121 @@ public class GameField : Game, IGameField
         {
             _truthTableService.IsVisible = !_truthTableService.IsVisible;
         };
+
+        // Level service setup
+        _levelService.LoadLevels();
+        _mainMenu.SetLevels(_levelService.Levels);
+        _mainMenu.SetCurrentMode(_levelService.CurrentMode);
+
+        // Profile and level selection dialogs
+        _profileDialog = new ProfileDialog(_profileService);
+        _levelSelectionPopup = new LevelSelectionPopup(_levelService, _profileService);
+        _levelDescriptionPopup = new LevelDescriptionPopup();
+        _levelCompletedPopup = new LevelCompletedPopup();
+
+        _mainMenu.OnSandboxMode += () =>
+        {
+            _levelService.SetMode(GameMode.Sandbox);
+            _mainMenu.SetCurrentMode(GameMode.Sandbox);
+            _mainMenu.SetProfileName(null);
+            _truthTableService.SetCurrentLevel(null);
+            _toolboxManager.SetLevelModeFilter(false, null);
+            _statusService.Show(LocalizationManager.Get("status.mode_sandbox"));
+        };
+        _mainMenu.OnLevelsMode += () =>
+        {
+            if (!_profileService.HasProfile)
+            {
+                _profileDialog.Show();
+                _statusService.Show(LocalizationManager.Get("status.profile_required"));
+                return;
+            }
+            _levelService.SetMode(GameMode.Levels);
+            _mainMenu.SetCurrentMode(GameMode.Levels);
+            _mainMenu.SetProfileName(_profileService.CurrentProfile?.Name);
+            _toolboxManager.SetLevelModeFilter(true, _profileService.GetUnlockedComponents(_levelService));
+            if (_levelService.CurrentLevel != null)
+            {
+                _truthTableService.SetCurrentLevel(_levelService.CurrentLevel);
+                _truthTableService.IsVisible = true;
+            }
+            _statusService.Show(LocalizationManager.Get("status.mode_levels"));
+        };
+        _mainMenu.OnSelectLevelPopup += () =>
+        {
+            if (!_profileService.HasProfile)
+            {
+                _profileDialog.Show();
+                _statusService.Show(LocalizationManager.Get("status.profile_required"));
+                return;
+            }
+            _levelSelectionPopup.Show();
+        };
+
+        _levelSelectionPopup.OnLevelSelected += index =>
+        {
+            _levelService.SelectLevel(index);
+            if (_levelService.CurrentLevel != null)
+            {
+                // Show level description popup instead of immediately starting
+                _levelDescriptionPopup.Show(_levelService.CurrentLevel);
+            }
+        };
+
+        _levelDescriptionPopup.OnStartLevel += () =>
+        {
+            if (_levelService.CurrentLevel != null)
+            {
+                _levelService.SetupLevelCircuit(_circuitManager.Circuit, _gameRenderer.GridSize);
+                _selection = new SelectionManager(_circuitManager.Circuit);
+                _truthTableService.SetCurrentLevel(_levelService.CurrentLevel);
+                _truthTableService.IsVisible = true;
+            }
+        };
+
+        _profileDialog.OnProfileSelected += () =>
+        {
+            _mainMenu.SetProfileName(_profileService.CurrentProfile?.Name);
+            _toolboxManager.SetLevelModeFilter(true, _profileService.GetUnlockedComponents(_levelService));
+            _levelService.SetMode(GameMode.Levels);
+            _mainMenu.SetCurrentMode(GameMode.Levels);
+        };
+
+        _truthTableService.OnLevelPassed += () =>
+        {
+            if (_levelService.CurrentLevel != null)
+            {
+                var level = _levelService.CurrentLevel;
+
+                // Auto-build the component from the circuit
+                var componentsToSave = _circuitManager.Circuit.Components.ToList();
+                if (componentsToSave.Count > 0)
+                {
+                    _componentBuilder.BuildComponent(level.ComponentName, componentsToSave, _gameRenderer.GridSize);
+                }
+
+                _profileService.CompleteLevel(level.Id);
+                _toolboxManager.SetLevelModeFilter(true, _profileService.GetUnlockedComponents(_levelService));
+                // Refresh custom components in toolbox
+                _toolboxManager.LoadCustomComponents(_circuitManager.CustomComponents.Keys);
+                // Show completed popup
+                _levelCompletedPopup.Show(level, _levelService.NextLevelInfo);
+            }
+        };
+
+        _levelCompletedPopup.OnNextLevel += () =>
+        {
+            _levelService.NextLevel();
+            if (_levelService.CurrentLevel != null)
+            {
+                _levelDescriptionPopup.Show(_levelService.CurrentLevel);
+            }
+        };
+
+        _levelCompletedPopup.OnClose += () =>
+        {
+            // Just close, stay on current level
+        };
     }
 
     protected override void Update(GameTime gameTime)
@@ -154,6 +277,39 @@ public class GameField : Game, IGameField
         var circuit = _circuitManager.Circuit;
 
         _statusService.Update(gameTime.ElapsedGameTime.TotalSeconds);
+
+        // Handle profile dialog (modal, blocks everything else)
+        if (_profileDialog.IsVisible)
+        {
+            _profileDialog.HandleInput(_inputState, _inputHandler);
+            _profileDialog.Update(mousePos, _inputState.PrimaryJustPressed, ScreenWidth, ScreenHeight, _inputHandler);
+            base.Update(gameTime);
+            return;
+        }
+
+        // Handle level selection popup (modal, blocks everything else)
+        if (_levelSelectionPopup.IsVisible)
+        {
+            _levelSelectionPopup.Update(mousePos, _inputState.PrimaryJustPressed, _inputState.ScrollDelta, ScreenWidth, ScreenHeight);
+            base.Update(gameTime);
+            return;
+        }
+
+        // Handle level description popup (modal)
+        if (_levelDescriptionPopup.IsVisible)
+        {
+            _levelDescriptionPopup.Update(mousePos, _inputState.PrimaryJustPressed, ScreenWidth, ScreenHeight);
+            base.Update(gameTime);
+            return;
+        }
+
+        // Handle level completed popup (modal)
+        if (_levelCompletedPopup.IsVisible)
+        {
+            _levelCompletedPopup.Update(mousePos, _inputState.PrimaryJustPressed, ScreenWidth, ScreenHeight);
+            base.Update(gameTime);
+            return;
+        }
 
         if (_dialogService.IsActive)
         {
@@ -166,7 +322,7 @@ public class GameField : Game, IGameField
         if (_mainMenu.ContainsPoint(mousePos)) { base.Update(gameTime); return; }
 
         // Update truth table window
-        _truthTableService.Update(mousePos, _inputState.PrimaryPressed, _inputState.PrimaryJustPressed, _inputState.PrimaryJustReleased, _inputState.ScrollDelta, circuit);
+        _truthTableService.Update(mousePos, _inputState.PrimaryPressed, _inputState.PrimaryJustPressed, _inputState.PrimaryJustReleased, _inputState.ScrollDelta, circuit, gameTime.ElapsedGameTime.TotalSeconds);
         if (_truthTableService.ContainsPoint(mousePos)) { base.Update(gameTime); return; }
 
         if (_inputState.CtrlHeld && _inputState.ScrollDelta != 0)
@@ -286,6 +442,12 @@ public class GameField : Game, IGameField
 
         _spriteBatch.Begin(samplerState: SamplerState.LinearClamp);
         _gameRenderer.DrawUI(_spriteBatch, _toolboxManager, _mainMenu, _statusService, _dialogService, _truthTableService, _camera, _inputState.PointerPosition, ScreenWidth, ScreenHeight, _font);
+
+        // Draw modal dialogs on top
+        _profileDialog.Draw(_spriteBatch, _gameRenderer.Pixel, _font, ScreenWidth, ScreenHeight);
+        _levelSelectionPopup.Draw(_spriteBatch, _gameRenderer.Pixel, _font, ScreenWidth, ScreenHeight);
+        _levelDescriptionPopup.Draw(_spriteBatch, _gameRenderer.Pixel, _font, ScreenWidth, ScreenHeight);
+        _levelCompletedPopup.Draw(_spriteBatch, _gameRenderer.Pixel, _font, ScreenWidth, ScreenHeight);
         _spriteBatch.End();
 
         base.Draw(gameTime);

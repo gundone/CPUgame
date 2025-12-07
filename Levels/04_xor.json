@@ -1,0 +1,16 @@
+{
+  "id": "xor",
+  "name": "XOR",
+  "description": "Create an XOR gate: output is true when inputs are different",
+  "fullDescription": "The XOR (exclusive OR) gate outputs 1 when inputs are DIFFERENT. It's the heart of binary arithmetic - used to calculate the sum bit in adders. XOR is also used for parity checking, data encryption, and toggle operations. You can build it using the gates you've already created: AND, OR, and INV.",
+  "tier": 2,
+  "componentName": "xor",
+  "inputCount": 2,
+  "outputCount": 1,
+  "truthTable": [
+    { "inputs": [false, false], "outputs": [false] },
+    { "inputs": [false, true], "outputs": [true] },
+    { "inputs": [true, false], "outputs": [true] },
+    { "inputs": [true, true], "outputs": [false] }
+  ]
+}

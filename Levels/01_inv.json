@@ -1,0 +1,14 @@
+{
+  "id": "inv",
+  "name": "INV (NOT)",
+  "description": "Create an inverter: output should be opposite of input",
+  "fullDescription": "The inverter (NOT gate) is the simplest logic gate. It outputs the opposite of its input: when input is 0, output is 1, and vice versa. Inverters are fundamental building blocks used in almost every digital circuit, from flip-flops to complex processors. Build it using a single NAND gate by connecting both inputs together.",
+  "tier": 1,
+  "componentName": "inv",
+  "inputCount": 1,
+  "outputCount": 1,
+  "truthTable": [
+    { "inputs": [false], "outputs": [true] },
+    { "inputs": [true], "outputs": [false] }
+  ]
+}

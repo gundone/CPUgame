@@ -19,6 +19,8 @@ services.AddSingleton<ICommandHandler, CommandHandler>();
 services.AddSingleton<IToolboxManager, ToolboxManager>();
 services.AddSingleton<IGameRenderer, GameRenderer>();
 services.AddSingleton<ITruthTableService, TruthTableService>();
+services.AddSingleton<ILevelService, LevelService>();
+services.AddSingleton<IProfileService, ProfileService>();
 
 // Game
 services.AddSingleton<IGameField, GameField>();

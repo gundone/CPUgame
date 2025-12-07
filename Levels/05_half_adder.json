@@ -1,0 +1,16 @@
+{
+  "id": "half_adder",
+  "name": "Half Adder",
+  "description": "Create a half adder: adds two 1-bit numbers, outputs sum and carry",
+  "fullDescription": "The half adder is the first step toward building a calculator! It adds two single bits and produces a Sum and a Carry output. The sum is 1 when inputs differ (that's XOR!), and carry is 1 when both inputs are 1 (that's AND!). Half adders are building blocks for full adders and multi-bit arithmetic units.",
+  "tier": 2,
+  "componentName": "half_adder",
+  "inputCount": 2,
+  "outputCount": 2,
+  "truthTable": [
+    { "inputs": [false, false], "outputs": [false, false] },
+    { "inputs": [false, true], "outputs": [false, true] },
+    { "inputs": [true, false], "outputs": [false, true] },
+    { "inputs": [true, true], "outputs": [true, false] }
+  ]
+}

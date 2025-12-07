@@ -1,0 +1,16 @@
+{
+  "id": "and",
+  "name": "AND",
+  "description": "Create an AND gate: output is true only when both inputs are true",
+  "fullDescription": "The AND gate outputs 1 only when ALL inputs are 1. It's used for combining conditions - like checking if multiple requirements are met simultaneously. In processors, AND gates are used in address decoding, masking operations, and control logic. Hint: NAND is 'NOT AND', so to make AND, you need to invert the NAND output.",
+  "tier": 1,
+  "componentName": "and",
+  "inputCount": 2,
+  "outputCount": 1,
+  "truthTable": [
+    { "inputs": [false, false], "outputs": [false] },
+    { "inputs": [false, true], "outputs": [false] },
+    { "inputs": [true, false], "outputs": [false] },
+    { "inputs": [true, true], "outputs": [true] }
+  ]
+}

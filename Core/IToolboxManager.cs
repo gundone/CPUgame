@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CPUgame.Components;
 using CPUgame.UI;
 using Microsoft.Xna.Framework;
@@ -11,6 +12,7 @@ public interface IToolboxManager
     bool IsInteracting { get; }
     void Initialize(int screenWidth, ComponentBuilder componentBuilder);
     void LoadCustomComponents(System.Collections.Generic.IEnumerable<string> componentNames);
+    void SetLevelModeFilter(bool isLevelMode, IEnumerable<string>? unlockedComponents);
     void Update(Point mousePos, bool primaryPressed, bool primaryJustPressed, bool primaryJustReleased);
     Component? HandleDrops(Point mousePos, Point worldMousePos, Circuit circuit, int gridSize, bool showPinValues, bool primaryJustReleased, IStatusService statusService, ComponentBuilder componentBuilder);
     void ClearDragState();
@@ -22,6 +24,10 @@ public class ToolboxManager : IToolboxManager
     public Toolbox MainToolbox { get; private set; } = null!;
     public Toolbox UserToolbox { get; private set; } = null!;
 
+    private bool _isLevelMode;
+    private HashSet<string> _unlockedComponents = new();
+    private HashSet<string> _allComponents = new();
+
     public bool IsInteracting => MainToolbox.IsDraggingItem || MainToolbox.IsDraggingWindow ||
                                   UserToolbox.IsDraggingItem || UserToolbox.IsDraggingWindow;
 
@@ -32,11 +38,55 @@ public class ToolboxManager : IToolboxManager
         UserToolbox.OnDeleteComponent += name => componentBuilder.DeleteComponent(name);
     }
 
-    public void LoadCustomComponents(System.Collections.Generic.IEnumerable<string> componentNames)
+    public void LoadCustomComponents(IEnumerable<string> componentNames)
     {
+        _allComponents.Clear();
         foreach (var name in componentNames)
         {
-            UserToolbox.AddCustomComponent(name);
+            _allComponents.Add(name);
+        }
+        RefreshUserToolbox();
+    }
+
+    public void SetLevelModeFilter(bool isLevelMode, IEnumerable<string>? unlockedComponents)
+    {
+        _isLevelMode = isLevelMode;
+        _unlockedComponents.Clear();
+        if (unlockedComponents != null)
+        {
+            foreach (var comp in unlockedComponents)
+            {
+                _unlockedComponents.Add(comp);
+            }
+        }
+        RefreshUserToolbox();
+    }
+
+    private void RefreshUserToolbox()
+    {
+        // Clear all custom components from toolbox
+        var currentComponents = UserToolbox.GetCustomComponentNames();
+        foreach (var name in currentComponents)
+        {
+            UserToolbox.RemoveCustomComponent(name);
+        }
+
+        // Add back components based on mode
+        foreach (var name in _allComponents)
+        {
+            if (_isLevelMode)
+            {
+                // In level mode, only show unlocked components
+                if (_unlockedComponents.Contains(name))
+                {
+                    UserToolbox.AddCustomComponent(name);
+                }
+            }
+            else
+            {
+                // In sandbox mode, show all components
+                UserToolbox.AddCustomComponent(name);
+            }
         }
     }
 

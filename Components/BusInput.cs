@@ -187,8 +187,19 @@ public class BusInput : Component
         {
             ResizeBits(false, allInputPins);
         }
+        else
+        {
+            HandleValueCommands(input);
+        }
+    }
+
+    /// <summary>
+    /// Handle value-only commands (no resizing). Used for level components.
+    /// </summary>
+    public void HandleValueCommands(InputState input)
+    {
         // Increment/decrement value with +/-
-        else if (input.IncreaseCommand)
+        if (input.IncreaseCommand)
         {
             Value = (Value + 1) % (1 << BitCount);
         }

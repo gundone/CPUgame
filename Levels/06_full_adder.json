@@ -1,0 +1,20 @@
+{
+  "id": "full_adder",
+  "name": "Full Adder",
+  "description": "Create a full adder: adds two 1-bit numbers with carry-in, outputs sum and carry-out",
+  "fullDescription": "The full adder extends the half adder by accepting a carry-in from a previous stage. This allows chaining multiple full adders to add numbers of any size! A 32-bit processor uses 32 full adders connected together. You can build it using two half adders and an OR gate for the carry-out.",
+  "tier": 2,
+  "componentName": "full_adder",
+  "inputCount": 3,
+  "outputCount": 2,
+  "truthTable": [
+    { "inputs": [false, false, false], "outputs": [false, false] },
+    { "inputs": [false, false, true], "outputs": [false, true] },
+    { "inputs": [false, true, false], "outputs": [false, true] },
+    { "inputs": [false, true, true], "outputs": [true, false] },
+    { "inputs": [true, false, false], "outputs": [false, true] },
+    { "inputs": [true, false, true], "outputs": [true, false] },
+    { "inputs": [true, true, false], "outputs": [true, false] },
+    { "inputs": [true, true, true], "outputs": [true, true] }
+  ]
+}

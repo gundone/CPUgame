@@ -16,14 +16,16 @@ public class CommandHandler : ICommandHandler
 {
     private readonly ICircuitManager _circuitManager;
     private readonly IStatusService _statusService;
+    private readonly ILevelService _levelService;
 
     public bool ShowPinValues { get; private set; }
     public event Action? OnBuildComponent;
 
-    public CommandHandler(ICircuitManager circuitManager, IStatusService statusService)
+    public CommandHandler(ICircuitManager circuitManager, IStatusService statusService, ILevelService levelService)
     {
         _circuitManager = circuitManager;
         _statusService = statusService;
+        _levelService = levelService;
     }
 
     public void HandleCommands(InputState input, SelectionManager selection, Circuit circuit, IWireManager wireManager, int gridSize)
@@ -83,9 +85,27 @@ public class CommandHandler : ICommandHandler
             return;
         }
 
+        // Filter out level components that cannot be deleted
+        var selectedComponents = selection.GetSelectedComponents();
+        int skipped = 0;
+        foreach (var component in selectedComponents.ToList())
+        {
+            if (_levelService.IsLevelComponent(component))
+            {
+                component.IsSelected = false;
+                skipped++;
+            }
+        }
+
         int count = selection.DeleteSelectedComponents();
         if (count > 0)
+        {
             _statusService.Show(LocalizationManager.Get("status.deleted", count));
+        }
+        else if (skipped > 0)
+        {
+            _statusService.Show(LocalizationManager.Get("status.cannot_delete_level_components"));
+        }
     }
 
     private void ApplyComponentCommands(InputState input, SelectionManager selection, Circuit circuit, int gridSize)
@@ -98,13 +118,26 @@ public class CommandHandler : ICommandHandler
             element.GridSize = gridSize;
 
             // Delegate to component-specific command handlers
+            // Skip resize commands for level components (they have fixed size)
+            bool isLevelComponent = _levelService.IsLevelComponent(element);
             if (element is BusInput busInput)
             {
-                busInput.HandleCommands(input, allInputPins);
+                if (!isLevelComponent)
+                {
+                    busInput.HandleCommands(input, allInputPins);
+                }
+                else
+                {
+                    // Allow value changes but not resizing for level components
+                    busInput.HandleValueCommands(input);
+                }
             }
             else if (element is BusOutput busOutput)
             {
-                busOutput.HandleCommands(input);
+                if (!isLevelComponent)
+                {
+                    busOutput.HandleCommands(input);
+                }
             }
 
             // Movement commands

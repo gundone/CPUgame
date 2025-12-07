@@ -61,7 +61,7 @@ public class Toolbox
         if (!isUserComponents)
         {
             // Built-in components
-            _items.Add(new ToolboxItem("NAND", ToolType.PlaceNand));
+            _items.Add(new ToolboxItem("!&", ToolType.PlaceNand));
             _items.Add(new ToolboxItem("Switch", ToolType.PlaceSwitch));
             _items.Add(new ToolboxItem("LED", ToolType.PlaceLed));
             _items.Add(new ToolboxItem("Clock", ToolType.PlaceClock));

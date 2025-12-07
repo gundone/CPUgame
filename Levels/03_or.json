@@ -1,0 +1,16 @@
+{
+  "id": "or",
+  "name": "OR",
+  "description": "Create an OR gate: output is true when at least one input is true",
+  "fullDescription": "The OR gate outputs 1 when ANY input is 1. It's essential for selecting between options or detecting if at least one condition is true. OR gates are used in interrupt handling, bus arbitration, and error detection circuits. Hint: Use De Morgan's law - OR can be built by inverting all inputs to a NAND gate.",
+  "tier": 1,
+  "componentName": "or",
+  "inputCount": 2,
+  "outputCount": 1,
+  "truthTable": [
+    { "inputs": [false, false], "outputs": [false] },
+    { "inputs": [false, true], "outputs": [true] },
+    { "inputs": [true, false], "outputs": [true] },
+    { "inputs": [true, true], "outputs": [true] }
+  ]
+}

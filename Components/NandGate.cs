@@ -13,7 +13,7 @@ public class NandGate : Component
 
     public NandGate(int x, int y) : base(x, y)
     {
-        Name = "NAND";
+        Name = "!&";
         Width = 40;
         Height = 60;
 

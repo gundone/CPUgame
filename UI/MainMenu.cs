@@ -12,6 +12,9 @@ public class MainMenu
     private MenuItem? _openMenu;
     private int _hoveredSubmenuIndex = -1;
     private SpriteFont? _font;
+    private List<GameLevel> _levels = new();
+    private GameMode _currentMode = GameMode.Sandbox;
+    private string? _profileName;
 
     private const int MenuHeight = 24;
     private const int SubmenuItemHeight = 26;
@@ -31,6 +34,9 @@ public class MainMenu
     public event Action<string>? OnLanguageChanged;
     public event Action<float>? OnTitleFontSizeChanged;
     public event Action? OnToggleTruthTable;
+    public event Action? OnSandboxMode;
+    public event Action? OnLevelsMode;
+    public event Action? OnSelectLevelPopup;
 
     public int Height => MenuHeight;
 
@@ -45,6 +51,24 @@ public class MainMenu
         _font = font;
     }
 
+    public void SetLevels(List<GameLevel> levels)
+    {
+        _levels = levels;
+        BuildMenu();
+    }
+
+    public void SetCurrentMode(GameMode mode)
+    {
+        _currentMode = mode;
+        BuildMenu();
+    }
+
+    public void SetProfileName(string? name)
+    {
+        _profileName = name;
+        BuildMenu();
+    }
+
     private int GetTextWidth(string text)
     {
         if (_font != null)
@@ -56,14 +80,54 @@ public class MainMenu
     {
         _menuItems.Clear();
 
-        // File menu
-        var fileMenu = new MenuItem(LocalizationManager.Get("menu.file"));
-        fileMenu.SubItems.Add(new MenuItem(LocalizationManager.Get("menu.file.new"), () => OnNewCircuit?.Invoke()));
-        fileMenu.SubItems.Add(new MenuItem(LocalizationManager.Get("menu.file.load"), () => OnLoadCircuit?.Invoke()));
-        fileMenu.SubItems.Add(new MenuItem(LocalizationManager.Get("menu.file.save"), () => OnSaveCircuit?.Invoke()));
-        fileMenu.SubItems.Add(new MenuItem("-")); // Separator
-        fileMenu.SubItems.Add(new MenuItem(LocalizationManager.Get("menu.file.exit"), () => OnExit?.Invoke()));
-        _menuItems.Add(fileMenu);
+        if (_currentMode == GameMode.Levels && !string.IsNullOrEmpty(_profileName))
+        {
+            // In levels mode, show profile name (no submenu)
+            var profileItem = new MenuItem(_profileName);
+            _menuItems.Add(profileItem);
+        }
+        else
+        {
+            // File menu (sandbox mode only)
+            var fileMenu = new MenuItem(LocalizationManager.Get("menu.file"));
+            fileMenu.SubItems.Add(new MenuItem(LocalizationManager.Get("menu.file.new"), () => OnNewCircuit?.Invoke()));
+            fileMenu.SubItems.Add(new MenuItem(LocalizationManager.Get("menu.file.load"), () => OnLoadCircuit?.Invoke()));
+            fileMenu.SubItems.Add(new MenuItem(LocalizationManager.Get("menu.file.save"), () => OnSaveCircuit?.Invoke()));
+            fileMenu.SubItems.Add(new MenuItem("-")); // Separator
+            fileMenu.SubItems.Add(new MenuItem(LocalizationManager.Get("menu.file.exit"), () => OnExit?.Invoke()));
+            _menuItems.Add(fileMenu);
+        }
+
+        // Game menu
+        var gameMenu = new MenuItem(LocalizationManager.Get("menu.game"));
+
+        // Mode header
+        gameMenu.SubItems.Add(new MenuItem($"-- {LocalizationManager.Get("menu.game.mode")} --"));
+
+        // Sandbox mode
+        string sandboxLabel = LocalizationManager.Get("menu.game.sandbox");
+        if (_currentMode == GameMode.Sandbox)
+        {
+            sandboxLabel = "* " + sandboxLabel;
+        }
+        gameMenu.SubItems.Add(new MenuItem(sandboxLabel, () => OnSandboxMode?.Invoke()));
+
+        // Levels mode
+        string levelsLabel = LocalizationManager.Get("menu.game.levels");
+        if (_currentMode == GameMode.Levels)
+        {
+            levelsLabel = "* " + levelsLabel;
+        }
+        gameMenu.SubItems.Add(new MenuItem(levelsLabel, () => OnLevelsMode?.Invoke()));
+
+        // Add select level option (only in levels mode)
+        if (_currentMode == GameMode.Levels)
+        {
+            gameMenu.SubItems.Add(new MenuItem("-")); // Separator
+            gameMenu.SubItems.Add(new MenuItem(LocalizationManager.Get("menu.game.selectlevel"), () => OnSelectLevelPopup?.Invoke()));
+        }
+
+        _menuItems.Add(gameMenu);
 
         // View menu
         var viewMenu = new MenuItem(LocalizationManager.Get("menu.view"));
@@ -113,11 +177,19 @@ public class MainMenu
                 int itemWidth = GetTextWidth(item.Label) + 20;
                 if (mousePos.X >= x && mousePos.X < x + itemWidth)
                 {
-                    if (_openMenu == item)
-                        _openMenu = null;
-                    else
-                        _openMenu = item;
-                    _hoveredSubmenuIndex = -1;
+                    // Only toggle menu if it has subitems
+                    if (item.SubItems.Count > 0)
+                    {
+                        if (_openMenu == item)
+                        {
+                            _openMenu = null;
+                        }
+                        else
+                        {
+                            _openMenu = item;
+                        }
+                        _hoveredSubmenuIndex = -1;
+                    }
                     return;
                 }
                 x += itemWidth;
