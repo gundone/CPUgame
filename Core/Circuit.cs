@@ -176,26 +176,229 @@ public class Circuit
 
     private bool IsPointNearWire(int px, int py, Pin from, Pin to, int tolerance)
     {
-        // Wire is drawn as 3 segments: horizontal, vertical, horizontal
-        float startX = from.WorldX;
-        float startY = from.WorldY;
-        float endX = to.WorldX;
-        float endY = to.WorldY;
-        float midX = (startX + endX) / 2;
+        // Calculate wire path (same logic as CircuitRenderer)
+        var path = CalculateWirePath(from.WorldX, from.WorldY, to.WorldX, to.WorldY);
 
-        // Segment 1: from start to mid1 (horizontal)
-        if (IsPointNearSegment(px, py, startX, startY, midX, startY, tolerance))
-            return true;
-
-        // Segment 2: from mid1 to mid2 (vertical)
-        if (IsPointNearSegment(px, py, midX, startY, midX, endY, tolerance))
-            return true;
-
-        // Segment 3: from mid2 to end (horizontal)
-        if (IsPointNearSegment(px, py, midX, endY, endX, endY, tolerance))
-            return true;
+        // Check each segment
+        for (int i = 0; i < path.Count - 1; i++)
+        {
+            if (IsPointNearSegment(px, py, path[i].X, path[i].Y, path[i + 1].X, path[i + 1].Y, tolerance))
+            {
+                return true;
+            }
+        }
 
         return false;
+    }
+
+    /// <summary>
+    /// Calculate wire path (same logic as CircuitRenderer).
+    /// Wire goes RIGHT from output (start) and LEFT into input (end).
+    /// </summary>
+    private List<(float X, float Y)> CalculateWirePath(float startX, float startY, float endX, float endY)
+    {
+        const int gridSize = 20;
+        var path = new List<(float X, float Y)> { (startX, startY) };
+
+        float margin = gridSize;
+
+        if (startX + margin < endX - margin)
+        {
+            // Normal case: enough space between start and end
+            float midX = CalculateWireMidX(startX, startY, endX, endY, startX + margin, endX - margin);
+            path.Add((midX, startY));
+            path.Add((midX, endY));
+        }
+        else
+        {
+            // Reverse/tight case: need to wrap around
+            float rightX = CalculateWireMidX(startX, startY, endX, endY, startX + margin, float.MaxValue);
+            float leftX = CalculateWireMidX(startX, startY, endX, endY, float.MinValue, endX - margin);
+
+            // Find wrap Y (above or below)
+            float minY = System.Math.Min(startY, endY);
+            float maxY = System.Math.Max(startY, endY);
+            float wrapY = CalculateWrapY(leftX, rightX, minY, maxY, gridSize);
+
+            path.Add((rightX, startY));
+            path.Add((rightX, wrapY));
+            path.Add((leftX, wrapY));
+            path.Add((leftX, endY));
+        }
+
+        path.Add((endX, endY));
+        return path;
+    }
+
+    /// <summary>
+    /// Calculate Y position for horizontal wrap segment.
+    /// </summary>
+    private float CalculateWrapY(float leftX, float rightX, float minY, float maxY, int gridSize)
+    {
+        float topMost = minY;
+        float bottomMost = maxY;
+
+        foreach (var comp in Components)
+        {
+            int rectLeft = comp.X - gridSize / 2;
+            int rectRight = comp.X + comp.Width + gridSize / 2;
+
+            if (rightX >= rectLeft && leftX <= rectRight)
+            {
+                if (comp.Y - gridSize / 2 < topMost)
+                {
+                    topMost = comp.Y - gridSize / 2;
+                }
+                if (comp.Y + comp.Height + gridSize / 2 > bottomMost)
+                {
+                    bottomMost = comp.Y + comp.Height + gridSize / 2;
+                }
+            }
+        }
+
+        float aboveY = topMost - gridSize;
+        float belowY = bottomMost + gridSize;
+        float centerY = (minY + maxY) / 2;
+
+        return System.Math.Abs(centerY - aboveY) <= System.Math.Abs(centerY - belowY)
+            ? SnapToGrid(aboveY, gridSize)
+            : SnapToGrid(belowY, gridSize);
+    }
+
+    /// <summary>
+    /// Calculate the X position for the vertical wire segment (same logic as CircuitRenderer).
+    /// </summary>
+    private float CalculateWireMidX(float startX, float startY, float endX, float endY, float minAllowedX, float maxAllowedX)
+    {
+        const int gridSize = 20;
+
+        float minY = System.Math.Min(startY, endY);
+        float maxY = System.Math.Max(startY, endY);
+
+        // Collect components that could block a vertical line
+        var blockingRects = new List<(int Left, int Right)>();
+        foreach (var comp in Components)
+        {
+            int rectTop = comp.Y - gridSize / 2;
+            int rectBottom = comp.Y + comp.Height + gridSize / 2;
+
+            if (maxY >= rectTop && minY <= rectBottom)
+            {
+                blockingRects.Add((comp.X - gridSize / 2, comp.X + comp.Width + gridSize / 2));
+            }
+        }
+
+        // Calculate preferred X based on direction
+        bool goingLeft = maxAllowedX < float.MaxValue - 1000 && minAllowedX <= float.MinValue + 1000;
+        bool goingRight = minAllowedX > float.MinValue + 1000 && maxAllowedX >= float.MaxValue - 1000;
+
+        float preferredX;
+        if (goingLeft)
+        {
+            preferredX = endX - gridSize;
+        }
+        else if (goingRight)
+        {
+            preferredX = startX + gridSize;
+        }
+        else
+        {
+            preferredX = (startX + endX) / 2;
+        }
+
+        // Clamp to allowed range
+        if (minAllowedX > float.MinValue + 1000)
+        {
+            preferredX = System.Math.Max(preferredX, minAllowedX);
+        }
+        if (maxAllowedX < float.MaxValue - 1000)
+        {
+            preferredX = System.Math.Min(preferredX, maxAllowedX);
+        }
+
+        if (blockingRects.Count == 0)
+        {
+            return SnapToGrid(preferredX, gridSize);
+        }
+
+        // Sort by left edge
+        blockingRects.Sort((a, b) => a.Left.CompareTo(b.Left));
+
+        // Find gaps and pick one that satisfies constraints
+        float rangeStart = minAllowedX > float.MinValue + 1000 ? minAllowedX : System.Math.Min(startX, endX) - gridSize * 4;
+        float rangeEnd = maxAllowedX < float.MaxValue - 1000 ? maxAllowedX : System.Math.Max(startX, endX) + gridSize * 4;
+
+        // Check gap before first rect
+        if (blockingRects[0].Left > rangeStart)
+        {
+            float gapCenter = (rangeStart + blockingRects[0].Left - gridSize) / 2;
+            bool inRange = (minAllowedX <= float.MinValue + 1000 || gapCenter >= minAllowedX) &&
+                          (maxAllowedX >= float.MaxValue - 1000 || gapCenter <= maxAllowedX);
+            if (inRange)
+            {
+                return SnapToGrid(gapCenter, gridSize);
+            }
+        }
+
+        // Check gaps between rects
+        for (int i = 0; i < blockingRects.Count - 1; i++)
+        {
+            float gapStart = blockingRects[i].Right + gridSize;
+            float gapEnd = blockingRects[i + 1].Left - gridSize;
+            if (gapEnd > gapStart)
+            {
+                float gapCenter = (gapStart + gapEnd) / 2;
+                bool inRange = (minAllowedX <= float.MinValue + 1000 || gapCenter >= minAllowedX) &&
+                              (maxAllowedX >= float.MaxValue - 1000 || gapCenter <= maxAllowedX);
+                if (inRange)
+                {
+                    return SnapToGrid(gapCenter, gridSize);
+                }
+            }
+        }
+
+        // Check gap after last rect
+        if (blockingRects[^1].Right < rangeEnd)
+        {
+            float gapCenter = (blockingRects[^1].Right + gridSize + rangeEnd) / 2;
+            bool inRange = (minAllowedX <= float.MinValue + 1000 || gapCenter >= minAllowedX) &&
+                          (maxAllowedX >= float.MaxValue - 1000 || gapCenter <= maxAllowedX);
+            if (inRange)
+            {
+                return SnapToGrid(gapCenter, gridSize);
+            }
+        }
+
+        // Route outside all components
+        if (goingRight || !goingLeft)
+        {
+            // Try right side first
+            float rightMost = blockingRects.Max(r => r.Right);
+            float rightRoute = rightMost + gridSize;
+            if (minAllowedX <= float.MinValue + 1000 || rightRoute >= minAllowedX)
+            {
+                return SnapToGrid(rightRoute, gridSize);
+            }
+        }
+
+        if (goingLeft || !goingRight)
+        {
+            // Try left side
+            float leftMost = blockingRects.Min(r => r.Left);
+            float leftRoute = leftMost - gridSize;
+            if (maxAllowedX >= float.MaxValue - 1000 || leftRoute <= maxAllowedX)
+            {
+                return SnapToGrid(leftRoute, gridSize);
+            }
+        }
+
+        // Last resort: use preferred position
+        return SnapToGrid(preferredX, gridSize);
+    }
+
+    private float SnapToGrid(float value, int gridSize)
+    {
+        return (float)(System.Math.Round(value / gridSize) * gridSize);
     }
 
     private bool IsPointNearSegment(int px, int py, float x1, float y1, float x2, float y2, int tolerance)

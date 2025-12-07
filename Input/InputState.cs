@@ -38,6 +38,7 @@ public class InputState
     // Text input (for dialogs)
     public bool EnterPressed { get; set; }
     public bool BackspacePressed { get; set; }
+    public bool TabPressed { get; set; }
     public char? CharacterInput { get; set; }
 
     // Movement commands for selected components
@@ -70,6 +71,7 @@ public class InputState
         TogglePinValuesCommand = false;
         EnterPressed = false;
         BackspacePressed = false;
+        TabPressed = false;
         CharacterInput = null;
         MoveUp = false;
         MoveDown = false;

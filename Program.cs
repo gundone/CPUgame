@@ -17,6 +17,7 @@ services.AddSingleton<ICircuitManager, CircuitManager>();
 services.AddSingleton<IWireManager, WireManager>();
 services.AddSingleton<ICommandHandler, CommandHandler>();
 services.AddSingleton<IToolboxManager, ToolboxManager>();
+services.AddSingleton<ICircuitRenderer, CircuitRenderer>();
 services.AddSingleton<IGameRenderer, GameRenderer>();
 services.AddSingleton<ITruthTableService, TruthTableService>();
 services.AddSingleton<ILevelService, LevelService>();

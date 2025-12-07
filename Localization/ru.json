@@ -59,6 +59,12 @@
   "dialog.name_component": "Введите имя компонента",
   "dialog.name_hint": "Enter для подтверждения, Escape для отмены",
   "dialog.edit_title": "Изменить название компонента",
+  "dialog.edit_component": "Редактирование компонента",
+  "dialog.component_title": "Название:",
+  "dialog.input": "Вход",
+  "dialog.output": "Выход",
+  "dialog.save": "Сохранить",
+  "dialog.cancel": "Отмена",
 
   "help.shortcuts": "Ctrl+S: Сохранить | Ctrl+O: Загрузить | Ctrl+B: Собрать | Del: Удалить | Ctrl+Прокрутка: Масштаб | ПКМ: Перемещение",
   "help.drag": "Перетащите компоненты из панели. Соедините выводы проводами. Del для удаления.",

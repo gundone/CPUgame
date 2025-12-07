@@ -59,6 +59,12 @@
   "dialog.name_component": "Enter Component Name",
   "dialog.name_hint": "Press Enter to confirm, Escape to cancel",
   "dialog.edit_title": "Edit Component Title",
+  "dialog.edit_component": "Edit Component",
+  "dialog.component_title": "Title:",
+  "dialog.input": "Input",
+  "dialog.output": "Output",
+  "dialog.save": "Save",
+  "dialog.cancel": "Cancel",
 
   "help.shortcuts": "Ctrl+S: Save | Ctrl+O: Load | Ctrl+B: Build | Del: Delete | Ctrl+Scroll: Zoom | RMB: Pan",
   "help.drag": "Drag components from toolbox. Drag pins to wire. Del to delete.",

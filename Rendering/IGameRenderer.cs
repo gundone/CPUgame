@@ -18,18 +18,22 @@ public interface IGameRenderer
 
 public class GameRenderer : IGameRenderer
 {
-    private CircuitRenderer _circuitRenderer = null!;
+    private readonly ICircuitRenderer _circuitRenderer;
     private SpriteFont _font = null!;
 
     public int GridSize => _circuitRenderer.GridSize;
     public Texture2D Pixel => _circuitRenderer.Pixel;
     public float TitleFontScale { get; set; } = 0.8f;
 
+    public GameRenderer(ICircuitRenderer circuitRenderer)
+    {
+        _circuitRenderer = circuitRenderer;
+    }
+
     public void Initialize(GraphicsDevice graphicsDevice, SpriteFont font)
     {
-        _circuitRenderer = new CircuitRenderer(graphicsDevice);
+        _circuitRenderer.Initialize(graphicsDevice, font);
         _font = font;
-        _circuitRenderer.SetFont(font);
     }
 
     public void DrawWorld(SpriteBatch spriteBatch, Circuit circuit, CameraController camera, SelectionManager selection, IWireManager wireManager, Pin? hoveredPin, Point mousePos, int screenWidth, int screenHeight, bool isDraggingItem)

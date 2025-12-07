@@ -87,16 +87,28 @@ public class ProfileDialog
 
     public void HandleInput(InputState input, IInputHandler inputHandler)
     {
-        if (!IsVisible || !IsCreatingProfile)
+        if (!IsVisible)
         {
             return;
         }
 
-        // Handle escape to cancel
+        // Handle escape to cancel or close
         if (input.EscapeCommand)
         {
-            IsCreatingProfile = false;
-            inputHandler.EndTextInput();
+            if (IsCreatingProfile)
+            {
+                IsCreatingProfile = false;
+                inputHandler.EndTextInput();
+            }
+            else if (_profiles.Count > 0 || _profileService.HasProfile)
+            {
+                Hide();
+            }
+            return;
+        }
+
+        if (!IsCreatingProfile)
+        {
             return;
         }
 
@@ -279,7 +291,7 @@ public class ProfileDialog
             var hintText = LocalizationManager.Get("profile.name_hint");
             var hintSize = font.MeasureString(hintText);
             spriteBatch.DrawString(font, hintText,
-                new Vector2(_bounds.X + (_bounds.Width - hintSize.X) / 2, _inputRect.Bottom + Padding / 2),
+                new Vector2(_bounds.X + (_bounds.Width - hintSize.X) / 2, _inputRect.Bottom + (float)Padding / 2),
                 HintColor);
 
             // Draw create button

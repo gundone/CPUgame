@@ -38,6 +38,7 @@ public class GameField : Game, IGameField
     private LevelSelectionPopup _levelSelectionPopup = null!;
     private LevelDescriptionPopup _levelDescriptionPopup = null!;
     private LevelCompletedPopup _levelCompletedPopup = null!;
+    private ComponentEditDialog _componentEditDialog = null!;
 
     private int ScreenWidth => GraphicsDevice?.Viewport.Width ?? _graphics.PreferredBackBufferWidth;
     private int ScreenHeight => GraphicsDevice?.Viewport.Height ?? _graphics.PreferredBackBufferHeight;
@@ -163,6 +164,7 @@ public class GameField : Game, IGameField
         _levelSelectionPopup = new LevelSelectionPopup(_levelService, _profileService);
         _levelDescriptionPopup = new LevelDescriptionPopup();
         _levelCompletedPopup = new LevelCompletedPopup();
+        _componentEditDialog = new ComponentEditDialog();
 
         _mainMenu.OnSandboxMode += () =>
         {
@@ -312,6 +314,15 @@ public class GameField : Game, IGameField
             return;
         }
 
+        // Handle component edit dialog (modal)
+        if (_componentEditDialog.IsVisible)
+        {
+            _componentEditDialog.HandleInput(_inputState, _inputHandler);
+            _componentEditDialog.Update(mousePos, _inputState.PrimaryJustPressed, ScreenWidth, ScreenHeight);
+            base.Update(gameTime);
+            return;
+        }
+
         if (_dialogService.IsActive)
         {
             _dialogService.HandleInput(_inputState, _inputHandler);
@@ -389,13 +400,13 @@ public class GameField : Game, IGameField
             return;
         }
 
-        // Handle double-click for title editing
+        // Handle double-click for component/pin title editing
         if (_inputState.PrimaryDoubleClick)
         {
             var component = circuit.GetComponentAt(worldMousePos.X, worldMousePos.Y);
             if (component != null)
             {
-                _dialogService.StartEditingTitle(component);
+                _componentEditDialog.Show(component);
                 _inputHandler.BeginTextInput();
                 return;
             }
@@ -449,6 +460,7 @@ public class GameField : Game, IGameField
         _levelSelectionPopup.Draw(_spriteBatch, _gameRenderer.Pixel, _font, ScreenWidth, ScreenHeight);
         _levelDescriptionPopup.Draw(_spriteBatch, _gameRenderer.Pixel, _font, ScreenWidth, ScreenHeight);
         _levelCompletedPopup.Draw(_spriteBatch, _gameRenderer.Pixel, _font, ScreenWidth, ScreenHeight);
+        _componentEditDialog.Draw(_spriteBatch, _gameRenderer.Pixel, _font, ScreenWidth, ScreenHeight);
         _spriteBatch.End();
 
         base.Draw(gameTime);

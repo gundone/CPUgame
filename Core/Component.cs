@@ -29,14 +29,20 @@ public abstract class Component
 
     protected Pin AddInput(string name, int localX, int localY)
     {
-        var pin = new Pin(name, PinType.Input, this) { LocalX = localX, LocalY = localY };
+        // Extract number from pin name (e.g., "I2" -> "2") or use count as fallback
+        string numPart = new string(name.Where(char.IsDigit).ToArray());
+        string defaultTitle = string.IsNullOrEmpty(numPart) ? $"in{Inputs.Count}" : $"in{numPart}";
+        var pin = new Pin(name, PinType.Input, this, defaultTitle) { LocalX = localX, LocalY = localY };
         Inputs.Add(pin);
         return pin;
     }
 
     protected Pin AddOutput(string name, int localX, int localY)
     {
-        var pin = new Pin(name, PinType.Output, this) { LocalX = localX, LocalY = localY };
+        // Extract number from pin name (e.g., "O2" -> "2") or use count as fallback
+        string numPart = new string(name.Where(char.IsDigit).ToArray());
+        string defaultTitle = string.IsNullOrEmpty(numPart) ? $"out{Outputs.Count}" : $"out{numPart}";
+        var pin = new Pin(name, PinType.Output, this, defaultTitle) { LocalX = localX, LocalY = localY };
         Outputs.Add(pin);
         return pin;
     }

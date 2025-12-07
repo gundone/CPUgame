@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using CPUgame.Components;
 using CPUgame.Core;
@@ -6,9 +7,9 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace CPUgame.Rendering;
 
-public class CircuitRenderer
+public class CircuitRenderer : ICircuitRenderer
 {
-    private readonly PrimitiveDrawer _drawer;
+    private PrimitiveDrawer _drawer = null!;
     private SpriteFont? _font;
 
     // Colors
@@ -31,13 +32,9 @@ public class CircuitRenderer
 
     public Texture2D Pixel => _drawer.Pixel;
 
-    public CircuitRenderer(GraphicsDevice graphicsDevice)
+    public void Initialize(GraphicsDevice graphicsDevice, SpriteFont font)
     {
         _drawer = new PrimitiveDrawer(graphicsDevice);
-    }
-
-    public void SetFont(SpriteFont font)
-    {
         _font = font;
     }
 
@@ -68,8 +65,23 @@ public class CircuitRenderer
         }
     }
 
+    // Cache for component rectangles during wire drawing
+    private List<Rectangle> _componentRects = new();
+
     public void DrawCircuit(SpriteBatch spriteBatch, Circuit circuit, Pin? selectedWire = null)
     {
+        // Cache component rectangles for wire routing
+        _componentRects.Clear();
+        foreach (var comp in circuit.Components)
+        {
+            // Add padding around components for wire clearance
+            _componentRects.Add(new Rectangle(
+                comp.X - GridSize / 2,
+                comp.Y - GridSize / 2,
+                comp.Width + GridSize,
+                comp.Height + GridSize));
+        }
+
         // Draw wires first (behind components)
         foreach (var component in circuit.Components)
         {
@@ -108,67 +120,280 @@ public class CircuitRenderer
         var start = new Vector2(from.WorldX, from.WorldY);
         var end = new Vector2(to.WorldX, to.WorldY);
 
-        // Calculate routing with offset to minimize overlapping
-        var midX = CalculateWireOffset(start, end);
-        var mid1 = new Vector2(midX, start.Y);
-        var mid2 = new Vector2(midX, end.Y);
-
         // Selected wires are thicker
         int thickness = isSelected ? 4 : 2;
 
-        _drawer.DrawLine(spriteBatch, start, mid1, color, thickness);
-        _drawer.DrawLine(spriteBatch, mid1, mid2, color, thickness);
-        _drawer.DrawLine(spriteBatch, mid2, end, color, thickness);
+        // Calculate wire path that avoids components
+        var path = CalculateWirePath(start, end);
+
+        // Draw all segments of the path
+        for (int i = 0; i < path.Count - 1; i++)
+        {
+            _drawer.DrawLine(spriteBatch, path[i], path[i + 1], color, thickness);
+        }
     }
 
     /// <summary>
-    /// Calculate the X position for the vertical segment of a wire.
-    /// Uses pin positions to create unique offsets that spread out parallel wires.
+    /// Calculate wire path that avoids components.
+    /// Wire always starts going RIGHT from output pin (start) and ends going LEFT into input pin (end).
     /// </summary>
-    private float CalculateWireOffset(Vector2 start, Vector2 end)
+    private List<Vector2> CalculateWirePath(Vector2 start, Vector2 end)
     {
-        float baseX = (start.X + end.X) / 2;
-        float distance = end.X - start.X;
+        var path = new List<Vector2> { start };
 
-        // If wire is very short horizontally, use simple center
-        if (System.Math.Abs(distance) < GridSize * 2)
+        // Wire must go RIGHT from output (start.X increases first)
+        // Wire must approach input from LEFT (end.X approached from smaller X)
+
+        float margin = GridSize;
+
+        if (start.X + margin < end.X - margin)
         {
-            return baseX;
+            // Normal case: enough space between start and end
+            // Path: start -> right -> vertical -> left into end
+            float midX = FindClearVerticalX(start, end, start.X + margin, end.X - margin);
+            path.Add(new Vector2(midX, start.Y));
+            path.Add(new Vector2(midX, end.Y));
+        }
+        else
+        {
+            // Reverse/tight case: need to wrap around
+            // Path: start -> right -> vertical (outside) -> left -> vertical -> into end from left
+            float rightX = FindClearVerticalX(start, end, start.X + margin, float.MaxValue);
+            float leftX = FindClearVerticalX(start, end, float.MinValue, end.X - margin);
+
+            // Determine wrap direction (go above or below)
+            float wrapY;
+            float minY = System.Math.Min(start.Y, end.Y);
+            float maxY = System.Math.Max(start.Y, end.Y);
+
+            // Find clear Y for horizontal segment
+            wrapY = FindClearHorizontalY(leftX, rightX, minY, maxY);
+
+            path.Add(new Vector2(rightX, start.Y));
+            path.Add(new Vector2(rightX, wrapY));
+            path.Add(new Vector2(leftX, wrapY));
+            path.Add(new Vector2(leftX, end.Y));
         }
 
-        // Calculate offset based on both Y positions to create unique paths
-        // Use a hash-like approach: combine Y coordinates to get variety
-        float ySum = start.Y + end.Y;
-        float yDiff = start.Y - end.Y;
+        path.Add(end);
+        return path;
+    }
 
-        // Create offset factor based on Y positions (range: -0.3 to 0.3 of distance)
-        // Using modulo to keep offsets distributed
-        float offsetFactor = ((ySum % (GridSize * 10)) / (GridSize * 10)) - 0.5f;
-        offsetFactor *= 0.4f; // Scale down to 40% of range
+    /// <summary>
+    /// Find a clear Y position for horizontal segment that avoids components.
+    /// </summary>
+    private float FindClearHorizontalY(float leftX, float rightX, float minY, float maxY)
+    {
+        // Collect components in the X range
+        var blockingRects = new List<Rectangle>();
+        foreach (var rect in _componentRects)
+        {
+            if (rightX >= rect.Left && leftX <= rect.Right)
+            {
+                blockingRects.Add(rect);
+            }
+        }
 
-        // Add secondary offset based on Y difference for more separation
-        float secondaryOffset = ((yDiff % (GridSize * 5)) / (GridSize * 5)) * 0.2f;
+        // Try going above
+        float topMost = minY;
+        foreach (var rect in blockingRects)
+        {
+            if (rect.Top < topMost)
+            {
+                topMost = rect.Top;
+            }
+        }
+        float aboveY = topMost - GridSize;
 
-        // Calculate final offset, keeping wire within reasonable bounds
-        float offset = distance * (offsetFactor + secondaryOffset);
+        // Try going below
+        float bottomMost = maxY;
+        foreach (var rect in blockingRects)
+        {
+            if (rect.Bottom > bottomMost)
+            {
+                bottomMost = rect.Bottom;
+            }
+        }
+        float belowY = bottomMost + GridSize;
 
-        // Ensure the vertical segment stays between the two endpoints
-        float minX = System.Math.Min(start.X, end.X) + GridSize;
-        float maxX = System.Math.Max(start.X, end.X) - GridSize;
+        // Choose the closer option
+        float distAbove = System.Math.Abs((minY + maxY) / 2 - aboveY);
+        float distBelow = System.Math.Abs((minY + maxY) / 2 - belowY);
 
-        return System.Math.Clamp(baseX + offset, minX, maxX);
+        return distAbove <= distBelow ? SnapToGrid(aboveY) : SnapToGrid(belowY);
+    }
+
+    /// <summary>
+    /// Find a clear X position for vertical segment that avoids all components.
+    /// The position must be within [minAllowedX, maxAllowedX].
+    /// </summary>
+    private float FindClearVerticalX(Vector2 start, Vector2 end, float minAllowedX, float maxAllowedX)
+    {
+        float minY = System.Math.Min(start.Y, end.Y);
+        float maxY = System.Math.Max(start.Y, end.Y);
+
+        // Collect all components that could block a vertical line between start.Y and end.Y
+        var blockingRects = new List<Rectangle>();
+        foreach (var rect in _componentRects)
+        {
+            // Check if component overlaps the Y range
+            if (maxY >= rect.Top && minY <= rect.Bottom)
+            {
+                blockingRects.Add(rect);
+            }
+        }
+
+        // Calculate preferred X based on constraints
+        float preferredX;
+        bool goingLeft = maxAllowedX < float.MaxValue && minAllowedX <= float.MinValue + 1000;
+        bool goingRight = minAllowedX > float.MinValue + 1000 && maxAllowedX >= float.MaxValue - 1000;
+
+        if (goingLeft)
+        {
+            // Prefer leftmost position when going left
+            preferredX = end.X - GridSize;
+        }
+        else if (goingRight)
+        {
+            // Prefer rightmost position when going right
+            preferredX = start.X + GridSize;
+        }
+        else
+        {
+            // Normal case: prefer middle
+            preferredX = (start.X + end.X) / 2;
+        }
+
+        // Clamp to allowed range
+        if (minAllowedX > float.MinValue + 1000)
+        {
+            preferredX = System.Math.Max(preferredX, minAllowedX);
+        }
+        if (maxAllowedX < float.MaxValue - 1000)
+        {
+            preferredX = System.Math.Min(preferredX, maxAllowedX);
+        }
+
+        // If no blocking components, use preferred position
+        if (blockingRects.Count == 0)
+        {
+            return SnapToGrid(preferredX);
+        }
+
+        // Determine search range
+        float rangeStart = minAllowedX > float.MinValue + 1000 ? minAllowedX : System.Math.Min(start.X, end.X) - GridSize * 4;
+        float rangeEnd = maxAllowedX < float.MaxValue - 1000 ? maxAllowedX : System.Math.Max(start.X, end.X) + GridSize * 4;
+
+        // Find gaps between components where we can route
+        var gaps = FindVerticalGaps(blockingRects, rangeStart, rangeEnd);
+
+        // Try to find a gap that satisfies constraints
+        foreach (var gap in gaps)
+        {
+            float gapCenter = (gap.Left + gap.Right) / 2;
+            bool inRange = (minAllowedX <= float.MinValue + 1000 || gapCenter >= minAllowedX) &&
+                          (maxAllowedX >= float.MaxValue - 1000 || gapCenter <= maxAllowedX);
+            if (inRange)
+            {
+                return SnapToGrid(gapCenter);
+            }
+        }
+
+        // Route outside all components
+        if (goingRight || !goingLeft)
+        {
+            // Try right side first
+            float rightMost = float.MinValue;
+            foreach (var rect in blockingRects)
+            {
+                rightMost = System.Math.Max(rightMost, rect.Right);
+            }
+            float rightRoute = rightMost + GridSize;
+            if (minAllowedX <= float.MinValue + 1000 || rightRoute >= minAllowedX)
+            {
+                return SnapToGrid(rightRoute);
+            }
+        }
+
+        if (goingLeft || !goingRight)
+        {
+            // Try left side
+            float leftMost = float.MaxValue;
+            foreach (var rect in blockingRects)
+            {
+                leftMost = System.Math.Min(leftMost, rect.Left);
+            }
+            float leftRoute = leftMost - GridSize;
+            if (maxAllowedX >= float.MaxValue - 1000 || leftRoute <= maxAllowedX)
+            {
+                return SnapToGrid(leftRoute);
+            }
+        }
+
+        // Last resort: use preferred position even if blocked
+        return SnapToGrid(preferredX);
+    }
+
+    /// <summary>
+    /// Find vertical gaps between blocking rectangles.
+    /// </summary>
+    private List<(float Left, float Right)> FindVerticalGaps(List<Rectangle> rects, float rangeStart, float rangeEnd)
+    {
+        var gaps = new List<(float Left, float Right)>();
+
+        if (rects.Count == 0)
+        {
+            return gaps;
+        }
+
+        // Sort rectangles by their left edge
+        var sorted = rects.OrderBy(r => r.Left).ToList();
+
+        // Check gap before first rectangle
+        float minRange = rangeStart - GridSize * 2;
+        if (sorted[0].Left > minRange)
+        {
+            gaps.Add((minRange, sorted[0].Left - GridSize));
+        }
+
+        // Check gaps between rectangles
+        for (int i = 0; i < sorted.Count - 1; i++)
+        {
+            float gapStart = sorted[i].Right + GridSize;
+            float gapEnd = sorted[i + 1].Left - GridSize;
+            if (gapEnd > gapStart)
+            {
+                gaps.Add((gapStart, gapEnd));
+            }
+        }
+
+        // Check gap after last rectangle
+        float maxRange = rangeEnd + GridSize * 2;
+        if (sorted[sorted.Count - 1].Right < maxRange)
+        {
+            gaps.Add((sorted[sorted.Count - 1].Right + GridSize, maxRange));
+        }
+
+        return gaps;
+    }
+
+    /// <summary>
+    /// Snap a coordinate to the grid.
+    /// </summary>
+    private float SnapToGrid(float value)
+    {
+        return (float)(System.Math.Round(value / GridSize) * GridSize);
     }
 
     public void DrawWirePreview(SpriteBatch spriteBatch, Vector2 start, Vector2 end)
     {
-        var midX = CalculateWireOffset(start, end);
-        var mid1 = new Vector2(midX, start.Y);
-        var mid2 = new Vector2(midX, end.Y);
+        var path = CalculateWirePath(start, end);
 
         var color = new Color(150, 150, 170, 150);
-        _drawer.DrawLine(spriteBatch, start, mid1, color, 2);
-        _drawer.DrawLine(spriteBatch, mid1, mid2, color, 2);
-        _drawer.DrawLine(spriteBatch, mid2, end, color, 2);
+        for (int i = 0; i < path.Count - 1; i++)
+        {
+            _drawer.DrawLine(spriteBatch, path[i], path[i + 1], color);
+        }
     }
 
     public void DrawComponent(SpriteBatch spriteBatch, Component component)
@@ -212,13 +437,13 @@ public class CircuitRenderer
         }
     }
 
-    private void DrawNandGate(SpriteBatch spriteBatch, Component component, Rectangle rect, Color borderColor)
+    private void DrawNandGate(SpriteBatch spriteBatch, Component _, Rectangle rect, Color borderColor)
     {
         _drawer.DrawRectangle(spriteBatch, rect, ComponentColor);
         _drawer.DrawRectangleOutline(spriteBatch, rect, borderColor, 2);
 
         // Draw NAND symbol (simplified)
-        var center = new Vector2(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
+        var center = new Vector2(rect.X + (float)rect.Width / 2, rect.Y + (float)rect.Height / 2);
 
         // Draw label
         if (_font != null)
@@ -244,7 +469,7 @@ public class CircuitRenderer
         {
             var text = sw.IsOn ? "1" : "0";
             var textSize = _font.MeasureString(text);
-            var center = new Vector2(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
+            var center = new Vector2(rect.X + (float)rect.Width / 2, rect.Y + (float)rect.Height / 2);
             spriteBatch.DrawString(_font, text, center - textSize / 2, TextColor);
         }
     }
@@ -255,12 +480,12 @@ public class CircuitRenderer
         _drawer.DrawRectangleOutline(spriteBatch, rect, borderColor, 2);
 
         // Draw LED circle
-        var center = new Vector2(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
+        var center = new Vector2(rect.X + (float)rect.Width / 2, rect.Y + (float)rect.Height / 2);
         var color = led.IsLit ? LedOnColor : LedOffColor;
         _drawer.DrawFilledCircle(spriteBatch, center, 12, color);
     }
 
-    private void DrawClock(SpriteBatch spriteBatch, Clock clk, Rectangle rect, Color borderColor)
+    private void DrawClock(SpriteBatch spriteBatch, Clock _, Rectangle rect, Color borderColor)
     {
         _drawer.DrawRectangle(spriteBatch, rect, ComponentColor);
         _drawer.DrawRectangleOutline(spriteBatch, rect, borderColor, 2);
@@ -269,7 +494,7 @@ public class CircuitRenderer
         {
             var text = "CLK";
             var textSize = _font.MeasureString(text);
-            var center = new Vector2(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
+            var center = new Vector2(rect.X + (float)rect.Width / 2, rect.Y + (float)rect.Height / 2);
             spriteBatch.DrawString(_font, text, center - textSize / 2, TextColor);
         }
     }
@@ -288,7 +513,7 @@ public class CircuitRenderer
             if (text.Length > 8)
                 text = text.Substring(0, 7) + "..";
             var textSize = _font.MeasureString(text);
-            var center = new Vector2(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
+            var center = new Vector2(rect.X + (float)rect.Width / 2, rect.Y + (float)rect.Height / 2);
             spriteBatch.DrawString(_font, text, center - textSize / 2, TextColor);
         }
     }
@@ -383,7 +608,7 @@ public class CircuitRenderer
         {
             var text = component.Name;
             var textSize = _font.MeasureString(text);
-            var center = new Vector2(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
+            var center = new Vector2(rect.X + (float)rect.Width / 2, rect.Y + (float)rect.Height / 2);
             spriteBatch.DrawString(_font, text, center - textSize / 2, TextColor);
         }
     }

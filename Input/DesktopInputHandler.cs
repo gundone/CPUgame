@@ -89,6 +89,7 @@ public class DesktopInputHandler : IInputHandler
         // Text input
         state.EnterPressed = IsKeyJustPressed(Keys.Enter, keyboard);
         state.BackspacePressed = IsKeyJustPressed(Keys.Back, keyboard);
+        state.TabPressed = IsKeyJustPressed(Keys.Tab, keyboard);
         state.CharacterInput = GetCharacterInput(keyboard);
 
         // Movement
