@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using Microsoft.Xna.Framework;
+using CPUgame.Core.Primitives;
 
 namespace CPUgame.Core;
 
@@ -26,7 +26,7 @@ public class Pin
     /// Manual wire path for this connection. If set, the wire is drawn using this path
     /// instead of auto-routing. Only valid for input pins (stores path from source output to this input).
     /// </summary>
-    public List<Point>? ManualWirePath { get; set; }
+    public List<Point2>? ManualWirePath { get; set; }
 
     // Visual position relative to component
     public int LocalX { get; set; }

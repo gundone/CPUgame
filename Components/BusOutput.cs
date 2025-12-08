@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using CPUgame.Core;
 using CPUgame.Input;
-using Microsoft.Xna.Framework.Input;
 
 namespace CPUgame.Components;
 
@@ -150,10 +149,5 @@ public class BusOutput : Component
         {
             ResizeBits(false);
         }
-    }
-
-    public override void ApplyCommand(KeyboardState current, KeyboardState previous, double deltaTime)
-    {
-        base.ApplyCommand(current, previous, deltaTime);
     }
 }

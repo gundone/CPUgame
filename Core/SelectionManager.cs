@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.Xna.Framework;
+using CPUgame.Core.Primitives;
 
 namespace CPUgame.Core;
 
@@ -14,16 +14,16 @@ public class SelectionManager
 
     // Selection rectangle state
     public bool IsSelecting { get; private set; }
-    public Point SelectionStart { get; private set; }
-    public Point SelectionEnd { get; private set; }
+    public Point2 SelectionStart { get; private set; }
+    public Point2 SelectionEnd { get; private set; }
 
     // Dragging state
     public bool IsDraggingSingle { get; private set; }
     public bool IsDraggingMultiple { get; private set; }
     private Component? _draggingComponent;
-    private Point _dragOffset;
-    private Point _multiDragStart;
-    private Dictionary<Component, Point>? _multiDragOffsets;
+    private Point2 _dragOffset;
+    private Point2 _multiDragStart;
+    private Dictionary<Component, Point2>? _multiDragOffsets;
 
     // Wire selection
     public Pin? SelectedWire { get; set; }
@@ -59,7 +59,7 @@ public class SelectionManager
     /// <summary>
     /// Start selection rectangle
     /// </summary>
-    public void StartSelectionRect(Point worldPos, bool addToSelection)
+    public void StartSelectionRect(Point2 worldPos, bool addToSelection)
     {
         if (!addToSelection)
         {
@@ -75,7 +75,7 @@ public class SelectionManager
     /// <summary>
     /// Update selection rectangle
     /// </summary>
-    public void UpdateSelectionRect(Point worldPos)
+    public void UpdateSelectionRect(Point2 worldPos)
     {
         if (IsSelecting)
         {
@@ -112,7 +112,7 @@ public class SelectionManager
     /// <summary>
     /// Handle click on component
     /// </summary>
-    public void HandleComponentClick(Component component, bool addToSelection, Point worldMousePos)
+    public void HandleComponentClick(Component component, bool addToSelection, Point2 worldMousePos)
     {
         SelectedWire = null;
 
@@ -159,28 +159,28 @@ public class SelectionManager
         }
     }
 
-    private void StartSingleDrag(Component component, Point worldMousePos)
+    private void StartSingleDrag(Component component, Point2 worldMousePos)
     {
         IsDraggingSingle = true;
         _draggingComponent = component;
-        _dragOffset = new Point(worldMousePos.X - component.X, worldMousePos.Y - component.Y);
+        _dragOffset = new Point2(worldMousePos.X - component.X, worldMousePos.Y - component.Y);
     }
 
-    private void StartMultiDrag(Point worldMousePos)
+    private void StartMultiDrag(Point2 worldMousePos)
     {
         IsDraggingMultiple = true;
         _multiDragStart = worldMousePos;
-        _multiDragOffsets = new Dictionary<Component, Point>();
+        _multiDragOffsets = new Dictionary<Component, Point2>();
         foreach (var selected in GetSelectedComponents())
         {
-            _multiDragOffsets[selected] = new Point(selected.X, selected.Y);
+            _multiDragOffsets[selected] = new Point2(selected.X, selected.Y);
         }
     }
 
     /// <summary>
     /// Update dragging position
     /// </summary>
-    public void UpdateDrag(Point worldMousePos, int gridSize)
+    public void UpdateDrag(Point2 worldMousePos, int gridSize)
     {
         if (IsDraggingSingle && _draggingComponent != null)
         {

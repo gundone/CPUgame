@@ -1,4 +1,5 @@
 using System;
+using CPUgame.Core.Primitives;
 using Microsoft.Xna.Framework;
 
 namespace CPUgame.Core;
@@ -16,23 +17,30 @@ public class CameraController
     public float ZoomStep { get; set; } = 0.1f;
 
     private bool _isPanning;
-    private Point _panStartMouse;
+    private Point2 _panStartMouse;
     private Vector2 _panStartCamera;
 
     /// <summary>
     /// Handle zoom input (scroll wheel or pinch)
     /// </summary>
-    public void HandleZoom(int scrollDelta, Point screenMousePos, Func<Point, Vector2> screenToWorld)
+    public void HandleZoom(int scrollDelta, Point2 screenMousePos, Func<Point2, Vector2> screenToWorld)
     {
-        if (scrollDelta == 0) return;
+        if (scrollDelta == 0)
+        {
+            return;
+        }
 
         float oldZoom = Zoom;
         var worldMouseBefore = screenToWorld(screenMousePos);
 
         if (scrollDelta > 0)
+        {
             Zoom = Math.Min(Zoom + ZoomStep, MaxZoom);
+        }
         else
+        {
             Zoom = Math.Max(Zoom - ZoomStep, MinZoom);
+        }
 
         // Zoom towards mouse position
         if (Math.Abs(Zoom - oldZoom) > 0.001f)
@@ -45,9 +53,12 @@ public class CameraController
     /// <summary>
     /// Handle pinch zoom for touch input
     /// </summary>
-    public void HandlePinchZoom(float scale, Point screenCenter, Func<Point, Vector2> screenToWorld)
+    public void HandlePinchZoom(float scale, Point2 screenCenter, Func<Point2, Vector2> screenToWorld)
     {
-        if (Math.Abs(scale - 1f) < 0.001f) return;
+        if (Math.Abs(scale - 1f) < 0.001f)
+        {
+            return;
+        }
 
         float oldZoom = Zoom;
         var worldCenterBefore = screenToWorld(screenCenter);
@@ -64,7 +75,7 @@ public class CameraController
     /// <summary>
     /// Start panning operation
     /// </summary>
-    public void StartPan(Point screenMousePos)
+    public void StartPan(Point2 screenMousePos)
     {
         _isPanning = true;
         _panStartMouse = screenMousePos;
@@ -74,9 +85,12 @@ public class CameraController
     /// <summary>
     /// Update pan position while dragging
     /// </summary>
-    public void UpdatePan(Point screenMousePos)
+    public void UpdatePan(Point2 screenMousePos)
     {
-        if (!_isPanning) return;
+        if (!_isPanning)
+        {
+            return;
+        }
 
         float deltaX = (screenMousePos.X - _panStartMouse.X) / Zoom;
         float deltaY = (screenMousePos.Y - _panStartMouse.Y) / Zoom;
@@ -105,7 +119,7 @@ public class CameraController
     /// <summary>
     /// Convert screen coordinates to world coordinates
     /// </summary>
-    public Vector2 ScreenToWorld(Point screenPos)
+    public Vector2 ScreenToWorld(Point2 screenPos)
     {
         return new Vector2(
             screenPos.X / Zoom + Offset.X,
@@ -115,9 +129,9 @@ public class CameraController
     /// <summary>
     /// Convert screen coordinates to world point
     /// </summary>
-    public Point ScreenToWorldPoint(Point screenPos)
+    public Point2 ScreenToWorldPoint(Point2 screenPos)
     {
         var world = ScreenToWorld(screenPos);
-        return new Point((int)world.X, (int)world.Y);
+        return new Point2((int)world.X, (int)world.Y);
     }
 }

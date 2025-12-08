@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework;
+using CPUgame.Core.Primitives;
 
 namespace CPUgame.Input;
 
@@ -8,7 +8,7 @@ namespace CPUgame.Input;
 public class InputState
 {
     // Pointer (mouse/touch) state
-    public Point PointerPosition { get; set; }
+    public Point2 PointerPosition { get; set; }
     public bool PrimaryPressed { get; set; }      // Left mouse / single touch
     public bool PrimaryJustPressed { get; set; }
     public bool PrimaryJustReleased { get; set; }

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
-using Microsoft.Xna.Framework;
+using CPUgame.Core.Primitives;
 using CPUgame.Components;
 
 namespace CPUgame.Core;
@@ -180,12 +180,12 @@ public static class CircuitSerializer
                     // Restore manual wire path if present
                     if (conn.ManualWirePath != null && conn.ManualWirePath.Count > 0)
                     {
-                        toPin.ManualWirePath = new List<Point>();
+                        toPin.ManualWirePath = new List<Point2>();
                         foreach (var pointArray in conn.ManualWirePath)
                         {
                             if (pointArray.Length >= 2)
                             {
-                                toPin.ManualWirePath.Add(new Point(pointArray[0], pointArray[1]));
+                                toPin.ManualWirePath.Add(new Point2(pointArray[0], pointArray[1]));
                             }
                         }
                     }

@@ -1,5 +1,7 @@
 using System;
+using CPUgame.Converters;
 using CPUgame.Core;
+using CPUgame.Core.Primitives;
 using CPUgame.UI;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -12,8 +14,8 @@ public interface IGameRenderer
     Texture2D Pixel { get; }
     float TitleFontScale { get; set; }
     void Initialize(GraphicsDevice graphicsDevice, SpriteFont font);
-    void DrawWorld(SpriteBatch spriteBatch, Circuit circuit, CameraController camera, SelectionManager selection, IWireManager wireManager, IManualWireService manualWireService, Pin? hoveredPin, Point mousePos, int screenWidth, int screenHeight, bool isDraggingItem);
-    void DrawUI(SpriteBatch spriteBatch, IToolboxManager toolboxManager, MainMenu mainMenu, IStatusService statusService, IDialogService dialogService, ITruthTableService truthTableService, CameraController camera, Point mousePos, int screenWidth, int screenHeight, SpriteFont font);
+    void DrawWorld(SpriteBatch spriteBatch, Circuit circuit, CameraController camera, SelectionManager selection, IWireManager wireManager, IManualWireService manualWireService, Pin? hoveredPin, Point2 mousePos, int screenWidth, int screenHeight, bool isDraggingItem);
+    void DrawUI(SpriteBatch spriteBatch, IToolboxManager toolboxManager, MainMenu mainMenu, IStatusService statusService, IDialogService dialogService, ITruthTableService truthTableService, CameraController camera, Point2 mousePos, int screenWidth, int screenHeight, SpriteFont font);
 }
 
 public class GameRenderer : IGameRenderer
@@ -36,7 +38,7 @@ public class GameRenderer : IGameRenderer
         _font = font;
     }
 
-    public void DrawWorld(SpriteBatch spriteBatch, Circuit circuit, CameraController camera, SelectionManager selection, IWireManager wireManager, IManualWireService manualWireService, Pin? hoveredPin, Point mousePos, int screenWidth, int screenHeight, bool isDraggingItem)
+    public void DrawWorld(SpriteBatch spriteBatch, Circuit circuit, CameraController camera, SelectionManager selection, IWireManager wireManager, IManualWireService manualWireService, Pin? hoveredPin, Point2 mousePos, int screenWidth, int screenHeight, bool isDraggingItem)
     {
         _circuitRenderer.DrawGrid(spriteBatch, camera.Offset.X, camera.Offset.Y, screenWidth, screenHeight, camera.Zoom);
         _circuitRenderer.DrawCircuit(spriteBatch, circuit, selection.SelectedWire);
@@ -108,14 +110,15 @@ public class GameRenderer : IGameRenderer
         }
     }
 
-    public void DrawUI(SpriteBatch spriteBatch, IToolboxManager toolboxManager, MainMenu mainMenu, IStatusService statusService, IDialogService dialogService, ITruthTableService truthTableService, CameraController camera, Point mousePos, int screenWidth, int screenHeight, SpriteFont font)
+    public void DrawUI(SpriteBatch spriteBatch, IToolboxManager toolboxManager, MainMenu mainMenu, IStatusService statusService, IDialogService dialogService, ITruthTableService truthTableService, CameraController camera, Point2 mousePos, int screenWidth, int screenHeight, SpriteFont font)
     {
+        var mousePosMonoGame = mousePos.ToMonoGame();
         DrawZoomIndicator(spriteBatch, camera.Zoom, mainMenu.Height);
-        toolboxManager.MainToolbox.Draw(spriteBatch, Pixel, font, mousePos);
-        toolboxManager.UserToolbox.Draw(spriteBatch, Pixel, font, mousePos);
-        truthTableService.Draw(spriteBatch, Pixel, font, mousePos);
+        toolboxManager.MainToolbox.Draw(spriteBatch, Pixel, font, mousePosMonoGame);
+        toolboxManager.UserToolbox.Draw(spriteBatch, Pixel, font, mousePosMonoGame);
+        truthTableService.Draw(spriteBatch, Pixel, font, mousePosMonoGame);
         DrawStatusBar(spriteBatch, statusService.Message, screenWidth, screenHeight);
-        mainMenu.Draw(spriteBatch, Pixel, font, screenWidth, mousePos);
+        mainMenu.Draw(spriteBatch, Pixel, font, screenWidth, mousePosMonoGame);
 
         if (dialogService.IsActive)
         {

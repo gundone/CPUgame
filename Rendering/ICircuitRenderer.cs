@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CPUgame.Core;
+using CPUgame.Core.Primitives;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -18,7 +19,7 @@ public interface ICircuitRenderer
     void DrawCircuit(SpriteBatch spriteBatch, Circuit circuit, Pin? selectedWire = null);
     void DrawWire(SpriteBatch spriteBatch, Pin from, Pin to, bool isSelected = false);
     void DrawWirePreview(SpriteBatch spriteBatch, Vector2 start, Vector2 end);
-    void DrawManualWirePreview(SpriteBatch spriteBatch, IReadOnlyList<Point> pathPoints, Vector2 currentMousePos);
+    void DrawManualWirePreview(SpriteBatch spriteBatch, IReadOnlyList<Point2> pathPoints, Vector2 currentMousePos);
     void DrawComponent(SpriteBatch spriteBatch, Component component);
     void DrawPinHighlight(SpriteBatch spriteBatch, Pin pin);
 

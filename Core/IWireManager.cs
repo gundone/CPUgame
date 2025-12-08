@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework;
+using CPUgame.Core.Primitives;
 
 namespace CPUgame.Core;
 
@@ -7,7 +7,7 @@ public interface IWireManager
     Pin? WireStartPin { get; }
     Pin? HoveredPin { get; }
     bool IsDraggingWire { get; }
-    void Update(Circuit circuit, Point worldMousePos, bool primaryJustPressed, bool primaryJustReleased, bool shiftHeld);
+    void Update(Circuit circuit, Point2 worldMousePos, bool primaryJustPressed, bool primaryJustReleased, bool shiftHeld);
     void Cancel();
 }
 
@@ -24,7 +24,7 @@ public class WireManager : IWireManager
         _statusService = statusService;
     }
 
-    public void Update(Circuit circuit, Point worldMousePos, bool primaryJustPressed, bool primaryJustReleased, bool shiftHeld)
+    public void Update(Circuit circuit, Point2 worldMousePos, bool primaryJustPressed, bool primaryJustReleased, bool shiftHeld)
     {
         HoveredPin = circuit.GetPinAt(worldMousePos.X, worldMousePos.Y);
 

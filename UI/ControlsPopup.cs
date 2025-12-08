@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using CPUgame.Core;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;

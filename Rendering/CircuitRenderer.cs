@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CPUgame.Components;
 using CPUgame.Core;
+using CPUgame.Core.Primitives;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -476,7 +477,7 @@ public class CircuitRenderer : ICircuitRenderer
         }
     }
 
-    public void DrawManualWirePreview(SpriteBatch spriteBatch, IReadOnlyList<Point> pathPoints, Vector2 currentMousePos)
+    public void DrawManualWirePreview(SpriteBatch spriteBatch, IReadOnlyList<Point2> pathPoints, Vector2 currentMousePos)
     {
         if (pathPoints.Count == 0)
         {

@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using Microsoft.Xna.Framework;
+using CPUgame.Core.Primitives;
 
 namespace CPUgame.Core;
 
@@ -37,7 +37,7 @@ public interface IManualWireService
     /// <summary>
     /// Current path points (grid-snapped).
     /// </summary>
-    IReadOnlyList<Point> PathPoints { get; }
+    IReadOnlyList<Point2> PathPoints { get; }
 
     /// <summary>
     /// Grid size for snapping.
@@ -52,7 +52,7 @@ public interface IManualWireService
     /// <summary>
     /// Add a point to the path (will be snapped to grid).
     /// </summary>
-    void AddPoint(Point worldPos);
+    void AddPoint(Point2 worldPos);
 
     /// <summary>
     /// Complete the wire connection to the target pin.
@@ -83,7 +83,7 @@ public interface IManualWireService
     /// <summary>
     /// Get node index at world position, or -1 if none.
     /// </summary>
-    int GetNodeAtPosition(Point worldPos, int tolerance = 10);
+    int GetNodeAtPosition(Point2 worldPos, int tolerance = 10);
 
     /// <summary>
     /// Start dragging a node.
@@ -93,7 +93,7 @@ public interface IManualWireService
     /// <summary>
     /// Update the position of the dragging node.
     /// </summary>
-    void UpdateDraggingNode(Point worldPos);
+    void UpdateDraggingNode(Point2 worldPos);
 
     /// <summary>
     /// Stop dragging the node.
@@ -110,7 +110,7 @@ public interface IManualWireService
     /// Add a new node at the given position on the wire.
     /// Finds the nearest segment and inserts the node.
     /// </summary>
-    bool AddNodeAtPosition(Point worldPos);
+    bool AddNodeAtPosition(Point2 worldPos);
 
     /// <summary>
     /// Remove the node at the given index.
@@ -122,13 +122,13 @@ public interface IManualWireService
     /// Get the segment index at world position, or -1 if none.
     /// Returns the index of the first point of the segment.
     /// </summary>
-    int GetSegmentAtPosition(Point worldPos, int tolerance = 8);
+    int GetSegmentAtPosition(Point2 worldPos, int tolerance = 8);
 }
 
 public class ManualWireService : IManualWireService
 {
     private readonly IStatusService _statusService;
-    private readonly List<Point> _pathPoints = new();
+    private readonly List<Point2> _pathPoints = new();
     private int _gridSize = 20;
 
     // Wire editing state
@@ -137,7 +137,7 @@ public class ManualWireService : IManualWireService
 
     public bool IsActive { get; private set; }
     public Pin? StartPin { get; private set; }
-    public IReadOnlyList<Point> PathPoints => _pathPoints;
+    public IReadOnlyList<Point2> PathPoints => _pathPoints;
     public int GridSize => _gridSize;
 
     public bool IsEditingWire => _editingWire != null;
@@ -158,10 +158,10 @@ public class ManualWireService : IManualWireService
         _pathPoints.Clear();
 
         // Add starting point (the pin location, snapped to grid)
-        _pathPoints.Add(SnapToGrid(new Point(pin.WorldX, pin.WorldY)));
+        _pathPoints.Add(SnapToGrid(new Point2(pin.WorldX, pin.WorldY)));
     }
 
-    public void AddPoint(Point worldPos)
+    public void AddPoint(Point2 worldPos)
     {
         if (!IsActive)
         {
@@ -195,7 +195,7 @@ public class ManualWireService : IManualWireService
         }
 
         // Add final point (target pin location)
-        var endPoint = SnapToGrid(new Point(targetPin.WorldX, targetPin.WorldY));
+        var endPoint = SnapToGrid(new Point2(targetPin.WorldX, targetPin.WorldY));
         if (_pathPoints.Count == 0 || _pathPoints[^1] != endPoint)
         {
             _pathPoints.Add(endPoint);
@@ -203,20 +203,20 @@ public class ManualWireService : IManualWireService
 
         // Determine which pin is input and which is output
         Pin inputPin, outputPin;
-        List<Point> path;
+        List<Point2> path;
 
         if (StartPin.Type == PinType.Output && targetPin.Type == PinType.Input)
         {
             outputPin = StartPin;
             inputPin = targetPin;
-            path = new List<Point>(_pathPoints);
+            path = new List<Point2>(_pathPoints);
         }
         else
         {
             outputPin = targetPin;
             inputPin = StartPin;
             // Reverse path since we drew from input to output
-            path = new List<Point>(_pathPoints);
+            path = new List<Point2>(_pathPoints);
             path.Reverse();
         }
 
@@ -264,7 +264,7 @@ public class ManualWireService : IManualWireService
         _draggingNodeIndex = -1;
     }
 
-    public int GetNodeAtPosition(Point worldPos, int tolerance = 10)
+    public int GetNodeAtPosition(Point2 worldPos, int tolerance = 10)
     {
         if (_editingWire?.ManualWirePath == null)
         {
@@ -304,7 +304,7 @@ public class ManualWireService : IManualWireService
         }
     }
 
-    public void UpdateDraggingNode(Point worldPos)
+    public void UpdateDraggingNode(Point2 worldPos)
     {
         if (_editingWire?.ManualWirePath == null || _draggingNodeIndex < 0)
         {
@@ -335,13 +335,13 @@ public class ManualWireService : IManualWireService
         var outputPin = inputPin.ConnectedTo;
 
         // Update first point (output pin location)
-        path[0] = new Point(outputPin.WorldX, outputPin.WorldY);
+        path[0] = new Point2(outputPin.WorldX, outputPin.WorldY);
 
         // Update last point (input pin location)
-        path[path.Count - 1] = new Point(inputPin.WorldX, inputPin.WorldY);
+        path[^1] = new Point2(inputPin.WorldX, inputPin.WorldY);
     }
 
-    public int GetSegmentAtPosition(Point worldPos, int tolerance = 8)
+    public int GetSegmentAtPosition(Point2 worldPos, int tolerance = 8)
     {
         if (_editingWire?.ManualWirePath == null)
         {
@@ -361,7 +361,7 @@ public class ManualWireService : IManualWireService
         return -1;
     }
 
-    public bool AddNodeAtPosition(Point worldPos)
+    public bool AddNodeAtPosition(Point2 worldPos)
     {
         if (_editingWire?.ManualWirePath == null)
         {
@@ -408,7 +408,7 @@ public class ManualWireService : IManualWireService
         return true;
     }
 
-    private bool IsPointNearSegment(Point p, Point segStart, Point segEnd, int tolerance)
+    private bool IsPointNearSegment(Point2 p, Point2 segStart, Point2 segEnd, int tolerance)
     {
         float px = p.X, py = p.Y;
         float x1 = segStart.X, y1 = segStart.Y;
@@ -434,10 +434,10 @@ public class ManualWireService : IManualWireService
         return distSq2 <= tolerance * tolerance;
     }
 
-    private Point SnapToGrid(Point p)
+    private Point2 SnapToGrid(Point2 p)
     {
         int x = (int)(System.Math.Round((double)p.X / _gridSize) * _gridSize);
         int y = (int)(System.Math.Round((double)p.Y / _gridSize) * _gridSize);
-        return new Point(x, y);
+        return new Point2(x, y);
     }
 }

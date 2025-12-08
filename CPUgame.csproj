@@ -6,6 +6,15 @@
     <PublishReadyToRun>false</PublishReadyToRun>
     <TieredCompilation>false</TieredCompilation>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- Exclude subproject folders since they're separate projects -->
+    <Compile Remove="CPUgame.Core\**" />
+    <None Remove="CPUgame.Core\**" />
+    <EmbeddedResource Remove="CPUgame.Core\**" />
+    <Compile Remove="CPUgame.Rendering.Abstractions\**" />
+    <None Remove="CPUgame.Rendering.Abstractions\**" />
+    <EmbeddedResource Remove="CPUgame.Rendering.Abstractions\**" />
+  </ItemGroup>
   <PropertyGroup>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Icon.ico</ApplicationIcon>
@@ -26,6 +35,10 @@
   <ItemGroup>
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.*" />
     <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.*" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="CPUgame.Core\CPUgame.Core.csproj" />
+    <ProjectReference Include="CPUgame.Rendering.Abstractions\CPUgame.Rendering.Abstractions.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="Localization\*.json">

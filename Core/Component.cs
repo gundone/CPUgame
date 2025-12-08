@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.Xna.Framework.Input;
 
 namespace CPUgame.Core;
 
@@ -89,45 +88,4 @@ public abstract class Component
     }
 
     public int GridSize { get; set; } = 20;
-    public double MoveInterval { get; set; } = 0.1; // seconds between moves (2 cells per second)
-
-    private double _moveTimer;
-
-    public virtual void ApplyCommand(KeyboardState current, KeyboardState previous, double deltaTime)
-    {
-        bool wantsMove = current.IsKeyDown(Keys.Left) || current.IsKeyDown(Keys.Right) ||
-                         current.IsKeyDown(Keys.Up) || current.IsKeyDown(Keys.Down);
-
-        if (wantsMove)
-        {
-            _moveTimer += deltaTime;
-
-            // Move immediately on first press, then wait for interval
-            bool isFirstPress = !previous.IsKeyDown(Keys.Left) && !previous.IsKeyDown(Keys.Right) &&
-                               !previous.IsKeyDown(Keys.Up) && !previous.IsKeyDown(Keys.Down);
-
-            if (isFirstPress || _moveTimer >= MoveInterval)
-            {
-                if (current.IsKeyDown(Keys.Left))
-                    X -= GridSize;
-                if (current.IsKeyDown(Keys.Right))
-                    X += GridSize;
-                if (current.IsKeyDown(Keys.Up))
-                    Y -= GridSize;
-                if (current.IsKeyDown(Keys.Down))
-                    Y += GridSize;
-
-                _moveTimer = 0;
-            }
-        }
-        else
-        {
-            _moveTimer = 0;
-        }
-    }
-
-    protected static bool IsKeyJustPressed(Keys key, KeyboardState current, KeyboardState previous)
-    {
-        return current.IsKeyDown(key) && !previous.IsKeyDown(key);
-    }
 }

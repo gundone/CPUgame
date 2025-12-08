@@ -1,6 +1,8 @@
 using System.Linq;
 using CPUgame.Components;
+using CPUgame.Converters;
 using CPUgame.Core;
+using CPUgame.Core.Primitives;
 using CPUgame.Input;
 using CPUgame.Rendering;
 using CPUgame.UI;
@@ -286,6 +288,7 @@ public class GameField : Game, IGameField
         _inputState.Clear();
         _inputHandler.Update(_inputState, gameTime.ElapsedGameTime.TotalSeconds);
         var mousePos = _inputState.PointerPosition;
+        var mousePosMonoGame = mousePos.ToMonoGame();
         var circuit = _circuitManager.Circuit;
 
         _statusService.Update(gameTime.ElapsedGameTime.TotalSeconds);
@@ -294,7 +297,7 @@ public class GameField : Game, IGameField
         if (_profileDialog.IsVisible)
         {
             _profileDialog.HandleInput(_inputState, _inputHandler);
-            _profileDialog.Update(mousePos, _inputState.PrimaryJustPressed, ScreenWidth, ScreenHeight, _inputHandler);
+            _profileDialog.Update(mousePosMonoGame, _inputState.PrimaryJustPressed, ScreenWidth, ScreenHeight, _inputHandler);
             base.Update(gameTime);
             return;
         }
@@ -302,7 +305,7 @@ public class GameField : Game, IGameField
         // Handle level selection popup (modal, blocks everything else)
         if (_levelSelectionPopup.IsVisible)
         {
-            _levelSelectionPopup.Update(mousePos, _inputState.PrimaryJustPressed, _inputState.ScrollDelta, ScreenWidth, ScreenHeight);
+            _levelSelectionPopup.Update(mousePosMonoGame, _inputState.PrimaryJustPressed, _inputState.ScrollDelta, ScreenWidth, ScreenHeight);
             base.Update(gameTime);
             return;
         }
@@ -310,7 +313,7 @@ public class GameField : Game, IGameField
         // Handle level description popup (modal)
         if (_levelDescriptionPopup.IsVisible)
         {
-            _levelDescriptionPopup.Update(mousePos, _inputState.PrimaryJustPressed, ScreenWidth, ScreenHeight);
+            _levelDescriptionPopup.Update(mousePosMonoGame, _inputState.PrimaryJustPressed, ScreenWidth, ScreenHeight);
             base.Update(gameTime);
             return;
         }
@@ -318,7 +321,7 @@ public class GameField : Game, IGameField
         // Handle level completed popup (modal)
         if (_levelCompletedPopup.IsVisible)
         {
-            _levelCompletedPopup.Update(mousePos, _inputState.PrimaryJustPressed, ScreenWidth, ScreenHeight);
+            _levelCompletedPopup.Update(mousePosMonoGame, _inputState.PrimaryJustPressed, ScreenWidth, ScreenHeight);
             base.Update(gameTime);
             return;
         }
@@ -326,7 +329,7 @@ public class GameField : Game, IGameField
         // Handle controls popup (modal)
         if (_controlsPopup.IsVisible)
         {
-            _controlsPopup.Update(mousePos, _inputState.PrimaryJustPressed, ScreenWidth, ScreenHeight);
+            _controlsPopup.Update(mousePosMonoGame, _inputState.PrimaryJustPressed, ScreenWidth, ScreenHeight);
             base.Update(gameTime);
             return;
         }
@@ -335,7 +338,7 @@ public class GameField : Game, IGameField
         if (_componentEditDialog.IsVisible)
         {
             _componentEditDialog.HandleInput(_inputState, _inputHandler);
-            _componentEditDialog.Update(mousePos, _inputState.PrimaryJustPressed, ScreenWidth, ScreenHeight);
+            _componentEditDialog.Update(mousePosMonoGame, _inputState.PrimaryJustPressed, ScreenWidth, ScreenHeight);
             base.Update(gameTime);
             return;
         }
@@ -347,12 +350,12 @@ public class GameField : Game, IGameField
             return;
         }
 
-        _mainMenu.Update(mousePos, _inputState.PrimaryJustPressed, _inputState.PrimaryJustReleased, ScreenWidth);
-        if (_mainMenu.ContainsPoint(mousePos)) { base.Update(gameTime); return; }
+        _mainMenu.Update(mousePosMonoGame, _inputState.PrimaryJustPressed, _inputState.PrimaryJustReleased, ScreenWidth);
+        if (_mainMenu.ContainsPoint(mousePosMonoGame)) { base.Update(gameTime); return; }
 
         // Update truth table window
-        _truthTableService.Update(mousePos, _inputState.PrimaryPressed, _inputState.PrimaryJustPressed, _inputState.PrimaryJustReleased, _inputState.ScrollDelta, circuit, gameTime.ElapsedGameTime.TotalSeconds);
-        if (_truthTableService.ContainsPoint(mousePos)) { base.Update(gameTime); return; }
+        _truthTableService.Update(mousePosMonoGame, _inputState.PrimaryPressed, _inputState.PrimaryJustPressed, _inputState.PrimaryJustReleased, _inputState.ScrollDelta, circuit, gameTime.ElapsedGameTime.TotalSeconds);
+        if (_truthTableService.ContainsPoint(mousePosMonoGame)) { base.Update(gameTime); return; }
 
         if (_inputState.CtrlHeld && _inputState.ScrollDelta != 0)
         {
@@ -360,11 +363,11 @@ public class GameField : Game, IGameField
         }
 
         var worldMousePos = _camera.ScreenToWorldPoint(mousePos);
-        bool clickedOnEmpty = !_toolboxManager.ContainsPoint(mousePos) && !_truthTableService.ContainsPoint(mousePos) &&
+        bool clickedOnEmpty = !_toolboxManager.ContainsPoint(mousePosMonoGame) && !_truthTableService.ContainsPoint(mousePosMonoGame) &&
                               circuit.GetComponentAt(worldMousePos.X, worldMousePos.Y) == null &&
                               circuit.GetPinAt(worldMousePos.X, worldMousePos.Y) == null;
 
-        if ((_inputState.MiddleJustPressed || _inputState.SecondaryJustPressed) && !_toolboxManager.ContainsPoint(mousePos) && !_truthTableService.ContainsPoint(mousePos))
+        if ((_inputState.MiddleJustPressed || _inputState.SecondaryJustPressed) && !_toolboxManager.ContainsPoint(mousePosMonoGame) && !_truthTableService.ContainsPoint(mousePosMonoGame))
         {
             _camera.StartPan(mousePos);
         }
@@ -387,16 +390,20 @@ public class GameField : Game, IGameField
         }
 
         _commandHandler.HandleCommands(_inputState, _selection, circuit, _wireManager, _gameRenderer.GridSize);
-        _toolboxManager.Update(mousePos, _inputState.PrimaryPressed, _inputState.PrimaryJustPressed, _inputState.PrimaryJustReleased);
+        _toolboxManager.Update(mousePosMonoGame, _inputState.PrimaryPressed, _inputState.PrimaryJustPressed, _inputState.PrimaryJustReleased);
 
         worldMousePos = _camera.ScreenToWorldPoint(mousePos);
-        var placedComponent = _toolboxManager.HandleDrops(mousePos, worldMousePos, circuit, _gameRenderer.GridSize, _commandHandler.ShowPinValues, _inputState.PrimaryJustReleased, _statusService, _componentBuilder);
+        var placedComponent = _toolboxManager.HandleDrops(mousePosMonoGame, worldMousePos.ToMonoGame(), circuit, _gameRenderer.GridSize, _commandHandler.ShowPinValues, _inputState.PrimaryJustReleased, _statusService, _componentBuilder);
         if (placedComponent != null)
+        {
             _selection.SelectComponent(placedComponent);
+        }
 
         if (_toolboxManager.IsInteracting)
+        {
             _wireManager.Cancel();
-        else if (!_toolboxManager.ContainsPoint(mousePos))
+        }
+        else if (!_toolboxManager.ContainsPoint(mousePosMonoGame))
         {
             foreach (var clock in circuit.Components.OfType<Clock>())
                 clock.Update(gameTime.ElapsedGameTime.TotalSeconds);
@@ -409,7 +416,7 @@ public class GameField : Game, IGameField
         base.Update(gameTime);
     }
 
-    private void HandleCircuitInteraction(Point worldMousePos, Circuit circuit)
+    private void HandleCircuitInteraction(Point2 worldMousePos, Circuit circuit)
     {
         // Handle manual wire mode
         if (_manualWireService.IsActive)
@@ -523,7 +530,7 @@ public class GameField : Game, IGameField
         }
     }
 
-    private void HandleWireNodeEditing(Point worldMousePos)
+    private void HandleWireNodeEditing(Point2 worldMousePos)
     {
         // Escape to exit editing mode
         if (_inputState.EscapeCommand)
@@ -603,7 +610,7 @@ public class GameField : Game, IGameField
         }
     }
 
-    private void HandleManualWireMode(Point worldMousePos, Circuit circuit)
+    private void HandleManualWireMode(Point2 worldMousePos, Circuit circuit)
     {
         // Escape to cancel
         if (_inputState.EscapeCommand)

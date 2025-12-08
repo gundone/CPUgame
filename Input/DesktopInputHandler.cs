@@ -1,6 +1,7 @@
 using System;
-using Microsoft.Xna.Framework;
+using CPUgame.Core.Primitives;
 using Microsoft.Xna.Framework.Input;
+using Point = Microsoft.Xna.Framework.Point;
 
 namespace CPUgame.Input;
 
@@ -32,7 +33,7 @@ public class DesktopInputHandler : IInputHandler
         var keyboard = Keyboard.GetState();
 
         // Pointer position
-        state.PointerPosition = new Point(mouse.X, mouse.Y);
+        state.PointerPosition = new Point2(mouse.X, mouse.Y);
 
         // Primary button (left mouse)
         state.PrimaryPressed = mouse.LeftButton == ButtonState.Pressed;

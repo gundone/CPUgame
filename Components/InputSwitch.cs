@@ -1,5 +1,4 @@
 using CPUgame.Core;
-using Microsoft.Xna.Framework.Input;
 
 namespace CPUgame.Components;
 
@@ -29,15 +28,5 @@ public class InputSwitch : Component
     public override void Evaluate()
     {
         Output.Value = IsOn ? Signal.High : Signal.Low;
-    }
-
-    public override void ApplyCommand(KeyboardState current, KeyboardState previous, double deltaTime)
-    {
-        base.ApplyCommand(current, previous, deltaTime);
-
-        if (IsKeyJustPressed(Keys.Space, current, previous))
-        {
-            Toggle();
-        }
     }
 }
