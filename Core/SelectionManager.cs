@@ -143,6 +143,11 @@ public class SelectionManager
     }
 
     /// <summary>
+    /// Check if the selected wire is a manual wire (has ManualWirePath).
+    /// </summary>
+    public bool IsSelectedWireManual => SelectedWire?.ManualWirePath != null && SelectedWire.ManualWirePath.Count >= 2;
+
+    /// <summary>
     /// Handle click on empty space
     /// </summary>
     public void HandleEmptyClick(bool addToSelection)

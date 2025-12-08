@@ -21,7 +21,7 @@ public class LevelSelectionPopup
     private int _hoveredTierIndex = -1;
 
     private const int PopupWidth = 400;
-    private const int PopupHeight = 350;
+    private const int PopupHeight = 550;
     private const int TitleHeight = 32;
     private const int TierHeaderHeight = 28;
     private const int LevelItemHeight = 36;

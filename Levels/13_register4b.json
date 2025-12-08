@@ -1,0 +1,28 @@
+{
+  "id": "register4b",
+  "name": "4-bit Register",
+  "description": "Create a 4-bit register: four D inputs, CLK, LD enable, and four Q outputs",
+  "fullDescription": "The 4-bit register stores a nibble (4 bits) of data. It has four data inputs (D0-D3), a clock (CLK), a load enable (LD), and four outputs (Q0-Q3). When CLK=1 AND LD=1, all four outputs follow their corresponding inputs simultaneously. This is the building block for CPU registers, program counters, and data buffers. Build it using four 1-bit registers working in parallel, sharing the same CLK and LD signals.",
+  "tier": 4,
+  "componentName": "register4b",
+  "inputCount": 6,
+  "outputCount": 4,
+  "truthTable": [
+    { "inputs": [false, false, false, false, true, true], "outputs": [false, false, false, false] },
+    { "inputs": [true, false, false, false, true, true], "outputs": [true, false, false, false] },
+    { "inputs": [false, true, false, false, true, true], "outputs": [false, true, false, false] },
+    { "inputs": [true, true, false, false, true, true], "outputs": [true, true, false, false] },
+    { "inputs": [false, false, true, false, true, true], "outputs": [false, false, true, false] },
+    { "inputs": [true, false, true, false, true, true], "outputs": [true, false, true, false] },
+    { "inputs": [false, true, true, false, true, true], "outputs": [false, true, true, false] },
+    { "inputs": [true, true, true, false, true, true], "outputs": [true, true, true, false] },
+    { "inputs": [false, false, false, true, true, true], "outputs": [false, false, false, true] },
+    { "inputs": [true, false, false, true, true, true], "outputs": [true, false, false, true] },
+    { "inputs": [false, true, false, true, true, true], "outputs": [false, true, false, true] },
+    { "inputs": [true, true, false, true, true, true], "outputs": [true, true, false, true] },
+    { "inputs": [false, false, true, true, true, true], "outputs": [false, false, true, true] },
+    { "inputs": [true, false, true, true, true, true], "outputs": [true, false, true, true] },
+    { "inputs": [false, true, true, true, true, true], "outputs": [false, true, true, true] },
+    { "inputs": [true, true, true, true, true, true], "outputs": [true, true, true, true] }
+  ]
+}

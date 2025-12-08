@@ -7,15 +7,15 @@ public enum Signal
 {
     Low = 0,
     High = 1,
-    Undefined = -1
+    // Undefined = -1
 }
 
 public static class SignalExtensions
 {
     public static Signal Nand(this Signal a, Signal b)
     {
-        if (a == Signal.Undefined || b == Signal.Undefined)
-            return Signal.Undefined;
+        //if (a == Signal.Undefined || b == Signal.Undefined)
+        //    return Signal.Undefined;
 
         return (a == Signal.High && b == Signal.High) ? Signal.Low : Signal.High;
     }
@@ -26,7 +26,7 @@ public static class SignalExtensions
         {
             Signal.High => Signal.Low,
             Signal.Low => Signal.High,
-            _ => Signal.Undefined
+            _ => Signal.Low
         };
     }
 

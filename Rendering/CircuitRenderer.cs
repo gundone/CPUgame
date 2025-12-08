@@ -68,6 +68,9 @@ public class CircuitRenderer : ICircuitRenderer
     // Cache for component rectangles during wire drawing
     private List<Rectangle> _componentRects = new();
 
+    // Segment overlap tracking
+    private Dictionary<(int, int, int, int), int> _segmentCounts = new();
+
     public void DrawCircuit(SpriteBatch spriteBatch, Circuit circuit, Pin? selectedWire = null)
     {
         // Cache component rectangles for wire routing
@@ -82,7 +85,20 @@ public class CircuitRenderer : ICircuitRenderer
                 comp.Height + GridSize));
         }
 
-        // Draw wires first (behind components)
+        // First pass: count overlapping segments
+        _segmentCounts.Clear();
+        foreach (var component in circuit.Components)
+        {
+            foreach (var input in component.Inputs)
+            {
+                if (input.ConnectedTo != null)
+                {
+                    CountWireSegments(input.ConnectedTo, input);
+                }
+            }
+        }
+
+        // Second pass: draw wires with thickness based on overlap
         foreach (var component in circuit.Components)
         {
             foreach (var input in component.Inputs)
@@ -102,6 +118,54 @@ public class CircuitRenderer : ICircuitRenderer
         }
     }
 
+    private void CountWireSegments(Pin from, Pin to)
+    {
+        List<Vector2> path;
+        if (to.ManualWirePath != null && to.ManualWirePath.Count >= 2)
+        {
+            path = new List<Vector2>();
+            foreach (var point in to.ManualWirePath)
+            {
+                path.Add(new Vector2(point.X, point.Y));
+            }
+        }
+        else
+        {
+            var start = new Vector2(from.WorldX, from.WorldY);
+            var end = new Vector2(to.WorldX, to.WorldY);
+            path = CalculateWirePath(start, end);
+        }
+
+        for (int i = 0; i < path.Count - 1; i++)
+        {
+            var key = NormalizeSegment(path[i], path[i + 1]);
+            if (_segmentCounts.ContainsKey(key))
+            {
+                _segmentCounts[key]++;
+            }
+            else
+            {
+                _segmentCounts[key] = 1;
+            }
+        }
+    }
+
+    private (int, int, int, int) NormalizeSegment(Vector2 a, Vector2 b)
+    {
+        // Snap to grid and normalize order for consistent keys
+        int x1 = (int)System.Math.Round(a.X / GridSize) * GridSize;
+        int y1 = (int)System.Math.Round(a.Y / GridSize) * GridSize;
+        int x2 = (int)System.Math.Round(b.X / GridSize) * GridSize;
+        int y2 = (int)System.Math.Round(b.Y / GridSize) * GridSize;
+
+        // Normalize order: smaller coordinates first
+        if (x1 > x2 || (x1 == x2 && y1 > y2))
+        {
+            return (x2, y2, x1, y1);
+        }
+        return (x1, y1, x2, y2);
+    }
+
     public void DrawWire(SpriteBatch spriteBatch, Pin from, Pin to, bool isSelected = false)
     {
         var color = from.Value switch
@@ -117,18 +181,34 @@ public class CircuitRenderer : ICircuitRenderer
             color = SelectedBorderColor;
         }
 
-        var start = new Vector2(from.WorldX, from.WorldY);
-        var end = new Vector2(to.WorldX, to.WorldY);
-
-        // Selected wires are thicker
-        int thickness = isSelected ? 4 : 2;
-
-        // Calculate wire path that avoids components
-        var path = CalculateWirePath(start, end);
+        // Check if this connection has a manual wire path
+        List<Vector2> path;
+        if (to.ManualWirePath != null && to.ManualWirePath.Count >= 2)
+        {
+            // Use manual path
+            path = new List<Vector2>();
+            foreach (var point in to.ManualWirePath)
+            {
+                path.Add(new Vector2(point.X, point.Y));
+            }
+        }
+        else
+        {
+            // Use auto-routing
+            var start = new Vector2(from.WorldX, from.WorldY);
+            var end = new Vector2(to.WorldX, to.WorldY);
+            path = CalculateWirePath(start, end);
+        }
 
         // Draw all segments of the path
         for (int i = 0; i < path.Count - 1; i++)
         {
+            var key = NormalizeSegment(path[i], path[i + 1]);
+            int overlapCount = _segmentCounts.GetValueOrDefault(key, 1);
+
+            // Base thickness + extra for overlaps, selected wires are thicker
+            int thickness = isSelected ? 4 : 2 + (overlapCount - 1);
+
             _drawer.DrawLine(spriteBatch, path[i], path[i + 1], color, thickness);
         }
     }
@@ -396,6 +476,43 @@ public class CircuitRenderer : ICircuitRenderer
         }
     }
 
+    public void DrawManualWirePreview(SpriteBatch spriteBatch, IReadOnlyList<Point> pathPoints, Vector2 currentMousePos)
+    {
+        if (pathPoints.Count == 0)
+        {
+            return;
+        }
+
+        var wireColor = new Color(100, 180, 255, 200);
+        var nodeColor = new Color(255, 200, 100);
+
+        // Draw existing path segments
+        for (int i = 0; i < pathPoints.Count - 1; i++)
+        {
+            var p1 = new Vector2(pathPoints[i].X, pathPoints[i].Y);
+            var p2 = new Vector2(pathPoints[i + 1].X, pathPoints[i + 1].Y);
+            _drawer.DrawLine(spriteBatch, p1, p2, wireColor, 2);
+        }
+
+        // Draw preview line to current mouse position (snapped to grid)
+        var lastPoint = new Vector2(pathPoints[^1].X, pathPoints[^1].Y);
+        var snappedMouse = new Vector2(
+            (float)(System.Math.Round(currentMousePos.X / GridSize) * GridSize),
+            (float)(System.Math.Round(currentMousePos.Y / GridSize) * GridSize));
+
+        var previewColor = new Color(100, 180, 255, 100);
+        _drawer.DrawLine(spriteBatch, lastPoint, snappedMouse, previewColor, 2);
+
+        // Draw nodes at each path point
+        foreach (var point in pathPoints)
+        {
+            _drawer.DrawFilledCircle(spriteBatch, new Vector2(point.X, point.Y), 4, nodeColor);
+        }
+
+        // Draw preview node at snapped mouse position
+        _drawer.DrawFilledCircle(spriteBatch, snappedMouse, 4, new Color(255, 200, 100, 100));
+    }
+
     public void DrawComponent(SpriteBatch spriteBatch, Component component)
     {
         var rect = new Rectangle(component.X, component.Y, component.Width, component.Height);
@@ -628,5 +745,40 @@ public class CircuitRenderer : ICircuitRenderer
     public void DrawPinHighlight(SpriteBatch spriteBatch, Pin pin)
     {
         _drawer.DrawFilledCircle(spriteBatch, new Vector2(pin.WorldX, pin.WorldY), 8, SelectedBorderColor);
+    }
+
+    public void DrawManualWireNodes(SpriteBatch spriteBatch, Pin inputPin, int draggingNodeIndex = -1)
+    {
+        if (inputPin.ManualWirePath == null || inputPin.ManualWirePath.Count < 2)
+        {
+            return;
+        }
+
+        var path = inputPin.ManualWirePath;
+        var nodeColor = new Color(255, 200, 100);
+        var draggingNodeColor = new Color(255, 255, 150);
+        var endpointColor = new Color(180, 180, 200);
+
+        // Draw all nodes
+        for (int i = 0; i < path.Count; i++)
+        {
+            var point = path[i];
+            var pos = new Vector2(point.X, point.Y);
+
+            // First and last points are endpoints (pins) - they can't be moved
+            if (i == 0 || i == path.Count - 1)
+            {
+                // Draw endpoint indicator (smaller, different color)
+                _drawer.DrawFilledCircle(spriteBatch, pos, 4, endpointColor);
+                _drawer.DrawCircle(spriteBatch, pos, 6, nodeColor);
+            }
+            else
+            {
+                // Internal node - can be moved
+                var color = (i == draggingNodeIndex) ? draggingNodeColor : nodeColor;
+                _drawer.DrawFilledCircle(spriteBatch, pos, 6, color);
+                _drawer.DrawCircle(spriteBatch, pos, 8, SelectedBorderColor);
+            }
+        }
     }
 }

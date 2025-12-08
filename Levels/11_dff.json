@@ -1,0 +1,14 @@
+{
+  "id": "dff",
+  "name": "D Flip-Flop",
+  "description": "Create a gated D latch: when CLK is high, Q follows D",
+  "fullDescription": "The D flip-flop (or D latch) is the fundamental building block of digital memory. It has a data input (D), a clock/enable input (CLK), and an output (Q). When CLK is HIGH, the latch is 'transparent' and Q follows D. When CLK goes LOW, Q holds its last value. This level tests the transparent behavior - when CLK=1, Q must equal D. Build it using NAND gates: you'll need a pair of cross-coupled NANDs for the SR latch core, plus input gating.",
+  "tier": 4,
+  "componentName": "dff",
+  "inputCount": 2,
+  "outputCount": 1,
+  "truthTable": [
+    { "inputs": [false, true], "outputs": [false] },
+    { "inputs": [true, true], "outputs": [true] }
+  ]
+}

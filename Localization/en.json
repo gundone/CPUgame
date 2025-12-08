@@ -23,6 +23,7 @@
   "menu.options.fontMedium": "Medium",
   "menu.options.fontLarge": "Large",
   "menu.options.fontExtraLarge": "Extra Large",
+  "menu.options.controls": "Controls",
 
   "toolbox.title": "Toolbox",
   "toolbox.nand": "NAND",
@@ -39,6 +40,9 @@
   "status.ready": "Ready",
   "status.wire_connected": "Wire connected",
   "status.wire_selected": "Wire selected - Press Del to disconnect",
+  "status.wire_edit_mode": "Wire edit mode - Drag nodes to move, Shift+click to add/remove nodes",
+  "status.node_added": "Node added",
+  "status.node_removed": "Node removed",
   "status.wire_disconnected": "Wire disconnected",
   "status.placed": "Placed {0}",
   "status.deleted": "Deleted {0} component(s)",
@@ -139,5 +143,68 @@
   "level.decoder.description": "The decoder converts a binary number to a one-hot code where exactly one output is HIGH. A 2-to-4 decoder has 2 inputs and 4 outputs. Input 00 activates output Y0, input 01 activates Y1, and so on. Decoders are essential in memory systems for address decoding, instruction decoding in CPUs, and seven-segment display drivers. Build it using AND gates and inverters - each output needs a unique combination of inputs.",
 
   "level.encoder.name": "4-to-2 Encoder",
-  "level.encoder.description": "The encoder is the opposite of a decoder. It converts a one-hot input (where exactly one input is active) to its binary representation. A 4-to-2 encoder has 4 inputs (I3-I0) and 2 outputs. When I0 is HIGH, output is 00; when I1 is HIGH, output is 01; when I2 is HIGH, output is 10; when I3 is HIGH, output is 11. Encoders are used in keyboards, interrupt handling, and data compression circuits."
+  "level.encoder.description": "The encoder is the opposite of a decoder. It converts a one-hot input (where exactly one input is active) to its binary representation. A 4-to-2 encoder has 4 inputs (I3-I0) and 2 outputs. When I0 is HIGH, output is 00; when I1 is HIGH, output is 01; when I2 is HIGH, output is 10; when I3 is HIGH, output is 11. Encoders are used in keyboards, interrupt handling, and data compression circuits.",
+
+  "level.dff.name": "D Flip-Flop",
+  "level.dff.description": "The D flip-flop (or D latch) is the fundamental building block of digital memory. It has a data input (D), a clock/enable input (CLK), and an output (Q). When CLK is HIGH, the latch is 'transparent' and Q follows D. When CLK goes LOW, Q holds its last value. This level tests the transparent behavior - when CLK=1, Q must equal D. Build it using NAND gates: you'll need a pair of cross-coupled NANDs for the SR latch core, plus input gating.",
+
+  "level.register.name": "1-bit Register",
+  "level.register.description": "A register extends the D flip-flop by adding a load enable (LD) signal. The register only updates when BOTH the clock (CLK) AND load enable (LD) are HIGH. This allows selective updating of stored values - essential for CPU registers where you don't want every clock cycle to overwrite data. Inputs are D (data), CLK (clock), and LD (load enable). When CLK=1 AND LD=1, output Q equals D. Use your DFF component and add logic to gate the clock with the load enable.",
+
+  "level.register4b.name": "4-bit Register",
+  "level.register4b.description": "The 4-bit register stores a nibble (4 bits) of data. It has four data inputs (D0-D3), a clock (CLK), a load enable (LD), and four outputs (Q0-Q3). When CLK=1 AND LD=1, all four outputs follow their corresponding inputs simultaneously. This is the building block for CPU registers, program counters, and data buffers. Build it using four 1-bit registers working in parallel, sharing the same CLK and LD signals.",
+
+  "level.ram16b.name": "16-bit RAM",
+  "level.ram16b.description": "RAM (Random Access Memory) combines registers with address decoding to create addressable storage. This 16-bit RAM has 4 memory locations, each storing 4 bits. Inputs: A0-A1 (2-bit address selecting one of 4 locations), D0-D3 (4-bit data input), WE (write enable), and CLK. Outputs: Q0-Q3 (4-bit data output). When WE=1 and CLK=1, data is written to the selected address and simultaneously appears on outputs. Use your 4-bit registers and a 2-to-4 decoder to build this.",
+
+  "controls.title": "Controls",
+  "controls.section.general": "General",
+  "controls.pan": "Pan view",
+  "controls.pan.key": "Right Mouse Button",
+  "controls.zoom": "Zoom",
+  "controls.zoom.key": "Ctrl + Scroll",
+  "controls.delete": "Delete selected",
+  "controls.delete.key": "Delete",
+  "controls.multiselect": "Multi-select",
+  "controls.multiselect.key": "Ctrl + Click",
+
+  "controls.section.wiring": "Wiring",
+  "controls.manual_wire": "Manual wire (click nodes)",
+  "controls.manual_wire.key": "Click on pin",
+  "controls.auto_wire": "Auto wire (drag)",
+  "controls.auto_wire.key": "Shift + Drag pin",
+  "controls.cancel_wire": "Cancel wiring",
+  "controls.cancel_wire.key": "Escape / Right Click",
+  "controls.undo_point": "Undo last point",
+  "controls.undo_point.key": "Backspace",
+
+  "controls.section.wire_edit": "Wire Editing",
+  "controls.select_wire": "Select wire",
+  "controls.select_wire.key": "Click on wire",
+  "controls.move_node": "Move node",
+  "controls.move_node.key": "Drag node",
+  "controls.add_node": "Add node",
+  "controls.add_node.key": "Shift + Click on wire",
+  "controls.remove_node": "Remove node",
+  "controls.remove_node.key": "Shift + Click on node",
+
+  "controls.section.buses": "IO Buses",
+  "controls.resize_bus_add": "Add bit to bus",
+  "controls.resize_bus_add.key": "Space / Shift+Scroll",
+  "controls.resize_bus_remove": "Remove bit from bus",
+  "controls.resize_bus_remove.key": "Shift+Space / Shift+Scroll",
+  "controls.increment": "Increment value",
+  "controls.increment.key": "+ / Scroll up",
+  "controls.decrement": "Decrement value",
+  "controls.decrement.key": "- / Scroll down",
+  "controls.toggle_values": "Toggle pin values",
+  "controls.toggle_values.key": "V",
+
+  "controls.section.file": "File Operations",
+  "controls.save": "Save circuit",
+  "controls.save.key": "Ctrl + S",
+  "controls.load": "Load circuit",
+  "controls.load.key": "Ctrl + O",
+  "controls.build": "Build component",
+  "controls.build.key": "Ctrl + B"
 }

@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using Microsoft.Xna.Framework;
+
 namespace CPUgame.Core;
 
 /// <summary>
@@ -8,7 +11,7 @@ public class Pin
     public string Name { get; }
     public PinType Type { get; }
     public Component Owner { get; }
-    public Signal Value { get; set; } = Signal.Undefined;
+    public Signal Value { get; set; } = Signal.Low;
 
     /// <summary>
     /// User-editable title for the pin. Defaults to "in0", "in1", etc. for inputs
@@ -18,6 +21,12 @@ public class Pin
 
     // Connection to another pin (for input pins, this is the source)
     public Pin? ConnectedTo { get; set; }
+
+    /// <summary>
+    /// Manual wire path for this connection. If set, the wire is drawn using this path
+    /// instead of auto-routing. Only valid for input pins (stores path from source output to this input).
+    /// </summary>
+    public List<Point>? ManualWirePath { get; set; }
 
     // Visual position relative to component
     public int LocalX { get; set; }
@@ -49,6 +58,7 @@ public class Pin
     public void Disconnect()
     {
         ConnectedTo = null;
+        ManualWirePath = null;
     }
 }
 

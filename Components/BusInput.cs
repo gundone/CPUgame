@@ -178,12 +178,12 @@ public class BusInput : Component
     /// </summary>
     public void HandleCommands(InputState input, List<Pin>? allInputPins = null)
     {
-        // Resize with space / shift+space
-        if (input.ResizeIncreaseCommand)
+        // Resize with space / shift+space or shift+scroll (not ctrl+scroll, that's zoom)
+        if (input.ResizeIncreaseCommand || (input.ShiftHeld && !input.CtrlHeld && input.ScrollDelta > 0))
         {
             ResizeBits(true, allInputPins);
         }
-        else if (input.ResizeDecreaseCommand)
+        else if (input.ResizeDecreaseCommand || (input.ShiftHeld && !input.CtrlHeld && input.ScrollDelta < 0))
         {
             ResizeBits(false, allInputPins);
         }
@@ -198,12 +198,12 @@ public class BusInput : Component
     /// </summary>
     public void HandleValueCommands(InputState input)
     {
-        // Increment/decrement value with +/-
-        if (input.IncreaseCommand)
+        // Increment/decrement value with +/- or scroll (without shift/ctrl, ctrl+scroll is zoom)
+        if (input.IncreaseCommand || (!input.ShiftHeld && !input.CtrlHeld && input.ScrollDelta > 0))
         {
             Value = (Value + 1) % (1 << BitCount);
         }
-        else if (input.DecreaseCommand)
+        else if (input.DecreaseCommand || (!input.ShiftHeld && !input.CtrlHeld && input.ScrollDelta < 0))
         {
             Value = (Value - 1 + (1 << BitCount)) % (1 << BitCount);
         }

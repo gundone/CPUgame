@@ -174,8 +174,50 @@ public class Circuit
         return null;
     }
 
+    /// <summary>
+    /// Get all manual wires connected to the given components (either as input or output).
+    /// Returns a list of input pins that have ManualWirePath set.
+    /// </summary>
+    public List<Pin> GetManualWiresForComponents(IEnumerable<Component> components)
+    {
+        var result = new List<Pin>();
+        var componentSet = new HashSet<Component>(components);
+
+        foreach (var component in Components)
+        {
+            foreach (var input in component.Inputs)
+            {
+                if (input.ManualWirePath != null && input.ManualWirePath.Count >= 2 && input.ConnectedTo != null)
+                {
+                    // Check if either the input's owner or the connected output's owner is in the set
+                    if (componentSet.Contains(input.Owner) || componentSet.Contains(input.ConnectedTo.Owner))
+                    {
+                        result.Add(input);
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
     private bool IsPointNearWire(int px, int py, Pin from, Pin to, int tolerance)
     {
+        // Check if this wire has a manual path
+        if (to.ManualWirePath != null && to.ManualWirePath.Count >= 2)
+        {
+            // Use manual path
+            var manualPath = to.ManualWirePath;
+            for (int i = 0; i < manualPath.Count - 1; i++)
+            {
+                if (IsPointNearSegment(px, py, manualPath[i].X, manualPath[i].Y, manualPath[i + 1].X, manualPath[i + 1].Y, tolerance))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         // Calculate wire path (same logic as CircuitRenderer)
         var path = CalculateWirePath(from.WorldX, from.WorldY, to.WorldX, to.WorldY);
 

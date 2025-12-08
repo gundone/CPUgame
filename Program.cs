@@ -15,6 +15,7 @@ services.AddSingleton<IInputHandler, DesktopInputHandler>();
 services.AddSingleton<IStatusService, StatusService>();
 services.AddSingleton<ICircuitManager, CircuitManager>();
 services.AddSingleton<IWireManager, WireManager>();
+services.AddSingleton<IManualWireService, ManualWireService>();
 services.AddSingleton<ICommandHandler, CommandHandler>();
 services.AddSingleton<IToolboxManager, ToolboxManager>();
 services.AddSingleton<ICircuitRenderer, CircuitRenderer>();

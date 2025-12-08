@@ -1,0 +1,14 @@
+{
+  "id": "register",
+  "name": "1-bit Register",
+  "description": "Create a 1-bit register with load enable: Q follows D only when both CLK and LD are high",
+  "fullDescription": "A register extends the D flip-flop by adding a load enable (LD) signal. The register only updates when BOTH the clock (CLK) AND load enable (LD) are HIGH. This allows selective updating of stored values - essential for CPU registers where you don't want every clock cycle to overwrite data. Inputs are D (data), CLK (clock), and LD (load enable). When CLK=1 AND LD=1, output Q equals D. Use your DFF component and add logic to gate the clock with the load enable.",
+  "tier": 4,
+  "componentName": "register",
+  "inputCount": 3,
+  "outputCount": 1,
+  "truthTable": [
+    { "inputs": [false, true, true], "outputs": [false] },
+    { "inputs": [true, true, true], "outputs": [true] }
+  ]
+}

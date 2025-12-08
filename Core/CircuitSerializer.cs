@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using Microsoft.Xna.Framework;
 using CPUgame.Components;
 
 namespace CPUgame.Core;
@@ -102,13 +103,25 @@ public static class CircuitSerializer
                     var toComponent = component;
                     var toPinIndex = toComponent.Inputs.IndexOf(input);
 
-                    data.Connections.Add(new ConnectionData
+                    var connData = new ConnectionData
                     {
                         FromComponentId = componentIds[fromComponent],
                         FromPinIndex = fromPinIndex,
                         ToComponentId = componentIds[toComponent],
                         ToPinIndex = toPinIndex
-                    });
+                    };
+
+                    // Save manual wire path if present
+                    if (input.ManualWirePath != null && input.ManualWirePath.Count > 0)
+                    {
+                        connData.ManualWirePath = new List<int[]>();
+                        foreach (var point in input.ManualWirePath)
+                        {
+                            connData.ManualWirePath.Add(new[] { point.X, point.Y });
+                        }
+                    }
+
+                    data.Connections.Add(connData);
                 }
             }
         }
@@ -163,6 +176,19 @@ public static class CircuitSerializer
                     var fromPin = fromComp.Outputs[conn.FromPinIndex];
                     var toPin = toComp.Inputs[conn.ToPinIndex];
                     fromPin.Connect(toPin);
+
+                    // Restore manual wire path if present
+                    if (conn.ManualWirePath != null && conn.ManualWirePath.Count > 0)
+                    {
+                        toPin.ManualWirePath = new List<Point>();
+                        foreach (var pointArray in conn.ManualWirePath)
+                        {
+                            if (pointArray.Length >= 2)
+                            {
+                                toPin.ManualWirePath.Add(new Point(pointArray[0], pointArray[1]));
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -217,4 +243,5 @@ public class ConnectionData
     public int FromPinIndex { get; set; }
     public int ToComponentId { get; set; }
     public int ToPinIndex { get; set; }
+    public List<int[]>? ManualWirePath { get; set; }
 }

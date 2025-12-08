@@ -1,0 +1,28 @@
+{
+  "id": "ram16b",
+  "name": "16-bit RAM",
+  "description": "Create a 16-bit RAM: 4 locations x 4 bits with address decoding",
+  "fullDescription": "RAM (Random Access Memory) combines registers with address decoding to create addressable storage. This 16-bit RAM has 4 memory locations, each storing 4 bits. Inputs: A0-A1 (2-bit address selecting one of 4 locations), D0-D3 (4-bit data input), WE (write enable), and CLK. Outputs: Q0-Q3 (4-bit data output). When WE=1 and CLK=1, data is written to the selected address and simultaneously appears on outputs. Use your 4-bit registers and a 2-to-4 decoder to build this - the decoder selects which register receives the clock based on the address.",
+  "tier": 4,
+  "componentName": "ram16b",
+  "inputCount": 8,
+  "outputCount": 4,
+  "truthTable": [
+    { "inputs": [false, false, false, false, false, false, true, true], "outputs": [false, false, false, false] },
+    { "inputs": [false, false, true, false, false, false, true, true], "outputs": [true, false, false, false] },
+    { "inputs": [false, false, false, true, false, false, true, true], "outputs": [false, true, false, false] },
+    { "inputs": [false, false, true, true, false, false, true, true], "outputs": [true, true, false, false] },
+    { "inputs": [false, false, false, false, true, false, true, true], "outputs": [false, false, true, false] },
+    { "inputs": [false, false, true, false, true, false, true, true], "outputs": [true, false, true, false] },
+    { "inputs": [false, false, false, true, true, false, true, true], "outputs": [false, true, true, false] },
+    { "inputs": [false, false, true, true, true, false, true, true], "outputs": [true, true, true, false] },
+    { "inputs": [false, false, false, false, false, true, true, true], "outputs": [false, false, false, true] },
+    { "inputs": [false, false, true, false, false, true, true, true], "outputs": [true, false, false, true] },
+    { "inputs": [false, false, false, true, false, true, true, true], "outputs": [false, true, false, true] },
+    { "inputs": [false, false, true, true, false, true, true, true], "outputs": [true, true, false, true] },
+    { "inputs": [false, false, false, false, true, true, true, true], "outputs": [false, false, false, false] },
+    { "inputs": [false, false, true, false, true, true, true, true], "outputs": [true, false, false, false] },
+    { "inputs": [false, false, false, true, true, true, true, true], "outputs": [false, true, false, false] },
+    { "inputs": [false, false, true, true, true, true, true, true], "outputs": [true, true, false, false] }
+  ]
+}

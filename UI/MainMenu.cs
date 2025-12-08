@@ -37,6 +37,7 @@ public class MainMenu
     public event Action? OnSandboxMode;
     public event Action? OnLevelsMode;
     public event Action? OnSelectLevelPopup;
+    public event Action? OnShowControls;
 
     public int Height => MenuHeight;
 
@@ -162,6 +163,9 @@ public class MainMenu
             }
             optionsMenu.SubItems.Add(new MenuItem(langName, () => OnLanguageChanged?.Invoke(langCode)));
         }
+
+        optionsMenu.SubItems.Add(new MenuItem("-")); // Separator
+        optionsMenu.SubItems.Add(new MenuItem(LocalizationManager.Get("menu.options.controls"), () => OnShowControls?.Invoke()));
 
         _menuItems.Add(optionsMenu);
     }

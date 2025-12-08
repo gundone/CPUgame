@@ -22,6 +22,7 @@ public class GameField : Game, IGameField
     private readonly IStatusService _statusService;
     private readonly ICircuitManager _circuitManager;
     private readonly IWireManager _wireManager;
+    private readonly IManualWireService _manualWireService;
     private readonly ICommandHandler _commandHandler;
     private readonly IToolboxManager _toolboxManager;
     private readonly IGameRenderer _gameRenderer;
@@ -39,20 +40,23 @@ public class GameField : Game, IGameField
     private LevelDescriptionPopup _levelDescriptionPopup = null!;
     private LevelCompletedPopup _levelCompletedPopup = null!;
     private ComponentEditDialog _componentEditDialog = null!;
+    private ControlsPopup _controlsPopup = null!;
 
     private int ScreenWidth => GraphicsDevice?.Viewport.Width ?? _graphics.PreferredBackBufferWidth;
     private int ScreenHeight => GraphicsDevice?.Viewport.Height ?? _graphics.PreferredBackBufferHeight;
 
     public GameField(IPlatformServices platformServices, IInputHandler inputHandler,
         IStatusService statusService, ICircuitManager circuitManager, IWireManager wireManager,
-        ICommandHandler commandHandler, IToolboxManager toolboxManager, IGameRenderer gameRenderer,
-        ITruthTableService truthTableService, ILevelService levelService, IProfileService profileService)
+        IManualWireService manualWireService, ICommandHandler commandHandler, IToolboxManager toolboxManager,
+        IGameRenderer gameRenderer, ITruthTableService truthTableService, ILevelService levelService,
+        IProfileService profileService)
     {
         _platformServices = platformServices;
         _inputHandler = inputHandler;
         _statusService = statusService;
         _circuitManager = circuitManager;
         _wireManager = wireManager;
+        _manualWireService = manualWireService;
         _commandHandler = commandHandler;
         _toolboxManager = toolboxManager;
         _gameRenderer = gameRenderer;
@@ -165,6 +169,7 @@ public class GameField : Game, IGameField
         _levelDescriptionPopup = new LevelDescriptionPopup();
         _levelCompletedPopup = new LevelCompletedPopup();
         _componentEditDialog = new ComponentEditDialog();
+        _controlsPopup = new ControlsPopup();
 
         _mainMenu.OnSandboxMode += () =>
         {
@@ -203,6 +208,10 @@ public class GameField : Game, IGameField
                 return;
             }
             _levelSelectionPopup.Show();
+        };
+        _mainMenu.OnShowControls += () =>
+        {
+            _controlsPopup.Show();
         };
 
         _levelSelectionPopup.OnLevelSelected += index =>
@@ -314,6 +323,14 @@ public class GameField : Game, IGameField
             return;
         }
 
+        // Handle controls popup (modal)
+        if (_controlsPopup.IsVisible)
+        {
+            _controlsPopup.Update(mousePos, _inputState.PrimaryJustPressed, ScreenWidth, ScreenHeight);
+            base.Update(gameTime);
+            return;
+        }
+
         // Handle component edit dialog (modal)
         if (_componentEditDialog.IsVisible)
         {
@@ -394,10 +411,36 @@ public class GameField : Game, IGameField
 
     private void HandleCircuitInteraction(Point worldMousePos, Circuit circuit)
     {
-        _wireManager.Update(circuit, worldMousePos, _inputState.PrimaryJustPressed, _inputState.PrimaryJustReleased);
+        // Handle manual wire mode
+        if (_manualWireService.IsActive)
+        {
+            HandleManualWireMode(worldMousePos, circuit);
+            return;
+        }
+
+        // Handle wire node editing mode
+        if (_manualWireService.IsEditingWire)
+        {
+            HandleWireNodeEditing(worldMousePos);
+            return;
+        }
+
+        // Shift+Click on pin starts auto wire mode
+        _wireManager.Update(circuit, worldMousePos, _inputState.PrimaryJustPressed, _inputState.PrimaryJustReleased, _inputState.ShiftHeld);
         if (_wireManager.IsDraggingWire)
         {
             return;
+        }
+
+        // Click on pin (without Shift) starts manual wire mode
+        if (_inputState.PrimaryJustPressed && !_inputState.ShiftHeld)
+        {
+            var hoveredPin = circuit.GetPinAt(worldMousePos.X, worldMousePos.Y);
+            if (hoveredPin != null)
+            {
+                _manualWireService.Start(hoveredPin, _gameRenderer.GridSize);
+                return;
+            }
         }
 
         // Handle double-click for component/pin title editing
@@ -417,6 +460,11 @@ public class GameField : Game, IGameField
             var component = circuit.GetComponentAt(worldMousePos.X, worldMousePos.Y);
             if (component != null)
             {
+                // Clicking on a component deselects wire and stops editing
+                if (_selection.SelectedWire != null)
+                {
+                    _manualWireService.StopEditingWire();
+                }
                 _selection.HandleComponentClick(component, _inputState.CtrlHeld, worldMousePos);
             }
             else
@@ -425,10 +473,21 @@ public class GameField : Game, IGameField
                 if (wire != null)
                 {
                     _selection.HandleWireClick(wire);
-                    _statusService.Show(LocalizationManager.Get("status.wire_selected"));
+                    // If it's a manual wire, enter editing mode
+                    if (wire.ManualWirePath != null && wire.ManualWirePath.Count >= 2)
+                    {
+                        _manualWireService.StartEditingWire(wire, _gameRenderer.GridSize);
+                        _statusService.Show(LocalizationManager.Get("status.wire_edit_mode"));
+                    }
+                    else
+                    {
+                        _statusService.Show(LocalizationManager.Get("status.wire_selected"));
+                    }
                 }
                 else
                 {
+                    // Clicking on empty space deselects wire and stops editing
+                    _manualWireService.StopEditingWire();
                     _selection.HandleEmptyClick(_inputState.CtrlHeld);
                 }
             }
@@ -437,10 +496,143 @@ public class GameField : Game, IGameField
         if (_inputState.PrimaryPressed)
         {
             _selection.UpdateDrag(worldMousePos, _gameRenderer.GridSize);
+            // Update wire endpoints in real-time as components move
+            if (_selection.IsDragging)
+            {
+                UpdateManualWireEndpointsForDraggedComponents();
+            }
         }
         if (_inputState.PrimaryJustReleased)
         {
             _selection.EndDrag();
+        }
+    }
+
+    private void UpdateManualWireEndpointsForDraggedComponents()
+    {
+        var draggedComponents = _selection.GetSelectedComponents();
+        if (draggedComponents.Count == 0)
+        {
+            return;
+        }
+
+        var manualWires = _circuitManager.Circuit.GetManualWiresForComponents(draggedComponents);
+        foreach (var wire in manualWires)
+        {
+            _manualWireService.UpdateWireEndpoints(wire);
+        }
+    }
+
+    private void HandleWireNodeEditing(Point worldMousePos)
+    {
+        // Escape to exit editing mode
+        if (_inputState.EscapeCommand)
+        {
+            _manualWireService.StopEditingWire();
+            _selection.SelectedWire = null;
+            return;
+        }
+
+        // Handle Shift+click for adding/removing nodes
+        if (_inputState.PrimaryJustPressed && _inputState.ShiftHeld)
+        {
+            var nodeIndex = _manualWireService.GetNodeAtPosition(worldMousePos);
+            if (nodeIndex >= 0)
+            {
+                // Shift+click on existing node - remove it
+                if (_manualWireService.RemoveNode(nodeIndex))
+                {
+                    _statusService.Show(LocalizationManager.Get("status.node_removed"));
+                }
+            }
+            else
+            {
+                // Shift+click on wire segment - add new node
+                if (_manualWireService.AddNodeAtPosition(worldMousePos))
+                {
+                    _statusService.Show(LocalizationManager.Get("status.node_added"));
+                }
+            }
+            return;
+        }
+
+        // Handle node dragging (without Shift)
+        if (_inputState.PrimaryJustPressed)
+        {
+            var nodeIndex = _manualWireService.GetNodeAtPosition(worldMousePos);
+            if (nodeIndex >= 0)
+            {
+                _manualWireService.StartDraggingNode(nodeIndex);
+            }
+            else
+            {
+                // Clicked outside nodes - exit editing mode and check what was clicked
+                _manualWireService.StopEditingWire();
+                _selection.SelectedWire = null;
+
+                // Check if clicking on something else
+                var component = _circuitManager.Circuit.GetComponentAt(worldMousePos.X, worldMousePos.Y);
+                if (component != null)
+                {
+                    _selection.HandleComponentClick(component, _inputState.CtrlHeld, worldMousePos);
+                }
+                else
+                {
+                    var wire = _circuitManager.Circuit.GetWireAt(worldMousePos.X, worldMousePos.Y);
+                    if (wire != null)
+                    {
+                        _selection.HandleWireClick(wire);
+                        if (wire.ManualWirePath != null && wire.ManualWirePath.Count >= 2)
+                        {
+                            _manualWireService.StartEditingWire(wire, _gameRenderer.GridSize);
+                            _statusService.Show(LocalizationManager.Get("status.wire_edit_mode"));
+                        }
+                    }
+                }
+            }
+        }
+
+        if (_inputState.PrimaryPressed && _manualWireService.DraggingNodeIndex >= 0)
+        {
+            _manualWireService.UpdateDraggingNode(worldMousePos);
+        }
+
+        if (_inputState.PrimaryJustReleased)
+        {
+            _manualWireService.StopDraggingNode();
+        }
+    }
+
+    private void HandleManualWireMode(Point worldMousePos, Circuit circuit)
+    {
+        // Escape to cancel
+        if (_inputState.EscapeCommand)
+        {
+            _manualWireService.Cancel();
+            return;
+        }
+
+        // Right-click or Backspace to undo last point
+        if (_inputState.SecondaryJustPressed || _inputState.BackspacePressed)
+        {
+            _manualWireService.RemoveLastPoint();
+            return;
+        }
+
+        if (_inputState.PrimaryJustPressed)
+        {
+            // Check if clicking on a valid target pin
+            var hoveredPin = circuit.GetPinAt(worldMousePos.X, worldMousePos.Y);
+            if (hoveredPin != null && hoveredPin != _manualWireService.StartPin)
+            {
+                // Try to complete the connection
+                _manualWireService.Complete(hoveredPin);
+            }
+            else
+            {
+                // Add point to path
+                _manualWireService.AddPoint(worldMousePos);
+            }
         }
     }
 
@@ -449,7 +641,7 @@ public class GameField : Game, IGameField
         GraphicsDevice.Clear(CircuitRenderer.BackgroundColor);
 
         _spriteBatch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: _camera.GetTransform());
-        _gameRenderer.DrawWorld(_spriteBatch, _circuitManager.Circuit, _camera, _selection, _wireManager, _wireManager.HoveredPin, _inputState.PointerPosition, ScreenWidth, ScreenHeight, _toolboxManager.MainToolbox.IsDraggingItem);
+        _gameRenderer.DrawWorld(_spriteBatch, _circuitManager.Circuit, _camera, _selection, _wireManager, _manualWireService, _wireManager.HoveredPin, _inputState.PointerPosition, ScreenWidth, ScreenHeight, _toolboxManager.MainToolbox.IsDraggingItem);
         _spriteBatch.End();
 
         _spriteBatch.Begin(samplerState: SamplerState.LinearClamp);
@@ -461,6 +653,7 @@ public class GameField : Game, IGameField
         _levelDescriptionPopup.Draw(_spriteBatch, _gameRenderer.Pixel, _font, ScreenWidth, ScreenHeight);
         _levelCompletedPopup.Draw(_spriteBatch, _gameRenderer.Pixel, _font, ScreenWidth, ScreenHeight);
         _componentEditDialog.Draw(_spriteBatch, _gameRenderer.Pixel, _font, ScreenWidth, ScreenHeight);
+        _controlsPopup.Draw(_spriteBatch, _gameRenderer.Pixel, _font, ScreenWidth, ScreenHeight);
         _spriteBatch.End();
 
         base.Draw(gameTime);

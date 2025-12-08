@@ -53,7 +53,8 @@ public abstract class Component
     public abstract void Evaluate();
 
     /// <summary>
-    /// Read input values from connected pins
+    /// Read input values from connected pins.
+    /// Unconnected inputs default to Low (0).
     /// </summary>
     public void ReadInputs()
     {
@@ -65,7 +66,7 @@ public abstract class Component
             }
             else
             {
-                input.Value = Signal.Undefined;
+                input.Value = Signal.Low;
             }
         }
     }

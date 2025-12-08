@@ -141,12 +141,12 @@ public class BusOutput : Component
     /// </summary>
     public void HandleCommands(InputState input)
     {
-        // Resize with space / shift+space
-        if (input.ResizeIncreaseCommand)
+        // Resize with space / shift+space or shift+scroll (not ctrl+scroll, that's zoom)
+        if (input.ResizeIncreaseCommand || (input.ShiftHeld && !input.CtrlHeld && input.ScrollDelta > 0))
         {
             ResizeBits(true);
         }
-        else if (input.ResizeDecreaseCommand)
+        else if (input.ResizeDecreaseCommand || (input.ShiftHeld && !input.CtrlHeld && input.ScrollDelta < 0))
         {
             ResizeBits(false);
         }

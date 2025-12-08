@@ -7,7 +7,7 @@ public interface IWireManager
     Pin? WireStartPin { get; }
     Pin? HoveredPin { get; }
     bool IsDraggingWire { get; }
-    void Update(Circuit circuit, Point worldMousePos, bool primaryJustPressed, bool primaryJustReleased);
+    void Update(Circuit circuit, Point worldMousePos, bool primaryJustPressed, bool primaryJustReleased, bool shiftHeld);
     void Cancel();
 }
 
@@ -24,11 +24,12 @@ public class WireManager : IWireManager
         _statusService = statusService;
     }
 
-    public void Update(Circuit circuit, Point worldMousePos, bool primaryJustPressed, bool primaryJustReleased)
+    public void Update(Circuit circuit, Point worldMousePos, bool primaryJustPressed, bool primaryJustReleased, bool shiftHeld)
     {
         HoveredPin = circuit.GetPinAt(worldMousePos.X, worldMousePos.Y);
 
-        if (primaryJustPressed && HoveredPin != null)
+        // Auto wire mode only starts with Shift held
+        if (primaryJustPressed && HoveredPin != null && shiftHeld)
         {
             WireStartPin = HoveredPin;
             IsDraggingWire = true;

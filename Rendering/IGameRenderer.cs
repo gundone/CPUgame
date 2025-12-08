@@ -12,7 +12,7 @@ public interface IGameRenderer
     Texture2D Pixel { get; }
     float TitleFontScale { get; set; }
     void Initialize(GraphicsDevice graphicsDevice, SpriteFont font);
-    void DrawWorld(SpriteBatch spriteBatch, Circuit circuit, CameraController camera, SelectionManager selection, IWireManager wireManager, Pin? hoveredPin, Point mousePos, int screenWidth, int screenHeight, bool isDraggingItem);
+    void DrawWorld(SpriteBatch spriteBatch, Circuit circuit, CameraController camera, SelectionManager selection, IWireManager wireManager, IManualWireService manualWireService, Pin? hoveredPin, Point mousePos, int screenWidth, int screenHeight, bool isDraggingItem);
     void DrawUI(SpriteBatch spriteBatch, IToolboxManager toolboxManager, MainMenu mainMenu, IStatusService statusService, IDialogService dialogService, ITruthTableService truthTableService, CameraController camera, Point mousePos, int screenWidth, int screenHeight, SpriteFont font);
 }
 
@@ -36,7 +36,7 @@ public class GameRenderer : IGameRenderer
         _font = font;
     }
 
-    public void DrawWorld(SpriteBatch spriteBatch, Circuit circuit, CameraController camera, SelectionManager selection, IWireManager wireManager, Pin? hoveredPin, Point mousePos, int screenWidth, int screenHeight, bool isDraggingItem)
+    public void DrawWorld(SpriteBatch spriteBatch, Circuit circuit, CameraController camera, SelectionManager selection, IWireManager wireManager, IManualWireService manualWireService, Pin? hoveredPin, Point mousePos, int screenWidth, int screenHeight, bool isDraggingItem)
     {
         _circuitRenderer.DrawGrid(spriteBatch, camera.Offset.X, camera.Offset.Y, screenWidth, screenHeight, camera.Zoom);
         _circuitRenderer.DrawCircuit(spriteBatch, circuit, selection.SelectedWire);
@@ -49,12 +49,31 @@ public class GameRenderer : IGameRenderer
             _circuitRenderer.DrawPinHighlight(spriteBatch, hoveredPin);
         }
 
+        // Draw auto wire preview
         if (wireManager.IsDraggingWire && wireManager.WireStartPin != null)
         {
             var worldMousePos = camera.ScreenToWorld(mousePos);
             _circuitRenderer.DrawWirePreview(spriteBatch,
                 new Vector2(wireManager.WireStartPin.WorldX, wireManager.WireStartPin.WorldY),
                 worldMousePos);
+        }
+
+        // Draw manual wire preview
+        if (manualWireService.IsActive)
+        {
+            var worldMousePos = camera.ScreenToWorld(mousePos);
+            _circuitRenderer.DrawManualWirePreview(spriteBatch, manualWireService.PathPoints, worldMousePos);
+        }
+
+        // Draw editable nodes for selected manual wire
+        if (manualWireService.IsEditingWire && manualWireService.EditingWire != null)
+        {
+            _circuitRenderer.DrawManualWireNodes(spriteBatch, manualWireService.EditingWire, manualWireService.DraggingNodeIndex);
+        }
+        else if (selection.IsSelectedWireManual && selection.SelectedWire != null)
+        {
+            // Show nodes for selected manual wire (but not in editing mode yet)
+            _circuitRenderer.DrawManualWireNodes(spriteBatch, selection.SelectedWire, -1);
         }
 
         if (selection.IsSelecting)
