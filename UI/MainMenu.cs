@@ -31,6 +31,7 @@ public class MainMenu
     public event Action? OnNewCircuit;
     public event Action? OnLoadCircuit;
     public event Action? OnSaveCircuit;
+    public event Action? OnSaveCircuitAs;
     public event Action? OnExit;
     public event Action<string>? OnLanguageChanged;
     public event Action<float>? OnTitleFontSizeChanged;
@@ -95,6 +96,7 @@ public class MainMenu
             fileMenu.SubItems.Add(new MenuItem(LocalizationManager.Get("menu.file.new"), () => OnNewCircuit?.Invoke()));
             fileMenu.SubItems.Add(new MenuItem(LocalizationManager.Get("menu.file.load"), () => OnLoadCircuit?.Invoke()));
             fileMenu.SubItems.Add(new MenuItem(LocalizationManager.Get("menu.file.save"), () => OnSaveCircuit?.Invoke()));
+            fileMenu.SubItems.Add(new MenuItem(LocalizationManager.Get("menu.file.saveas"), () => OnSaveCircuitAs?.Invoke()));
             fileMenu.SubItems.Add(new MenuItem("-")); // Separator
             fileMenu.SubItems.Add(new MenuItem(LocalizationManager.Get("menu.file.exit"), () => OnExit?.Invoke()));
             _menuItems.Add(fileMenu);

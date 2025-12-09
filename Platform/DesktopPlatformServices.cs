@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
+using System.Windows.Forms;
 using CPUgame.Core.Services;
 
 namespace CPUgame.Platform;
@@ -74,5 +76,80 @@ public class DesktopPlatformServices : IPlatformServices
     public void WriteAllText(string path, string content)
     {
         File.WriteAllText(path, content);
+    }
+
+    public FileDialogResult ShowSaveFileDialog(string title, string defaultFileName, string filter, string? initialDirectory = null)
+    {
+        FileDialogResult dialogResult = new();
+
+        RunOnStaThread(() =>
+        {
+            using var dialog = new SaveFileDialog
+            {
+                Title = title,
+                FileName = defaultFileName,
+                Filter = filter,
+                DefaultExt = ".json",
+                AddExtension = true,
+                InitialDirectory = initialDirectory ?? GetSavesFolder()
+            };
+
+            var result = dialog.ShowDialog();
+            dialogResult.Success = result == DialogResult.OK;
+            dialogResult.FilePath = result == DialogResult.OK ? dialog.FileName : null;
+        });
+
+        return dialogResult;
+    }
+
+    public FileDialogResult ShowOpenFileDialog(string title, string filter, string? initialDirectory = null)
+    {
+        FileDialogResult dialogResult = new();
+
+        RunOnStaThread(() =>
+        {
+            using var dialog = new OpenFileDialog
+            {
+                Title = title,
+                Filter = filter,
+                InitialDirectory = initialDirectory ?? GetSavesFolder()
+            };
+
+            var result = dialog.ShowDialog();
+            dialogResult.Success = result == DialogResult.OK;
+            dialogResult.FilePath = result == DialogResult.OK ? dialog.FileName : null;
+        });
+
+        return dialogResult;
+    }
+
+    private static void RunOnStaThread(Action action)
+    {
+        if (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA)
+        {
+            action();
+            return;
+        }
+
+        Exception? exception = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception ex)
+            {
+                exception = ex;
+            }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        thread.Join();
+
+        if (exception != null)
+        {
+            throw exception;
+        }
     }
 }

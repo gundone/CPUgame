@@ -1,6 +1,15 @@
 namespace CPUgame.Core.Services;
 
 /// <summary>
+/// Result of a file dialog operation
+/// </summary>
+public class FileDialogResult
+{
+    public bool Success { get; set; }
+    public string? FilePath { get; set; }
+}
+
+/// <summary>
 /// Platform-specific services interface.
 /// Desktop and Android will have different implementations.
 /// </summary>
@@ -60,4 +69,23 @@ public interface IPlatformServices
     /// Write all text to file
     /// </summary>
     void WriteAllText(string path, string content);
+
+    /// <summary>
+    /// Show a save file dialog
+    /// </summary>
+    /// <param name="title">Dialog title</param>
+    /// <param name="defaultFileName">Default file name</param>
+    /// <param name="filter">File filter (e.g., "Circuit files|*.json")</param>
+    /// <param name="initialDirectory">Initial directory</param>
+    /// <returns>Result with success status and selected file path</returns>
+    FileDialogResult ShowSaveFileDialog(string title, string defaultFileName, string filter, string? initialDirectory = null);
+
+    /// <summary>
+    /// Show an open file dialog
+    /// </summary>
+    /// <param name="title">Dialog title</param>
+    /// <param name="filter">File filter (e.g., "Circuit files|*.json")</param>
+    /// <param name="initialDirectory">Initial directory</param>
+    /// <returns>Result with success status and selected file path</returns>
+    FileDialogResult ShowOpenFileDialog(string title, string filter, string? initialDirectory = null);
 }

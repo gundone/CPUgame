@@ -149,6 +149,7 @@ public class GameField : Game, IGameField
         _mainMenu.OnNewCircuit += _circuitManager.NewCircuit;
         _mainMenu.OnLoadCircuit += _circuitManager.LoadCircuit;
         _mainMenu.OnSaveCircuit += _circuitManager.SaveCircuit;
+        _mainMenu.OnSaveCircuitAs += _circuitManager.SaveCircuitAs;
         _mainMenu.OnExit += Exit;
         _mainMenu.OnLanguageChanged += code =>
         {

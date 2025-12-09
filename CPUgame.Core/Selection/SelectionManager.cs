@@ -22,6 +22,8 @@ public class SelectionManager
     private Point2 _dragOffset;
     private Point2 _multiDragStart;
     private Dictionary<Component, Point2>? _multiDragOffsets;
+    private bool _hasDragged;
+    private Component? _pendingDeselect;
 
     // Wire selection
     public Pin? SelectedWire { get; set; }
@@ -116,11 +118,14 @@ public class SelectionManager
     public void HandleComponentClick(Component component, bool addToSelection, Point2 worldMousePos)
     {
         SelectedWire = null;
+        _pendingDeselect = null;
 
         // Check if clicking on an already selected component with multiple selections
         if (component.IsSelected && GetSelectedComponents().Count > 1)
         {
+            // Start multi-drag, but remember we might need to deselect on release if no drag occurred
             StartMultiDrag(worldMousePos);
+            _pendingDeselect = component;
         }
         else
         {
@@ -170,6 +175,7 @@ public class SelectionManager
     private void StartMultiDrag(Point2 worldMousePos)
     {
         IsDraggingMultiple = true;
+        _hasDragged = false;
         _multiDragStart = worldMousePos;
         _multiDragOffsets = new Dictionary<Component, Point2>();
         foreach (var selected in GetSelectedComponents())
@@ -193,6 +199,12 @@ public class SelectionManager
             int deltaX = worldMousePos.X - _multiDragStart.X;
             int deltaY = worldMousePos.Y - _multiDragStart.Y;
 
+            // Mark as dragged if moved beyond a small threshold
+            if (Math.Abs(deltaX) > 2 || Math.Abs(deltaY) > 2)
+            {
+                _hasDragged = true;
+            }
+
             foreach (var kvp in _multiDragOffsets)
             {
                 var comp = kvp.Key;
@@ -208,10 +220,18 @@ public class SelectionManager
     /// </summary>
     public void EndDrag()
     {
+        // If we had a pending deselect and didn't actually drag, deselect only the clicked component
+        if (_pendingDeselect != null && !_hasDragged)
+        {
+            _pendingDeselect.IsSelected = false;
+        }
+
         IsDraggingSingle = false;
         IsDraggingMultiple = false;
         _draggingComponent = null;
         _multiDragOffsets = null;
+        _pendingDeselect = null;
+        _hasDragged = false;
     }
 
     public bool IsDragging => IsDraggingSingle || IsDraggingMultiple;

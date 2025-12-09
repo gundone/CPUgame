@@ -3,8 +3,9 @@
 
   "menu.file": "File",
   "menu.file.new": "New Circuit",
-  "menu.file.load": "Load Circuit",
+  "menu.file.load": "Load Circuit...",
   "menu.file.save": "Save Circuit",
+  "menu.file.saveas": "Save Circuit As...",
   "menu.file.exit": "Exit",
 
   "menu.game": "Game",
@@ -69,6 +70,8 @@
   "dialog.output": "Output",
   "dialog.save": "Save",
   "dialog.cancel": "Cancel",
+  "dialog.save_circuit": "Save Circuit",
+  "dialog.load_circuit": "Load Circuit",
 
   "help.shortcuts": "Ctrl+S: Save | Ctrl+O: Load | Ctrl+B: Build | Del: Delete | Ctrl+Scroll: Zoom | RMB: Pan",
   "help.drag": "Drag components from toolbox. Drag pins to wire. Del to delete.",

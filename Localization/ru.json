@@ -3,8 +3,9 @@
 
   "menu.file": "Файл",
   "menu.file.new": "Новая схема",
-  "menu.file.load": "Загрузить схему",
+  "menu.file.load": "Загрузить схему...",
   "menu.file.save": "Сохранить схему",
+  "menu.file.saveas": "Сохранить схему как...",
   "menu.file.exit": "Выход",
 
   "menu.game": "Игра",
@@ -69,6 +70,8 @@
   "dialog.output": "Выход",
   "dialog.save": "Сохранить",
   "dialog.cancel": "Отмена",
+  "dialog.save_circuit": "Сохранить схему",
+  "dialog.load_circuit": "Загрузить схему",
 
   "help.shortcuts": "Ctrl+S: Сохранить | Ctrl+O: Загрузить | Ctrl+B: Собрать | Del: Удалить | Ctrl+Прокрутка: Масштаб | ПКМ: Перемещение",
   "help.drag": "Перетащите компоненты из панели. Соедините выводы проводами. Del для удаления.",
