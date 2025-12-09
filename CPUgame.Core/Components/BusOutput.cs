@@ -1,9 +1,7 @@
-using System;
-using System.Collections.Generic;
-using CPUgame.Core;
-using CPUgame.Input;
+using CPUgame.Core.Circuit;
+using CPUgame.Core.Input;
 
-namespace CPUgame.Components;
+namespace CPUgame.Core.Components;
 
 /// <summary>
 /// Multi-bit output component with configurable number of input pins.
@@ -47,7 +45,10 @@ public class BusOutput : Component
     public void ResizeBits(bool increase)
     {
         int currentIndex = Array.IndexOf(AllowedBitCounts, BitCount);
-        if (currentIndex < 0) currentIndex = 2; // Default to 4
+        if (currentIndex < 0)
+        {
+            currentIndex = 2; // Default to 4
+        }
 
         int newBitCount;
         if (increase && currentIndex < AllowedBitCounts.Length - 1)

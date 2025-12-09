@@ -1,7 +1,4 @@
-using System.Collections.Generic;
-using System.Linq;
-
-namespace CPUgame.Core;
+namespace CPUgame.Core.Circuit;
 
 /// <summary>
 /// Base class for all circuit components
@@ -82,7 +79,9 @@ public abstract class Component
             var dx = px - pin.WorldX;
             var dy = py - pin.WorldY;
             if (dx * dx + dy * dy <= tolerance * tolerance)
+            {
                 return pin;
+            }
         }
         return null;
     }

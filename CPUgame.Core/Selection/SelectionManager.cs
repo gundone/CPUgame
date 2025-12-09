@@ -1,16 +1,14 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using CPUgame.Core.Circuit;
 using CPUgame.Core.Primitives;
 
-namespace CPUgame.Core;
+namespace CPUgame.Core.Selection;
 
 /// <summary>
 /// Manages component selection and selection rectangle
 /// </summary>
 public class SelectionManager
 {
-    private readonly Circuit _circuit;
+    private readonly Circuit.Circuit _circuit;
 
     // Selection rectangle state
     public bool IsSelecting { get; private set; }
@@ -28,12 +26,12 @@ public class SelectionManager
     // Wire selection
     public Pin? SelectedWire { get; set; }
 
-    public SelectionManager(Circuit circuit)
+    public SelectionManager(Circuit.Circuit circuit)
     {
         _circuit = circuit;
     }
 
-    public void SetCircuit(Circuit circuit)
+    public void SetCircuit(Circuit.Circuit circuit)
     {
         // For when circuit is replaced (new/load)
         ClearAll();
@@ -88,7 +86,10 @@ public class SelectionManager
     /// </summary>
     public void CompleteSelectionRect()
     {
-        if (!IsSelecting) return;
+        if (!IsSelecting)
+        {
+            return;
+        }
 
         int minX = Math.Min(SelectionStart.X, SelectionEnd.X);
         int maxX = Math.Max(SelectionStart.X, SelectionEnd.X);

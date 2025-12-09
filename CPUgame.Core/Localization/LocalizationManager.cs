@@ -1,9 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Text.Json;
 
-namespace CPUgame.Core;
+namespace CPUgame.Core.Localization;
 
 public static class LocalizationManager
 {
@@ -140,7 +137,9 @@ public static class LocalizationManager
         var languages = new List<string>();
 
         if (!Directory.Exists(LocalizationFolder))
+        {
             return languages;
+        }
 
         foreach (var file in Directory.GetFiles(LocalizationFolder, "*.json"))
         {

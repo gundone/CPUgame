@@ -1,7 +1,10 @@
 using System;
 using System.Linq;
-using CPUgame.Components;
-using CPUgame.Input;
+using CPUgame.Core.Components;
+using CPUgame.Core.Input;
+using CPUgame.Core.Localization;
+using CPUgame.Core.Selection;
+using CPUgame.Core.Services;
 
 namespace CPUgame.Core;
 
@@ -9,7 +12,7 @@ public interface ICommandHandler
 {
     bool ShowPinValues { get; }
     event Action? OnBuildComponent;
-    void HandleCommands(InputState input, SelectionManager selection, Circuit circuit, IWireManager wireManager, int gridSize);
+    void HandleCommands(InputState input, SelectionManager selection, Circuit.Circuit circuit, IWireManager wireManager, int gridSize);
 }
 
 public class CommandHandler : ICommandHandler
@@ -28,7 +31,7 @@ public class CommandHandler : ICommandHandler
         _levelService = levelService;
     }
 
-    public void HandleCommands(InputState input, SelectionManager selection, Circuit circuit, IWireManager wireManager, int gridSize)
+    public void HandleCommands(InputState input, SelectionManager selection, Circuit.Circuit circuit, IWireManager wireManager, int gridSize)
     {
         if (input.DeleteCommand)
         {
@@ -108,7 +111,7 @@ public class CommandHandler : ICommandHandler
         }
     }
 
-    private void ApplyComponentCommands(InputState input, SelectionManager selection, Circuit circuit, int gridSize)
+    private void ApplyComponentCommands(InputState input, SelectionManager selection, Circuit.Circuit circuit, int gridSize)
     {
         var selected = selection.GetSelectedComponents();
         var allInputPins = circuit.Components.SelectMany(c => c.Inputs).ToList();

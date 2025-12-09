@@ -1,9 +1,7 @@
-using System;
-using System.Collections.Generic;
-using CPUgame.Core;
-using CPUgame.Input;
+using CPUgame.Core.Circuit;
+using CPUgame.Core.Input;
 
-namespace CPUgame.Components;
+namespace CPUgame.Core.Components;
 
 /// <summary>
 /// Multi-bit input component with configurable number of output pins.
@@ -49,7 +47,10 @@ public class BusInput : Component
     public void ResizeBits(bool increase, List<Pin>? connectedInputPins = null)
     {
         int currentIndex = Array.IndexOf(AllowedBitCounts, BitCount);
-        if (currentIndex < 0) currentIndex = 2; // Default to 4
+        if (currentIndex < 0)
+        {
+            currentIndex = 2; // Default to 4
+        }
 
         int newBitCount;
         if (increase && currentIndex < AllowedBitCounts.Length - 1)
@@ -85,7 +86,9 @@ public class BusInput : Component
                         int bitIndex = oldBitCount - 1 - outputIndex;
 
                         if (!connectionsByBit.ContainsKey(bitIndex))
+                        {
                             connectionsByBit[bitIndex] = new List<Pin>();
+                        }
                         connectionsByBit[bitIndex].Add(inputPin);
 
                         // Disconnect
@@ -122,23 +125,36 @@ public class BusInput : Component
 
     public void SetBit(int bitIndex, bool value)
     {
-        if (bitIndex < 0 || bitIndex >= BitCount) return;
+        if (bitIndex < 0 || bitIndex >= BitCount)
+        {
+            return;
+        }
 
         if (value)
+        {
             Value |= (1 << bitIndex);
+        }
         else
+        {
             Value &= ~(1 << bitIndex);
+        }
     }
 
     public void ToggleBit(int bitIndex)
     {
-        if (bitIndex < 0 || bitIndex >= BitCount) return;
+        if (bitIndex < 0 || bitIndex >= BitCount)
+        {
+            return;
+        }
         SetBit(bitIndex, !GetBit(bitIndex));
     }
 
     public bool GetBit(int bitIndex)
     {
-        if (bitIndex < 0 || bitIndex >= BitCount) return false;
+        if (bitIndex < 0 || bitIndex >= BitCount)
+        {
+            return false;
+        }
         return (Value & (1 << bitIndex)) != 0;
     }
 
@@ -159,7 +175,9 @@ public class BusInput : Component
         {
             int bitIndex = BitCount - 1 - i;
             if (binary[i] == '1')
+            {
                 Value |= (1 << bitIndex);
+            }
         }
     }
 

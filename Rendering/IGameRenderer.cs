@@ -1,7 +1,11 @@
 using System;
 using CPUgame.Converters;
 using CPUgame.Core;
+using CPUgame.Core.Circuit;
+using CPUgame.Core.Localization;
 using CPUgame.Core.Primitives;
+using CPUgame.Core.Selection;
+using CPUgame.Core.Services;
 using CPUgame.UI;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;

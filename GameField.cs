@@ -1,9 +1,14 @@
 using System.Linq;
-using CPUgame.Components;
-using CPUgame.Converters;
 using CPUgame.Core;
+using CPUgame.Core.Components;
+using CPUgame.Core.Input;
 using CPUgame.Core.Primitives;
-using CPUgame.Input;
+using CPUgame.Converters;
+using CPUgame.Core.Circuit;
+using CPUgame.Core.Levels;
+using CPUgame.Core.Localization;
+using CPUgame.Core.Selection;
+using CPUgame.Core.Services;
 using CPUgame.Rendering;
 using CPUgame.UI;
 using Microsoft.Xna.Framework;
@@ -541,7 +546,7 @@ public class GameField : Game, IGameField
         }
 
         // Handle Shift+click for adding/removing nodes
-        if (_inputState.PrimaryJustPressed && _inputState.ShiftHeld)
+        if (_inputState is { PrimaryJustPressed: true, ShiftHeld: true })
         {
             var nodeIndex = _manualWireService.GetNodeAtPosition(worldMousePos);
             if (nodeIndex >= 0)

@@ -1,11 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Text.Json;
+using CPUgame.Core.Circuit;
+using CPUgame.Core.Components;
 using CPUgame.Core.Primitives;
-using CPUgame.Components;
 
-namespace CPUgame.Core;
+namespace CPUgame.Core.Serialization;
 
 public static class CircuitSerializer
 {
@@ -15,22 +13,25 @@ public static class CircuitSerializer
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
-    public static void SaveCircuit(Circuit circuit, string filePath)
+    public static void SaveCircuit(Circuit.Circuit circuit, string filePath)
     {
         var data = SerializeCircuit(circuit);
         var json = JsonSerializer.Serialize(data, Options);
         File.WriteAllText(filePath, json);
     }
 
-    public static Circuit LoadCircuit(string filePath, Dictionary<string, CircuitData>? customComponents = null)
+    public static Circuit.Circuit LoadCircuit(string filePath, Dictionary<string, CircuitData>? customComponents = null)
     {
         var json = File.ReadAllText(filePath);
         var data = JsonSerializer.Deserialize<CircuitData>(json, Options);
-        if (data == null) throw new InvalidOperationException("Failed to deserialize circuit");
+        if (data == null)
+        {
+            throw new InvalidOperationException("Failed to deserialize circuit");
+        }
         return DeserializeCircuit(data, customComponents);
     }
 
-    public static void SaveCustomComponent(Circuit circuit, string name, string filePath)
+    public static void SaveCustomComponent(Circuit.Circuit circuit, string name, string filePath)
     {
         var data = SerializeCircuit(circuit);
         data.Name = name;
@@ -43,11 +44,14 @@ public static class CircuitSerializer
     {
         var json = File.ReadAllText(filePath);
         var data = JsonSerializer.Deserialize<CircuitData>(json, Options);
-        if (data == null) throw new InvalidOperationException("Failed to deserialize component");
+        if (data == null)
+        {
+            throw new InvalidOperationException("Failed to deserialize component");
+        }
         return data;
     }
 
-    public static CircuitData SerializeCircuit(Circuit circuit)
+    public static CircuitData SerializeCircuit(Circuit.Circuit circuit)
     {
         var data = new CircuitData
         {
@@ -72,11 +76,17 @@ public static class CircuitSerializer
             };
 
             if (component is InputSwitch sw)
+            {
                 compData.State = sw.IsOn;
+            }
             else if (component is Clock clk)
+            {
                 compData.Frequency = clk.Frequency;
+            }
             else if (component is CustomComponent custom)
+            {
                 compData.CustomName = custom.ComponentName;
+            }
             else if (component is BusInput busIn)
             {
                 compData.BitCount = busIn.BitCount;
@@ -129,9 +139,9 @@ public static class CircuitSerializer
         return data;
     }
 
-    public static Circuit DeserializeCircuit(CircuitData data, Dictionary<string, CircuitData>? customComponents = null)
+    public static Circuit.Circuit DeserializeCircuit(CircuitData data, Dictionary<string, CircuitData>? customComponents = null)
     {
-        var circuit = new Circuit { Name = data.Name };
+        var circuit = new Circuit.Circuit { Name = data.Name };
         var componentMap = new Dictionary<int, Component>();
 
         foreach (var compData in data.Components)

@@ -1,6 +1,6 @@
 using CPUgame.Core.Primitives;
 
-namespace CPUgame.Input;
+namespace CPUgame.Core.Input;
 
 /// <summary>
 /// Platform-agnostic input state that can be populated by different input handlers

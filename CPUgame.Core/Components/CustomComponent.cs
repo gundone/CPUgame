@@ -1,15 +1,13 @@
-using System.Collections.Generic;
-using System.Linq;
-using CPUgame.Core;
+using CPUgame.Core.Circuit;
 
-namespace CPUgame.Components;
+namespace CPUgame.Core.Components;
 
 /// <summary>
 /// A custom component built from other components (composite circuit)
 /// </summary>
 public class CustomComponent : Component
 {
-    public Circuit InternalCircuit { get; }
+    public Circuit.Circuit InternalCircuit { get; }
     public string ComponentName { get; }
 
     private readonly List<BusInput> _busInputs = new();
@@ -20,7 +18,7 @@ public class CustomComponent : Component
     // Maps external pin index to (BusOutput index, bit index within that BusOutput)
     private readonly List<(int busIndex, int bitIndex)> _outputPinMap = new();
 
-    public CustomComponent(int x, int y, string name, Circuit internalCircuit) : base(x, y)
+    public CustomComponent(int x, int y, string name, Circuit.Circuit internalCircuit) : base(x, y)
     {
         ComponentName = name;
         Name = name;
@@ -30,9 +28,13 @@ public class CustomComponent : Component
         foreach (var component in internalCircuit.Components)
         {
             if (component is BusInput busIn)
+            {
                 _busInputs.Add(busIn);
+            }
             else if (component is BusOutput busOut)
+            {
                 _busOutputs.Add(busOut);
+            }
         }
 
         // Count total input pins (from all BusInputs)

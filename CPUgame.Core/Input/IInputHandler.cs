@@ -1,4 +1,4 @@
-namespace CPUgame.Input;
+namespace CPUgame.Core.Input;
 
 /// <summary>
 /// Interface for platform-specific input handling.
@@ -35,12 +35,4 @@ public interface IInputHandler
     /// End text input mode (hides on-screen keyboard on mobile)
     /// </summary>
     void EndTextInput();
-}
-
-public enum CursorType
-{
-    Arrow,
-    Hand,
-    Move,
-    Crosshair
 }

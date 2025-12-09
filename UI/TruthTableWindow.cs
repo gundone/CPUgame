@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CPUgame.Components;
-using CPUgame.Core;
+using CPUgame.Core.Circuit;
+using CPUgame.Core.Components;
+using CPUgame.Core.Levels;
+using CPUgame.Core.Localization;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 

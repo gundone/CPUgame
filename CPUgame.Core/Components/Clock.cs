@@ -1,6 +1,6 @@
-using CPUgame.Core;
+using CPUgame.Core.Circuit;
 
-namespace CPUgame.Components;
+namespace CPUgame.Core.Components;
 
 /// <summary>
 /// A clock signal generator that oscillates between High and Low
@@ -26,7 +26,10 @@ public class Clock : Component
 
     public void Update(double deltaTime)
     {
-        if (!IsRunning) return;
+        if (!IsRunning)
+        {
+            return;
+        }
 
         _elapsed += deltaTime;
         var period = 1.0 / Frequency;

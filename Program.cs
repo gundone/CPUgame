@@ -1,5 +1,7 @@
 using CPUgame;
 using CPUgame.Core;
+using CPUgame.Core.Input;
+using CPUgame.Core.Services;
 using CPUgame.Input;
 using CPUgame.Platform;
 using CPUgame.Rendering;

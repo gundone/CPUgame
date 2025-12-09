@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
-using CPUgame.Input;
+using CPUgame.Core.Circuit;
+using CPUgame.Core.Input;
+using CPUgame.Core.Localization;
+using CPUgame.Core.Services;
 
 namespace CPUgame.Core;
 

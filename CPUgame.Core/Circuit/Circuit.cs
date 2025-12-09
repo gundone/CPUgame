@@ -1,7 +1,4 @@
-using System.Collections.Generic;
-using System.Linq;
-
-namespace CPUgame.Core;
+namespace CPUgame.Core.Circuit;
 
 /// <summary>
 /// Represents a circuit containing multiple components
@@ -82,7 +79,9 @@ public class Circuit
                 foreach (var input in other.Inputs)
                 {
                     if (input.ConnectedTo == output)
+                    {
                         input.Disconnect();
+                    }
                 }
             }
         }
@@ -119,7 +118,10 @@ public class Circuit
             }
 
             // Circuit is stable
-            if (!changed) break;
+            if (!changed)
+            {
+                break;
+            }
         }
     }
 
@@ -129,7 +131,9 @@ public class Circuit
         for (int i = Components.Count - 1; i >= 0; i--)
         {
             if (Components[i].ContainsPoint(x, y))
+            {
                 return Components[i];
+            }
         }
         return null;
     }
@@ -139,7 +143,10 @@ public class Circuit
         foreach (var component in Components)
         {
             var pin = component.GetPinAt(x, y, tolerance);
-            if (pin != null) return pin;
+            if (pin != null)
+            {
+                return pin;
+            }
         }
         return null;
     }
@@ -258,8 +265,8 @@ public class Circuit
             float leftX = CalculateWireMidX(startX, startY, endX, endY, float.MinValue, endX - margin);
 
             // Find wrap Y (above or below)
-            float minY = System.Math.Min(startY, endY);
-            float maxY = System.Math.Max(startY, endY);
+            float minY = Math.Min(startY, endY);
+            float maxY = Math.Max(startY, endY);
             float wrapY = CalculateWrapY(leftX, rightX, minY, maxY, gridSize);
 
             path.Add((rightX, startY));
@@ -287,13 +294,13 @@ public class Circuit
 
             if (rightX >= rectLeft && leftX <= rectRight)
             {
-                if (comp.Y - gridSize / 2 < topMost)
+                if (comp.Y - (float)gridSize / 2 < topMost)
                 {
-                    topMost = comp.Y - gridSize / 2;
+                    topMost = comp.Y - (float)gridSize / 2;
                 }
-                if (comp.Y + comp.Height + gridSize / 2 > bottomMost)
+                if (comp.Y + comp.Height + (float)gridSize / 2 > bottomMost)
                 {
-                    bottomMost = comp.Y + comp.Height + gridSize / 2;
+                    bottomMost = comp.Y + comp.Height + (float)gridSize / 2;
                 }
             }
         }
@@ -302,7 +309,7 @@ public class Circuit
         float belowY = bottomMost + gridSize;
         float centerY = (minY + maxY) / 2;
 
-        return System.Math.Abs(centerY - aboveY) <= System.Math.Abs(centerY - belowY)
+        return Math.Abs(centerY - aboveY) <= Math.Abs(centerY - belowY)
             ? SnapToGrid(aboveY, gridSize)
             : SnapToGrid(belowY, gridSize);
     }
@@ -314,8 +321,8 @@ public class Circuit
     {
         const int gridSize = 20;
 
-        float minY = System.Math.Min(startY, endY);
-        float maxY = System.Math.Max(startY, endY);
+        float minY = Math.Min(startY, endY);
+        float maxY = Math.Max(startY, endY);
 
         // Collect components that could block a vertical line
         var blockingRects = new List<(int Left, int Right)>();
@@ -351,11 +358,11 @@ public class Circuit
         // Clamp to allowed range
         if (minAllowedX > float.MinValue + 1000)
         {
-            preferredX = System.Math.Max(preferredX, minAllowedX);
+            preferredX = Math.Max(preferredX, minAllowedX);
         }
         if (maxAllowedX < float.MaxValue - 1000)
         {
-            preferredX = System.Math.Min(preferredX, maxAllowedX);
+            preferredX = Math.Min(preferredX, maxAllowedX);
         }
 
         if (blockingRects.Count == 0)
@@ -367,8 +374,8 @@ public class Circuit
         blockingRects.Sort((a, b) => a.Left.CompareTo(b.Left));
 
         // Find gaps and pick one that satisfies constraints
-        float rangeStart = minAllowedX > float.MinValue + 1000 ? minAllowedX : System.Math.Min(startX, endX) - gridSize * 4;
-        float rangeEnd = maxAllowedX < float.MaxValue - 1000 ? maxAllowedX : System.Math.Max(startX, endX) + gridSize * 4;
+        float rangeStart = minAllowedX > float.MinValue + 1000 ? minAllowedX : Math.Min(startX, endX) - gridSize * 4;
+        float rangeEnd = maxAllowedX < float.MaxValue - 1000 ? maxAllowedX : Math.Max(startX, endX) + gridSize * 4;
 
         // Check gap before first rect
         if (blockingRects[0].Left > rangeStart)
@@ -440,7 +447,7 @@ public class Circuit
 
     private float SnapToGrid(float value, int gridSize)
     {
-        return (float)(System.Math.Round(value / gridSize) * gridSize);
+        return (float)(Math.Round(value / gridSize) * gridSize);
     }
 
     private bool IsPointNearSegment(int px, int py, float x1, float y1, float x2, float y2, int tolerance)
@@ -458,7 +465,7 @@ public class Circuit
         }
 
         // Project point onto line
-        float t = System.Math.Max(0, System.Math.Min(1, ((px - x1) * dx + (py - y1) * dy) / lengthSq));
+        float t = Math.Max(0, Math.Min(1, ((px - x1) * dx + (py - y1) * dy) / lengthSq));
         float projX = x1 + t * dx;
         float projY = y1 + t * dy;
 

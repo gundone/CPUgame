@@ -1,6 +1,6 @@
-using CPUgame.Core;
+using CPUgame.Core.Circuit;
 
-namespace CPUgame.Components;
+namespace CPUgame.Core.Components;
 
 /// <summary>
 /// A switch that can be toggled to provide High or Low signal

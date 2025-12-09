@@ -1,5 +1,8 @@
 using System.Collections.Generic;
-using CPUgame.Components;
+using CPUgame.Core.Circuit;
+using CPUgame.Core.Components;
+using CPUgame.Core.Localization;
+using CPUgame.Core.Services;
 using CPUgame.UI;
 using Microsoft.Xna.Framework;
 
@@ -14,7 +17,7 @@ public interface IToolboxManager
     void LoadCustomComponents(System.Collections.Generic.IEnumerable<string> componentNames);
     void SetLevelModeFilter(bool isLevelMode, IEnumerable<string>? unlockedComponents);
     void Update(Point mousePos, bool primaryPressed, bool primaryJustPressed, bool primaryJustReleased);
-    Component? HandleDrops(Point mousePos, Point worldMousePos, Circuit circuit, int gridSize, bool showPinValues, bool primaryJustReleased, IStatusService statusService, ComponentBuilder componentBuilder);
+    Component? HandleDrops(Point mousePos, Point worldMousePos, Circuit.Circuit circuit, int gridSize, bool showPinValues, bool primaryJustReleased, IStatusService statusService, ComponentBuilder componentBuilder);
     void ClearDragState();
     bool ContainsPoint(Point pos);
 }
@@ -96,7 +99,7 @@ public class ToolboxManager : IToolboxManager
         UserToolbox.Update(mousePos, primaryPressed, primaryJustPressed, primaryJustReleased);
     }
 
-    public Component? HandleDrops(Point mousePos, Point worldMousePos, Circuit circuit, int gridSize, bool showPinValues, bool primaryJustReleased, IStatusService statusService, ComponentBuilder componentBuilder)
+    public Component? HandleDrops(Point mousePos, Point worldMousePos, Circuit.Circuit circuit, int gridSize, bool showPinValues, bool primaryJustReleased, IStatusService statusService, ComponentBuilder componentBuilder)
     {
         if (!primaryJustReleased) return null;
 
@@ -123,7 +126,7 @@ public class ToolboxManager : IToolboxManager
         return placedComponent;
     }
 
-    private Component? PlaceFromMainToolbox(Point worldMousePos, Circuit circuit, int gridSize, bool showPinValues, IStatusService statusService)
+    private Component? PlaceFromMainToolbox(Point worldMousePos, Circuit.Circuit circuit, int gridSize, bool showPinValues, IStatusService statusService)
     {
         var x = (worldMousePos.X / gridSize) * gridSize;
         var y = (worldMousePos.Y / gridSize) * gridSize;
@@ -153,7 +156,7 @@ public class ToolboxManager : IToolboxManager
         return newComponent;
     }
 
-    private Component? PlaceFromUserToolbox(Point worldMousePos, Circuit circuit, int gridSize, IStatusService statusService, ComponentBuilder componentBuilder)
+    private Component? PlaceFromUserToolbox(Point worldMousePos, Circuit.Circuit circuit, int gridSize, IStatusService statusService, ComponentBuilder componentBuilder)
     {
         var x = (worldMousePos.X / gridSize) * gridSize;
         var y = (worldMousePos.Y / gridSize) * gridSize;

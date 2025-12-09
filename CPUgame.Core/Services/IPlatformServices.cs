@@ -1,6 +1,4 @@
-using System.Collections.Generic;
-
-namespace CPUgame.Core;
+namespace CPUgame.Core.Services;
 
 /// <summary>
 /// Platform-specific services interface.

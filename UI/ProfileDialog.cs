@@ -1,7 +1,8 @@
 using System;
 using System.Collections.Generic;
 using CPUgame.Core;
-using CPUgame.Input;
+using CPUgame.Core.Input;
+using CPUgame.Core.Localization;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 

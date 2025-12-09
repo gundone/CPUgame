@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using CPUgame.Core;
+using CPUgame.Core.Circuit;
 using CPUgame.Core.Primitives;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;

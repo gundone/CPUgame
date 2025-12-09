@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
-using CPUgame.Components;
+using CPUgame.Core.Circuit;
+using CPUgame.Core.Components;
+using CPUgame.Core.Levels;
 using CPUgame.UI;
 
 namespace CPUgame.Core;
@@ -25,7 +27,7 @@ public interface ILevelService
     void NextLevel();
     void PreviousLevel();
     bool CheckLevelCompletion(List<TruthTableRow> simulatedTable);
-    void SetupLevelCircuit(Circuit circuit, int gridSize);
+    void SetupLevelCircuit(Circuit.Circuit circuit, int gridSize);
     bool IsLevelComponent(Component component);
 
     event Action? OnModeChanged;
@@ -195,7 +197,7 @@ public class LevelService : ILevelService
         return true;
     }
 
-    public void SetupLevelCircuit(Circuit circuit, int gridSize)
+    public void SetupLevelCircuit(Circuit.Circuit circuit, int gridSize)
     {
         // Clear previous level components tracking
         _levelComponents.Clear();

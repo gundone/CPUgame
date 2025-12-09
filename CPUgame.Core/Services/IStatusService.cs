@@ -1,4 +1,6 @@
-namespace CPUgame.Core;
+using CPUgame.Core.Localization;
+
+namespace CPUgame.Core.Services;
 
 public interface IStatusService
 {
@@ -24,7 +26,9 @@ public class StatusService : IStatusService
         {
             _remainingTime -= deltaTime;
             if (_remainingTime <= 0)
+            {
                 Message = LocalizationManager.Get("status.ready");
+            }
         }
     }
 }

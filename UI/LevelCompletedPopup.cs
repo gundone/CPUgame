@@ -1,5 +1,6 @@
 using System;
-using CPUgame.Core;
+using CPUgame.Core.Levels;
+using CPUgame.Core.Localization;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 

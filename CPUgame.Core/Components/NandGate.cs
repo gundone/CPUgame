@@ -1,6 +1,6 @@
-using CPUgame.Core;
+using CPUgame.Core.Circuit;
 
-namespace CPUgame.Components;
+namespace CPUgame.Core.Components;
 
 /// <summary>
 /// The fundamental NAND gate - all other gates can be built from this
@@ -26,5 +26,4 @@ public class NandGate : Component
     {
         Output.Value = InputA.Value.Nand(InputB.Value);
     }
-
 }

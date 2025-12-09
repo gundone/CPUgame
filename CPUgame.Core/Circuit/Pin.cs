@@ -1,7 +1,6 @@
-using System.Collections.Generic;
 using CPUgame.Core.Primitives;
 
-namespace CPUgame.Core;
+namespace CPUgame.Core.Circuit;
 
 /// <summary>
 /// Represents an input or output pin on a component

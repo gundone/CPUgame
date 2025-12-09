@@ -1,7 +1,6 @@
-using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace CPUgame.Core;
+namespace CPUgame.Core.Levels;
 
 /// <summary>
 /// Represents a game level with a target truth table

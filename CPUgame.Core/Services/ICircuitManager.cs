@@ -1,11 +1,11 @@
-using System;
-using System.Collections.Generic;
+using CPUgame.Core.Localization;
+using CPUgame.Core.Serialization;
 
-namespace CPUgame.Core;
+namespace CPUgame.Core.Services;
 
 public interface ICircuitManager
 {
-    Circuit Circuit { get; }
+    Circuit.Circuit Circuit { get; }
     Dictionary<string, CircuitData> CustomComponents { get; }
     event Action? OnCircuitChanged;
     void NewCircuit();
@@ -18,7 +18,7 @@ public class CircuitManager : ICircuitManager
     private readonly IPlatformServices _platformServices;
     private readonly IStatusService _statusService;
 
-    public Circuit Circuit { get; private set; }
+    public Circuit.Circuit Circuit { get; private set; }
     public Dictionary<string, CircuitData> CustomComponents { get; } = new();
     public event Action? OnCircuitChanged;
 
@@ -26,12 +26,12 @@ public class CircuitManager : ICircuitManager
     {
         _platformServices = platformServices;
         _statusService = statusService;
-        Circuit = new Circuit { Name = "My Circuit" };
+        Circuit = new Circuit.Circuit { Name = "My Circuit" };
     }
 
     public void NewCircuit()
     {
-        Circuit = new Circuit { Name = "New Circuit" };
+        Circuit = new Circuit.Circuit { Name = "New Circuit" };
         OnCircuitChanged?.Invoke();
         _statusService.Show(LocalizationManager.Get("status.ready"));
     }

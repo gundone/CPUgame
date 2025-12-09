@@ -1,4 +1,5 @@
 using System;
+using CPUgame.Core.Input;
 using CPUgame.Core.Primitives;
 using Microsoft.Xna.Framework.Input;
 using Point = Microsoft.Xna.Framework.Point;

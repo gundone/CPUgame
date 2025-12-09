@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CPUgame.Components;
+using CPUgame.Core.Circuit;
+using CPUgame.Core.Components;
+using CPUgame.Core.Serialization;
+using CPUgame.Core.Services;
 
 namespace CPUgame.Core;
 
@@ -101,7 +104,7 @@ public class ComponentBuilder
     public bool BuildComponent(string name, List<Component> selected, int gridSize)
     {
         // Create a new circuit with only selected components
-        var subCircuit = new Circuit { Name = name };
+        var subCircuit = new Circuit.Circuit { Name = name };
         var componentMap = new Dictionary<Component, Component>();
 
         // Clone components

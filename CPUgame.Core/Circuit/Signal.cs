@@ -1,4 +1,4 @@
-namespace CPUgame.Core;
+namespace CPUgame.Core.Circuit;
 
 /// <summary>
 /// Represents a digital signal state

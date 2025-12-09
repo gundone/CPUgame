@@ -1,6 +1,6 @@
-using CPUgame.Core;
+using CPUgame.Core.Circuit;
 
-namespace CPUgame.Components;
+namespace CPUgame.Core.Components;
 
 /// <summary>
 /// An LED that shows the signal state visually

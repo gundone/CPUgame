@@ -1,5 +1,8 @@
 using System.Collections.Generic;
+using CPUgame.Core.Circuit;
+using CPUgame.Core.Localization;
 using CPUgame.Core.Primitives;
+using CPUgame.Core.Services;
 
 namespace CPUgame.Core;
 
