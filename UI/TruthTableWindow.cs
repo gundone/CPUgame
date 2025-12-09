@@ -5,6 +5,7 @@ using CPUgame.Core.Circuit;
 using CPUgame.Core.Components;
 using CPUgame.Core.Levels;
 using CPUgame.Core.Localization;
+using CPUgame.Core.TruthTable;
 using FontStashSharp;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -25,26 +26,26 @@ public class TruthTableWindow
     public List<TruthTableRow> TruthTableRows => _truthTableRows;
 
     private Point _windowDragOffset;
-    private List<TruthTableRow> _truthTableRows = new();
+    private readonly List<TruthTableRow> _truthTableRows = new();
     private int _totalInputBits;
     private int _totalOutputBits;
-    private List<string> _inputLabels = new();
-    private List<string> _outputLabels = new();
+    private readonly List<string> _inputLabels = new();
+    private readonly List<string> _outputLabels = new();
 
     // Level mode
     private GameLevel? _currentLevel;
-    private List<bool> _rowMatchStatus = new(); // Track which rows match the expected output
+    private readonly List<bool> _rowMatchStatus = new(); // Track which rows match the expected output
 
     // Bus info for header rows
-    private List<BusHeaderInfo> _inputBuses = new();
-    private List<BusHeaderInfo> _outputBuses = new();
+    private readonly List<BusHeaderInfo> _inputBuses = new();
+    private readonly List<BusHeaderInfo> _outputBuses = new();
 
     // Calculated column widths (accounting for header text)
     private int _inputColumnWidth;
     private int _outputColumnWidth;
     private int _expectedOutputColumnWidth;
-    private List<int> _inputBusWidths = new();
-    private List<int> _outputBusWidths = new();
+    private readonly List<int> _inputBusWidths = new();
+    private readonly List<int> _outputBusWidths = new();
     private SpriteFontBase? _font;
 
     // Animation for simulation indicator
@@ -53,7 +54,7 @@ public class TruthTableWindow
 
     // Scrolling
     private int _scrollOffset;
-    private int _maxVisibleRows = 16;
+    private readonly int _maxVisibleRows = 16;
     private bool _isScrollbarDragging;
     private int _scrollbarDragStartY;
     private int _scrollbarDragStartOffset;
@@ -103,8 +104,6 @@ public class TruthTableWindow
     private static readonly Color ScrollbarThumbHoverColor = new(100, 100, 120);
     private static readonly Color RowMatchColor = new(40, 70, 50);
     private static readonly Color RowMismatchColor = new(70, 40, 40);
-    private static readonly Color MatchIndicatorColor = new(80, 200, 120);
-    private static readonly Color MismatchIndicatorColor = new(200, 80, 80);
     private static readonly Color LevelPassedColor = new(50, 180, 100);
 
     public TruthTableWindow(int x, int y)
@@ -259,7 +258,7 @@ public class TruthTableWindow
         // Count input pins from BusInput components
         foreach (var component in circuit.Components.OfType<BusInput>().OrderBy(c => c.Y).ThenBy(c => c.X))
         {
-            _inputBuses.Add(new BusHeaderInfo(component.Title ?? component.Name, component.BitCount));
+            _inputBuses.Add(new BusHeaderInfo(component.Title!, component.BitCount));
             for (int i = component.BitCount - 1; i >= 0; i--)
             {
                 _inputLabels.Add($"{component.Title ?? component.Name}[{i}]");
@@ -1249,35 +1248,7 @@ public class TruthTableWindow
     }
 }
 
-/// <summary>
-/// Represents a single row in the truth table
-/// </summary>
-public class TruthTableRow
-{
-    public List<bool> InputValues { get; }
-    public List<bool> OutputValues { get; }
 
-    public TruthTableRow(List<bool> inputValues, List<bool> outputValues)
-    {
-        InputValues = new List<bool>(inputValues);
-        OutputValues = new List<bool>(outputValues);
-    }
-}
-
-/// <summary>
-/// Stores information about a bus for header display
-/// </summary>
-public class BusHeaderInfo
-{
-    public string Title { get; }
-    public int BitCount { get; }
-
-    public BusHeaderInfo(string title, int bitCount)
-    {
-        Title = title;
-        BitCount = bitCount;
-    }
-}
 
 /// <summary>
 /// Actions that can be triggered from truth table buttons

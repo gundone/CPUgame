@@ -28,8 +28,6 @@ public class Toolbox
     public string? DraggingCustomComponent { get; private set; }
     public Point DragPosition { get; private set; }
 
-    // Delete mode for user components
-    public bool IsDeleteMode { get; private set; }
     public string? HoveredComponentForDelete { get; private set; }
 
     private readonly List<ToolboxItem> _items = new();

@@ -4,6 +4,7 @@ using System.Linq;
 using CPUgame.Core;
 using CPUgame.Core.Levels;
 using CPUgame.Core.Localization;
+using CPUgame.Core.Services;
 using FontStashSharp;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;

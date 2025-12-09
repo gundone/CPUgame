@@ -22,7 +22,6 @@ public class MainMenu
     private const int SubmenuPadding = 4;
 
     private static readonly Color MenuBarColor = new(40, 40, 50);
-    private static readonly Color MenuItemColor = new(50, 50, 60);
     private static readonly Color MenuItemHoverColor = new(70, 70, 85);
     private static readonly Color SubmenuColor = new(45, 45, 55, 250);
     private static readonly Color TextColor = new(220, 220, 230);
@@ -309,11 +308,11 @@ public class MainMenu
         // Draw open submenu
         if (_openMenu != null)
         {
-            DrawSubmenu(spriteBatch, pixel, font, _openMenu, mousePos);
+            DrawSubmenu(spriteBatch, pixel, font, _openMenu);
         }
     }
 
-    private void DrawSubmenu(SpriteBatch spriteBatch, Texture2D pixel, SpriteFontBase font, MenuItem menu, Point mousePos)
+    private void DrawSubmenu(SpriteBatch spriteBatch, Texture2D pixel, SpriteFontBase font, MenuItem menu)
     {
         var rect = GetSubmenuRect(menu);
 

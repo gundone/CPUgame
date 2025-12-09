@@ -1,10 +1,8 @@
-using System;
-using System.Collections.Generic;
 using CPUgame.Core.Circuit;
 using CPUgame.Core.Components;
 using CPUgame.Core.Serialization;
 
-namespace CPUgame.Core;
+namespace CPUgame.Core.Services;
 
 /// <summary>
 /// Interface for building and managing custom components

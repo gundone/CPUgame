@@ -21,7 +21,6 @@ public class GameField : Game, IGameField
     private readonly GraphicsDeviceManager _graphics;
     private SpriteBatch _spriteBatch = null!;
 
-    private readonly IPlatformServices _platformServices;
     private readonly IInputHandler _inputHandler;
     private readonly InputState _inputState = new();
 
@@ -59,7 +58,6 @@ public class GameField : Game, IGameField
         IToolboxManager toolboxManager, IGameRenderer gameRenderer, ITruthTableService truthTableService,
         ILevelService levelService, IProfileService profileService)
     {
-        _platformServices = platformServices;
         _inputHandler = inputHandler;
         _statusService = statusService;
         _circuitManager = circuitManager;
@@ -81,7 +79,7 @@ public class GameField : Game, IGameField
         IsMouseVisible = true;
         Window.AllowUserResizing = true;
 
-        _platformServices.EnsureDirectoryExists(_platformServices.GetComponentsFolder());
+        platformServices.EnsureDirectoryExists(platformServices.GetComponentsFolder());
     }
 
     protected override void Initialize()

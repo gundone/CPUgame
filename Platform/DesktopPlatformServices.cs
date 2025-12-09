@@ -84,15 +84,13 @@ public class DesktopPlatformServices : IPlatformServices
 
         RunOnStaThread(() =>
         {
-            using var dialog = new SaveFileDialog
-            {
-                Title = title,
-                FileName = defaultFileName,
-                Filter = filter,
-                DefaultExt = ".json",
-                AddExtension = true,
-                InitialDirectory = initialDirectory ?? GetSavesFolder()
-            };
+            using var dialog = new SaveFileDialog();
+            dialog.Title = title;
+            dialog.FileName = defaultFileName;
+            dialog.Filter = filter;
+            dialog.DefaultExt = ".json";
+            dialog.AddExtension = true;
+            dialog.InitialDirectory = initialDirectory ?? GetSavesFolder();
 
             var result = dialog.ShowDialog();
             dialogResult.Success = result == DialogResult.OK;
@@ -108,12 +106,10 @@ public class DesktopPlatformServices : IPlatformServices
 
         RunOnStaThread(() =>
         {
-            using var dialog = new OpenFileDialog
-            {
-                Title = title,
-                Filter = filter,
-                InitialDirectory = initialDirectory ?? GetSavesFolder()
-            };
+            using var dialog = new OpenFileDialog();
+            dialog.Title = title;
+            dialog.Filter = filter;
+            dialog.InitialDirectory = initialDirectory ?? GetSavesFolder();
 
             var result = dialog.ShowDialog();
             dialogResult.Success = result == DialogResult.OK;

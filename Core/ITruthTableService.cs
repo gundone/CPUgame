@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using CPUgame.Core.Levels;
+using CPUgame.Core.TruthTable;
 using CPUgame.UI;
 using FontStashSharp;
 using Microsoft.Xna.Framework;
