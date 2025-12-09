@@ -12,7 +12,7 @@ public interface ICommandHandler
 {
     bool ShowPinValues { get; }
     event Action? OnBuildComponent;
-    void HandleCommands(InputState input, SelectionManager selection, Circuit.Circuit circuit, IWireManager wireManager, int gridSize);
+    void HandleCommands(InputState input, ISelectionManager selection, Circuit.Circuit circuit, IWireManager wireManager, int gridSize);
 }
 
 public class CommandHandler : ICommandHandler
@@ -31,7 +31,7 @@ public class CommandHandler : ICommandHandler
         _levelService = levelService;
     }
 
-    public void HandleCommands(InputState input, SelectionManager selection, Circuit.Circuit circuit, IWireManager wireManager, int gridSize)
+    public void HandleCommands(InputState input, ISelectionManager selection, Circuit.Circuit circuit, IWireManager wireManager, int gridSize)
     {
         if (input.DeleteCommand)
         {
@@ -80,7 +80,7 @@ public class CommandHandler : ICommandHandler
         ApplyComponentCommands(input, selection, circuit, gridSize);
     }
 
-    private void DeleteSelected(SelectionManager selection)
+    private void DeleteSelected(ISelectionManager selection)
     {
         if (selection.DeleteSelectedWire())
         {
@@ -111,7 +111,7 @@ public class CommandHandler : ICommandHandler
         }
     }
 
-    private void ApplyComponentCommands(InputState input, SelectionManager selection, Circuit.Circuit circuit, int gridSize)
+    private void ApplyComponentCommands(InputState input, ISelectionManager selection, Circuit.Circuit circuit, int gridSize)
     {
         var selected = selection.GetSelectedComponents();
         var allInputPins = circuit.Components.SelectMany(c => c.Inputs).ToList();

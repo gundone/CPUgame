@@ -16,10 +16,15 @@ services.AddSingleton<IInputHandler, DesktopInputHandler>();
 // Core services
 services.AddSingleton<IStatusService, StatusService>();
 services.AddSingleton<ICircuitManager, CircuitManager>();
+services.AddSingleton<ICameraController, CameraController>();
+services.AddSingleton<IComponentBuilder, ComponentBuilder>();
+services.AddSingleton<IDialogService, DialogService>();
 services.AddSingleton<IWireManager, WireManager>();
 services.AddSingleton<IManualWireService, ManualWireService>();
 services.AddSingleton<ICommandHandler, CommandHandler>();
 services.AddSingleton<IToolboxManager, ToolboxManager>();
+services.AddSingleton<IPrimitiveDrawer, PrimitiveDrawer>();
+services.AddSingleton<IFontService, FontService>();
 services.AddSingleton<ICircuitRenderer, CircuitRenderer>();
 services.AddSingleton<IGameRenderer, GameRenderer>();
 services.AddSingleton<ITruthTableService, TruthTableService>();

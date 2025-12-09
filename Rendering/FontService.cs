@@ -10,12 +10,12 @@ namespace CPUgame.Rendering;
 /// Provides dynamically-sized fonts using FontStashSharp.
 /// Renders crisp text at any zoom level.
 /// </summary>
-public class FontService : IDisposable
+public class FontService : IFontService
 {
-    private readonly FontSystem _fontSystem;
+    private FontSystem? _fontSystem;
     private const int BaseFontSize = 14;
 
-    public FontService(GraphicsDevice graphicsDevice)
+    public void Initialize(GraphicsDevice graphicsDevice)
     {
         var settings = new FontSystemSettings
         {
@@ -52,7 +52,7 @@ public class FontService : IDisposable
     /// </summary>
     public SpriteFontBase GetFont()
     {
-        return _fontSystem.GetFont(BaseFontSize);
+        return _fontSystem!.GetFont(BaseFontSize);
     }
 
     /// <summary>
@@ -61,7 +61,7 @@ public class FontService : IDisposable
     public SpriteFontBase GetFont(float scale)
     {
         int size = Math.Max(8, (int)(BaseFontSize * scale));
-        return _fontSystem.GetFont(size);
+        return _fontSystem!.GetFont(size);
     }
 
     /// <summary>
@@ -69,7 +69,7 @@ public class FontService : IDisposable
     /// </summary>
     public SpriteFontBase GetFontAtSize(int size)
     {
-        return _fontSystem.GetFont(Math.Max(8, size));
+        return _fontSystem!.GetFont(Math.Max(8, size));
     }
 
     /// <summary>
@@ -81,11 +81,11 @@ public class FontService : IDisposable
         // At zoom 1.0, use base size
         // At zoom 2.0, use 2x size, etc.
         int size = Math.Max(8, (int)(BaseFontSize * zoom));
-        return _fontSystem.GetFont(size);
+        return _fontSystem!.GetFont(size);
     }
 
     public void Dispose()
     {
-        _fontSystem.Dispose();
+        _fontSystem?.Dispose();
     }
 }

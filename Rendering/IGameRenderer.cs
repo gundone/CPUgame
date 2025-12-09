@@ -18,15 +18,15 @@ public interface IGameRenderer
     int GridSize { get; }
     Texture2D Pixel { get; }
     float TitleFontScale { get; set; }
-    void Initialize(GraphicsDevice graphicsDevice, FontService fontService);
-    void DrawWorld(SpriteBatch spriteBatch, Circuit circuit, CameraController camera, SelectionManager selection, IWireManager wireManager, IManualWireService manualWireService, Pin? hoveredPin, Point2 mousePos, int screenWidth, int screenHeight, bool isDraggingItem);
-    void DrawUI(SpriteBatch spriteBatch, IToolboxManager toolboxManager, MainMenu mainMenu, IStatusService statusService, IDialogService dialogService, ITruthTableService truthTableService, CameraController camera, Point2 mousePos, int screenWidth, int screenHeight, SpriteFontBase font);
+    void Initialize(GraphicsDevice graphicsDevice, IFontService fontService);
+    void DrawWorld(SpriteBatch spriteBatch, Circuit circuit, ICameraController camera, ISelectionManager selection, IWireManager wireManager, IManualWireService manualWireService, Pin? hoveredPin, Point2 mousePos, int screenWidth, int screenHeight, bool isDraggingItem);
+    void DrawUI(SpriteBatch spriteBatch, IToolboxManager toolboxManager, MainMenu mainMenu, IStatusService statusService, IDialogService dialogService, ITruthTableService truthTableService, ICameraController camera, Point2 mousePos, int screenWidth, int screenHeight, SpriteFontBase font);
 }
 
 public class GameRenderer : IGameRenderer
 {
     private readonly ICircuitRenderer _circuitRenderer;
-    private FontService _fontService = null!;
+    private IFontService _fontService = null!;
 
     public int GridSize => _circuitRenderer.GridSize;
     public Texture2D Pixel => _circuitRenderer.Pixel;
@@ -37,13 +37,13 @@ public class GameRenderer : IGameRenderer
         _circuitRenderer = circuitRenderer;
     }
 
-    public void Initialize(GraphicsDevice graphicsDevice, FontService fontService)
+    public void Initialize(GraphicsDevice graphicsDevice, IFontService fontService)
     {
         _circuitRenderer.Initialize(graphicsDevice, fontService);
         _fontService = fontService;
     }
 
-    public void DrawWorld(SpriteBatch spriteBatch, Circuit circuit, CameraController camera, SelectionManager selection, IWireManager wireManager, IManualWireService manualWireService, Pin? hoveredPin, Point2 mousePos, int screenWidth, int screenHeight, bool isDraggingItem)
+    public void DrawWorld(SpriteBatch spriteBatch, Circuit circuit, ICameraController camera, ISelectionManager selection, IWireManager wireManager, IManualWireService manualWireService, Pin? hoveredPin, Point2 mousePos, int screenWidth, int screenHeight, bool isDraggingItem)
     {
         // Set zoom for circuit renderer so fonts scale appropriately
         _circuitRenderer.CurrentZoom = camera.Zoom;
@@ -116,7 +116,7 @@ public class GameRenderer : IGameRenderer
         }
     }
 
-    public void DrawUI(SpriteBatch spriteBatch, IToolboxManager toolboxManager, MainMenu mainMenu, IStatusService statusService, IDialogService dialogService, ITruthTableService truthTableService, CameraController camera, Point2 mousePos, int screenWidth, int screenHeight, SpriteFontBase font)
+    public void DrawUI(SpriteBatch spriteBatch, IToolboxManager toolboxManager, MainMenu mainMenu, IStatusService statusService, IDialogService dialogService, ITruthTableService truthTableService, ICameraController camera, Point2 mousePos, int screenWidth, int screenHeight, SpriteFontBase font)
     {
         var mousePosMonoGame = mousePos.ToMonoGame();
         DrawZoomIndicator(spriteBatch, camera.Zoom, mainMenu.Height);
@@ -132,7 +132,7 @@ public class GameRenderer : IGameRenderer
         }
     }
 
-    private void DrawSelectionRectangle(SpriteBatch spriteBatch, SelectionManager selection, float zoom)
+    private void DrawSelectionRectangle(SpriteBatch spriteBatch, ISelectionManager selection, float zoom)
     {
         int minX = Math.Min(selection.SelectionStart.X, selection.SelectionEnd.X);
         int maxX = Math.Max(selection.SelectionStart.X, selection.SelectionEnd.X);

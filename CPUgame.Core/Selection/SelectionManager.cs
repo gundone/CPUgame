@@ -6,7 +6,7 @@ namespace CPUgame.Core.Selection;
 /// <summary>
 /// Manages component selection and selection rectangle
 /// </summary>
-public class SelectionManager
+public class SelectionManager : ISelectionManager
 {
     private readonly Circuit.Circuit _circuit;
 

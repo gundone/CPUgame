@@ -80,7 +80,6 @@ public class MonoGameDrawContext : IDrawContext
     public void DrawCircle(Vector2f center, float radius, ColorRgba color, int thickness = 1)
     {
         // Draw circle outline using line segments
-        var c = ToColor(color);
         const int segments = 32;
         float angleStep = MathF.PI * 2 / segments;
 

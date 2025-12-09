@@ -12,8 +12,8 @@ namespace CPUgame.Rendering;
 
 public class CircuitRenderer : ICircuitRenderer
 {
-    private PrimitiveDrawer _drawer = null!;
-    private FontService? _fontService;
+    private readonly IPrimitiveDrawer _drawer;
+    private IFontService? _fontService;
 
     // Colors
     public static readonly Color BackgroundColor = new(30, 30, 35);
@@ -36,9 +36,14 @@ public class CircuitRenderer : ICircuitRenderer
 
     public Texture2D Pixel => _drawer.Pixel;
 
-    public void Initialize(GraphicsDevice graphicsDevice, FontService fontService)
+    public CircuitRenderer(IPrimitiveDrawer drawer)
     {
-        _drawer = new PrimitiveDrawer(graphicsDevice);
+        _drawer = drawer;
+    }
+
+    public void Initialize(GraphicsDevice graphicsDevice, IFontService fontService)
+    {
+        _drawer.Initialize(graphicsDevice);
         _fontService = fontService;
     }
 

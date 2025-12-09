@@ -13,11 +13,11 @@ public interface IToolboxManager
     Toolbox MainToolbox { get; }
     Toolbox UserToolbox { get; }
     bool IsInteracting { get; }
-    void Initialize(int screenWidth, ComponentBuilder componentBuilder);
+    void Initialize(int screenWidth, IComponentBuilder componentBuilder);
     void LoadCustomComponents(System.Collections.Generic.IEnumerable<string> componentNames);
     void SetLevelModeFilter(bool isLevelMode, IEnumerable<string>? unlockedComponents);
     void Update(Point mousePos, bool primaryPressed, bool primaryJustPressed, bool primaryJustReleased);
-    Component? HandleDrops(Point mousePos, Point worldMousePos, Circuit.Circuit circuit, int gridSize, bool showPinValues, bool primaryJustReleased, IStatusService statusService, ComponentBuilder componentBuilder);
+    Component? HandleDrops(Point mousePos, Point worldMousePos, Circuit.Circuit circuit, int gridSize, bool showPinValues, bool primaryJustReleased, IStatusService statusService, IComponentBuilder componentBuilder);
     void ClearDragState();
     bool ContainsPoint(Point pos);
 }
@@ -34,7 +34,7 @@ public class ToolboxManager : IToolboxManager
     public bool IsInteracting => MainToolbox.IsDraggingItem || MainToolbox.IsDraggingWindow ||
                                   UserToolbox.IsDraggingItem || UserToolbox.IsDraggingWindow;
 
-    public void Initialize(int screenWidth, ComponentBuilder componentBuilder)
+    public void Initialize(int screenWidth, IComponentBuilder componentBuilder)
     {
         MainToolbox = new Toolbox(screenWidth - 200, 60);
         UserToolbox = new Toolbox(screenWidth - 200, 300, isUserComponents: true);
@@ -99,7 +99,7 @@ public class ToolboxManager : IToolboxManager
         UserToolbox.Update(mousePos, primaryPressed, primaryJustPressed, primaryJustReleased);
     }
 
-    public Component? HandleDrops(Point mousePos, Point worldMousePos, Circuit.Circuit circuit, int gridSize, bool showPinValues, bool primaryJustReleased, IStatusService statusService, ComponentBuilder componentBuilder)
+    public Component? HandleDrops(Point mousePos, Point worldMousePos, Circuit.Circuit circuit, int gridSize, bool showPinValues, bool primaryJustReleased, IStatusService statusService, IComponentBuilder componentBuilder)
     {
         if (!primaryJustReleased) return null;
 
@@ -156,7 +156,7 @@ public class ToolboxManager : IToolboxManager
         return newComponent;
     }
 
-    private Component? PlaceFromUserToolbox(Point worldMousePos, Circuit.Circuit circuit, int gridSize, IStatusService statusService, ComponentBuilder componentBuilder)
+    private Component? PlaceFromUserToolbox(Point worldMousePos, Circuit.Circuit circuit, int gridSize, IStatusService statusService, IComponentBuilder componentBuilder)
     {
         var x = (worldMousePos.X / gridSize) * gridSize;
         var y = (worldMousePos.Y / gridSize) * gridSize;

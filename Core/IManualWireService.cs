@@ -74,9 +74,16 @@ public interface IManualWireService
     void RemoveLastPoint();
 
     /// <summary>
-    /// Start editing a selected manual wire's nodes.
+    /// Start editing a selected wire's nodes.
+    /// If the wire doesn't have a ManualWirePath, one will be created automatically.
     /// </summary>
     void StartEditingWire(Pin inputPin, int gridSize);
+
+    /// <summary>
+    /// Converts an auto-routed wire to a manual wire by creating a path with endpoints.
+    /// Returns true if conversion was successful.
+    /// </summary>
+    bool ConvertToManualWire(Pin inputPin);
 
     /// <summary>
     /// Stop editing the current wire.
@@ -250,15 +257,40 @@ public class ManualWireService : IManualWireService
 
     public void StartEditingWire(Pin inputPin, int gridSize)
     {
+        _gridSize = gridSize;
+
+        // If wire doesn't have a ManualWirePath, create one
         if (inputPin.ManualWirePath == null || inputPin.ManualWirePath.Count < 2)
         {
-            return;
+            if (!ConvertToManualWire(inputPin))
+            {
+                return;
+            }
         }
 
         Cancel(); // Cancel any active wire drawing
-        _gridSize = gridSize;
         _editingWire = inputPin;
         _draggingNodeIndex = -1;
+    }
+
+    public bool ConvertToManualWire(Pin inputPin)
+    {
+        // Must be an input pin with a connection
+        if (inputPin.Type != PinType.Input || inputPin.ConnectedTo == null)
+        {
+            return false;
+        }
+
+        var outputPin = inputPin.ConnectedTo;
+
+        // Create a simple two-point path from output to input
+        inputPin.ManualWirePath = new List<Point2>
+        {
+            new Point2(outputPin.WorldX, outputPin.WorldY),
+            new Point2(inputPin.WorldX, inputPin.WorldY)
+        };
+
+        return true;
     }
 
     public void StopEditingWire()

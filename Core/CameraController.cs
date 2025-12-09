@@ -7,7 +7,7 @@ namespace CPUgame.Core;
 /// <summary>
 /// Handles camera zoom and panning for the circuit view
 /// </summary>
-public class CameraController
+public class CameraController : ICameraController
 {
     public float Zoom { get; private set; } = 1.0f;
     public Vector2 Offset { get; private set; } = Vector2.Zero;

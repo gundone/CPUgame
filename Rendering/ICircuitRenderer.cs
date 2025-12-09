@@ -15,7 +15,7 @@ public interface ICircuitRenderer
     Texture2D Pixel { get; }
     float CurrentZoom { get; set; }
 
-    void Initialize(GraphicsDevice graphicsDevice, FontService fontService);
+    void Initialize(GraphicsDevice graphicsDevice, IFontService fontService);
     void DrawGrid(SpriteBatch spriteBatch, float cameraX, float cameraY, int screenWidth, int screenHeight, float zoom);
     void DrawCircuit(SpriteBatch spriteBatch, Circuit circuit, Pin? selectedWire = null);
     void DrawWire(SpriteBatch spriteBatch, Pin from, Pin to, bool isSelected = false);

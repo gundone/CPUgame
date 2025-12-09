@@ -5,28 +5,21 @@ using Microsoft.Xna.Framework.Graphics;
 namespace CPUgame.Rendering;
 
 /// <summary>
-/// Helper class for drawing primitive shapes without textures
+/// Helper class for drawing primitive shapes.
 /// </summary>
-public class PrimitiveDrawer
+public class PrimitiveDrawer : IPrimitiveDrawer
 {
-    private readonly GraphicsDevice _graphicsDevice;
-    private readonly BasicEffect _effect;
+    private GraphicsDevice _graphicsDevice = null!;
     private Texture2D? _pixel;
     private Texture2D? _circleTexture;
+    private Texture2D? _ringTexture;
     private const int CircleTextureSize = 64;
 
-    public PrimitiveDrawer(GraphicsDevice graphicsDevice)
+    public void Initialize(GraphicsDevice graphicsDevice)
     {
         _graphicsDevice = graphicsDevice;
-        _effect = new BasicEffect(graphicsDevice)
-        {
-            VertexColorEnabled = true,
-            Projection = Matrix.CreateOrthographicOffCenter(
-                0, graphicsDevice.Viewport.Width,
-                graphicsDevice.Viewport.Height, 0,
-                0, 1)
-        };
         CreateCircleTexture();
+        CreateRingTexture();
     }
 
     private void CreateCircleTexture()
@@ -54,6 +47,36 @@ public class PrimitiveDrawer
         _circleTexture.SetData(data);
     }
 
+    private void CreateRingTexture()
+    {
+        // Create anti-aliased ring (circle outline) texture
+        _ringTexture = new Texture2D(_graphicsDevice, CircleTextureSize, CircleTextureSize);
+        var data = new Color[CircleTextureSize * CircleTextureSize];
+        float center = CircleTextureSize / 2f;
+        float outerRadius = center - 1.5f;
+        float ringWidth = 3f; // Width of the ring in texture pixels
+        float innerRadius = outerRadius - ringWidth;
+
+        for (int y = 0; y < CircleTextureSize; y++)
+        {
+            for (int x = 0; x < CircleTextureSize; x++)
+            {
+                float dx = x - center + 0.5f;
+                float dy = y - center + 0.5f;
+                float distance = MathF.Sqrt(dx * dx + dy * dy);
+
+                // Calculate alpha based on distance from ring center
+                float outerAlpha = Math.Clamp(outerRadius - distance + 1f, 0f, 1f);
+                float innerAlpha = Math.Clamp(distance - innerRadius + 1f, 0f, 1f);
+                float alpha = outerAlpha * innerAlpha;
+
+                byte a = (byte)(alpha * 255);
+                data[y * CircleTextureSize + x] = new Color(a, a, a, a);
+            }
+        }
+        _ringTexture.SetData(data);
+    }
+
     public Texture2D Pixel
     {
         get
@@ -65,14 +88,6 @@ public class PrimitiveDrawer
             }
             return _pixel;
         }
-    }
-
-    public void UpdateProjection()
-    {
-        _effect.Projection = Matrix.CreateOrthographicOffCenter(
-            0, _graphicsDevice.Viewport.Width,
-            _graphicsDevice.Viewport.Height, 0,
-            0, 1);
     }
 
     public void DrawRectangle(SpriteBatch spriteBatch, Rectangle rect, Color color)
@@ -102,29 +117,23 @@ public class PrimitiveDrawer
             null, color, angle, Vector2.Zero, SpriteEffects.None, 0);
     }
 
-    public void DrawCircle(SpriteBatch spriteBatch, Vector2 center, float radius, Color color, int segments = 0)
+    public void DrawCircle(SpriteBatch spriteBatch, Vector2 center, float radius, Color color, int thickness = 1)
     {
-        // Auto-calculate segments based on radius for smooth circles
-        // More segments for larger circles (when zoomed in)
-        if (segments <= 0)
+        // Use pre-rendered ring texture for smooth anti-aliased circle outline
+        if (_ringTexture != null)
         {
-            segments = Math.Max(16, (int)(radius * 2));
-        }
-
-        var vertices = new VertexPositionColor[segments + 1];
-
-        for (int i = 0; i <= segments; i++)
-        {
-            float angle = (float)(i * 2 * Math.PI / segments);
-            vertices[i] = new VertexPositionColor(
-                new Vector3(center.X + radius * MathF.Cos(angle), center.Y + radius * MathF.Sin(angle), 0),
-                color);
-        }
-
-        foreach (var pass in _effect.CurrentTechnique.Passes)
-        {
-            pass.Apply();
-            _graphicsDevice.DrawUserPrimitives(PrimitiveType.LineStrip, vertices, 0, segments);
+            float diameter = radius * 2;
+            float scale = diameter / CircleTextureSize;
+            spriteBatch.Draw(
+                _ringTexture,
+                center,
+                null,
+                color,
+                0f,
+                new Vector2(CircleTextureSize / 2f, CircleTextureSize / 2f),
+                scale,
+                SpriteEffects.None,
+                0f);
         }
     }
 

@@ -11,22 +11,22 @@ namespace CPUgame.Core;
 /// <summary>
 /// Handles building and managing custom components
 /// </summary>
-public class ComponentBuilder
+public class ComponentBuilder : IComponentBuilder
 {
-    private readonly Dictionary<string, CircuitData> _customComponents;
+    private readonly ICircuitManager _circuitManager;
     private readonly IPlatformServices _platformServices;
 
     public event Action<string>? OnComponentCreated;
     public event Action<string>? OnComponentDeleted;
     public event Action<string>? OnError;
 
-    public ComponentBuilder(Dictionary<string, CircuitData> customComponents, IPlatformServices platformServices)
+    public ComponentBuilder(ICircuitManager circuitManager, IPlatformServices platformServices)
     {
-        _customComponents = customComponents;
+        _circuitManager = circuitManager;
         _platformServices = platformServices;
     }
 
-    public IReadOnlyDictionary<string, CircuitData> CustomComponents => _customComponents;
+    public IReadOnlyDictionary<string, CircuitData> CustomComponents => _circuitManager.CustomComponents;
 
     /// <summary>
     /// Load all custom components from storage
@@ -43,7 +43,7 @@ public class ComponentBuilder
                 var data = CircuitSerializer.LoadCustomComponentData(file);
                 if (data.IsCustomComponent)
                 {
-                    _customComponents[data.Name] = data;
+                    _circuitManager.CustomComponents[data.Name] = data;
                 }
             }
             catch (Exception ex)
@@ -88,7 +88,7 @@ public class ComponentBuilder
             return false;
         }
 
-        if (_customComponents.ContainsKey(name))
+        if (_circuitManager.CustomComponents.ContainsKey(name))
         {
             error = "status.name_exists";
             return false;
@@ -145,7 +145,7 @@ public class ComponentBuilder
         {
             CircuitSerializer.SaveCustomComponent(subCircuit, name, filePath);
             var data = CircuitSerializer.LoadCustomComponentData(filePath);
-            _customComponents[name] = data;
+            _circuitManager.CustomComponents[name] = data;
             OnComponentCreated?.Invoke(name);
             return true;
         }
@@ -161,7 +161,7 @@ public class ComponentBuilder
     /// </summary>
     public bool DeleteComponent(string name)
     {
-        _customComponents.Remove(name);
+        _circuitManager.CustomComponents.Remove(name);
 
         var filePath = _platformServices.CombinePath(_platformServices.GetComponentsFolder(), $"{name}.json");
         if (_platformServices.FileExists(filePath))
@@ -188,9 +188,9 @@ public class ComponentBuilder
     /// </summary>
     public CustomComponent? CreateInstance(string name, int x, int y)
     {
-        if (_customComponents.TryGetValue(name, out var data))
+        if (_circuitManager.CustomComponents.TryGetValue(name, out var data))
         {
-            var internalCircuit = CircuitSerializer.DeserializeCircuit(data, _customComponents);
+            var internalCircuit = CircuitSerializer.DeserializeCircuit(data, _circuitManager.CustomComponents);
             return new CustomComponent(x, y, name, internalCircuit);
         }
         return null;

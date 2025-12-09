@@ -31,7 +31,7 @@ public interface IDialogService
 public class DialogService : IDialogService
 {
     private readonly IStatusService _statusService;
-    private readonly ComponentBuilder _componentBuilder;
+    private readonly IComponentBuilder _componentBuilder;
     private List<Component>? _pendingSelection;
     private Component? _editingComponent;
 
@@ -44,7 +44,7 @@ public class DialogService : IDialogService
     public event Action<Component, string>? OnTitleConfirmed;
     public event Action? OnCancelled;
 
-    public DialogService(IStatusService statusService, ComponentBuilder componentBuilder)
+    public DialogService(IStatusService statusService, IComponentBuilder componentBuilder)
     {
         _statusService = statusService;
         _componentBuilder = componentBuilder;

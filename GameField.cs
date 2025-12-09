@@ -20,7 +20,6 @@ public class GameField : Game, IGameField
 {
     private readonly GraphicsDeviceManager _graphics;
     private SpriteBatch _spriteBatch = null!;
-    private FontService _fontService = null!;
 
     private readonly IPlatformServices _platformServices;
     private readonly IInputHandler _inputHandler;
@@ -28,6 +27,10 @@ public class GameField : Game, IGameField
 
     private readonly IStatusService _statusService;
     private readonly ICircuitManager _circuitManager;
+    private readonly ICameraController _camera;
+    private readonly IComponentBuilder _componentBuilder;
+    private readonly IDialogService _dialogService;
+    private readonly IFontService _fontService;
     private readonly IWireManager _wireManager;
     private readonly IManualWireService _manualWireService;
     private readonly ICommandHandler _commandHandler;
@@ -37,10 +40,7 @@ public class GameField : Game, IGameField
     private readonly ILevelService _levelService;
     private readonly IProfileService _profileService;
 
-    private CameraController _camera = null!;
-    private SelectionManager _selection = null!;
-    private ComponentBuilder _componentBuilder = null!;
-    private DialogService _dialogService = null!;
+    private ISelectionManager _selection = null!;
     private MainMenu _mainMenu = null!;
     private ProfileDialog _profileDialog = null!;
     private LevelSelectionPopup _levelSelectionPopup = null!;
@@ -53,15 +53,20 @@ public class GameField : Game, IGameField
     private int ScreenHeight => GraphicsDevice?.Viewport.Height ?? _graphics.PreferredBackBufferHeight;
 
     public GameField(IPlatformServices platformServices, IInputHandler inputHandler,
-        IStatusService statusService, ICircuitManager circuitManager, IWireManager wireManager,
-        IManualWireService manualWireService, ICommandHandler commandHandler, IToolboxManager toolboxManager,
-        IGameRenderer gameRenderer, ITruthTableService truthTableService, ILevelService levelService,
-        IProfileService profileService)
+        IStatusService statusService, ICircuitManager circuitManager, ICameraController cameraController,
+        IComponentBuilder componentBuilder, IDialogService dialogService, IFontService fontService,
+        IWireManager wireManager, IManualWireService manualWireService, ICommandHandler commandHandler,
+        IToolboxManager toolboxManager, IGameRenderer gameRenderer, ITruthTableService truthTableService,
+        ILevelService levelService, IProfileService profileService)
     {
         _platformServices = platformServices;
         _inputHandler = inputHandler;
         _statusService = statusService;
         _circuitManager = circuitManager;
+        _camera = cameraController;
+        _componentBuilder = componentBuilder;
+        _dialogService = dialogService;
+        _fontService = fontService;
         _wireManager = wireManager;
         _manualWireService = manualWireService;
         _commandHandler = commandHandler;
@@ -83,10 +88,7 @@ public class GameField : Game, IGameField
     {
         LocalizationManager.Initialize();
 
-        _camera = new CameraController();
         _selection = new SelectionManager(_circuitManager.Circuit);
-        _componentBuilder = new ComponentBuilder(_circuitManager.CustomComponents, _platformServices);
-        _dialogService = new DialogService(_statusService, _componentBuilder);
 
         _componentBuilder.OnComponentCreated += name =>
         {
@@ -139,7 +141,7 @@ public class GameField : Game, IGameField
     protected override void LoadContent()
     {
         _spriteBatch = new SpriteBatch(GraphicsDevice);
-        _fontService = new FontService(GraphicsDevice);
+        _fontService.Initialize(GraphicsDevice);
         _gameRenderer.Initialize(GraphicsDevice, _fontService);
         _toolboxManager.Initialize(ScreenWidth, _componentBuilder);
         _toolboxManager.LoadCustomComponents(_circuitManager.CustomComponents.Keys);
@@ -486,10 +488,10 @@ public class GameField : Game, IGameField
                 if (wire != null)
                 {
                     _selection.HandleWireClick(wire);
-                    // If it's a manual wire, enter editing mode
-                    if (wire.ManualWirePath != null && wire.ManualWirePath.Count >= 2)
+                    // Enter editing mode (auto-converts to manual wire if needed)
+                    _manualWireService.StartEditingWire(wire, _gameRenderer.GridSize);
+                    if (_manualWireService.IsEditingWire)
                     {
-                        _manualWireService.StartEditingWire(wire, _gameRenderer.GridSize);
                         _statusService.Show(LocalizationManager.Get("status.wire_edit_mode"));
                     }
                     else
@@ -595,9 +597,10 @@ public class GameField : Game, IGameField
                     if (wire != null)
                     {
                         _selection.HandleWireClick(wire);
-                        if (wire.ManualWirePath != null && wire.ManualWirePath.Count >= 2)
+                        // Enter editing mode (auto-converts to manual wire if needed)
+                        _manualWireService.StartEditingWire(wire, _gameRenderer.GridSize);
+                        if (_manualWireService.IsEditingWire)
                         {
-                            _manualWireService.StartEditingWire(wire, _gameRenderer.GridSize);
                             _statusService.Show(LocalizationManager.Get("status.wire_edit_mode"));
                         }
                     }
