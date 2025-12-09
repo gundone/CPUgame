@@ -12,6 +12,8 @@ public class PrimitiveDrawer
     private readonly GraphicsDevice _graphicsDevice;
     private readonly BasicEffect _effect;
     private Texture2D? _pixel;
+    private Texture2D? _circleTexture;
+    private const int CircleTextureSize = 64;
 
     public PrimitiveDrawer(GraphicsDevice graphicsDevice)
     {
@@ -24,6 +26,32 @@ public class PrimitiveDrawer
                 graphicsDevice.Viewport.Height, 0,
                 0, 1)
         };
+        CreateCircleTexture();
+    }
+
+    private void CreateCircleTexture()
+    {
+        // Create anti-aliased circle texture for smooth scaling with LinearClamp
+        _circleTexture = new Texture2D(_graphicsDevice, CircleTextureSize, CircleTextureSize);
+        var data = new Color[CircleTextureSize * CircleTextureSize];
+        float center = CircleTextureSize / 2f;
+        float radius = center - 1.5f;
+
+        for (int y = 0; y < CircleTextureSize; y++)
+        {
+            for (int x = 0; x < CircleTextureSize; x++)
+            {
+                float dx = x - center + 0.5f;
+                float dy = y - center + 0.5f;
+                float distance = MathF.Sqrt(dx * dx + dy * dy);
+
+                // Smooth anti-aliased edge
+                float alpha = Math.Clamp(radius - distance + 1f, 0f, 1f);
+                byte a = (byte)(alpha * 255);
+                data[y * CircleTextureSize + x] = new Color(a, a, a, a); // Premultiplied alpha
+            }
+        }
+        _circleTexture.SetData(data);
     }
 
     public Texture2D Pixel
@@ -74,8 +102,15 @@ public class PrimitiveDrawer
             null, color, angle, Vector2.Zero, SpriteEffects.None, 0);
     }
 
-    public void DrawCircle(SpriteBatch spriteBatch, Vector2 center, float radius, Color color, int segments = 16)
+    public void DrawCircle(SpriteBatch spriteBatch, Vector2 center, float radius, Color color, int segments = 0)
     {
+        // Auto-calculate segments based on radius for smooth circles
+        // More segments for larger circles (when zoomed in)
+        if (segments <= 0)
+        {
+            segments = Math.Max(16, (int)(radius * 2));
+        }
+
         var vertices = new VertexPositionColor[segments + 1];
 
         for (int i = 0; i <= segments; i++)
@@ -95,14 +130,21 @@ public class PrimitiveDrawer
 
     public void DrawFilledCircle(SpriteBatch spriteBatch, Vector2 center, float radius, Color color)
     {
-        // Simple filled circle using rectangles
-        int r = (int)radius;
-        for (int y = -r; y <= r; y++)
+        // Use pre-rendered circle texture for smooth anti-aliased circles
+        if (_circleTexture != null)
         {
-            int halfWidth = (int)Math.Sqrt(r * r - y * y);
-            spriteBatch.Draw(Pixel,
-                new Rectangle((int)center.X - halfWidth, (int)center.Y + y, halfWidth * 2, 1),
-                color);
+            float diameter = radius * 2;
+            float scale = diameter / CircleTextureSize;
+            spriteBatch.Draw(
+                _circleTexture,
+                center,
+                null,
+                color,
+                0f,
+                new Vector2(CircleTextureSize / 2f, CircleTextureSize / 2f), // Center origin
+                scale,
+                SpriteEffects.None,
+                0f);
         }
     }
 }

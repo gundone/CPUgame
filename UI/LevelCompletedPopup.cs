@@ -1,6 +1,7 @@
 using System;
 using CPUgame.Core.Levels;
 using CPUgame.Core.Localization;
+using FontStashSharp;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -113,7 +114,7 @@ public class LevelCompletedPopup
         }
     }
 
-    public void Draw(SpriteBatch spriteBatch, Texture2D pixel, SpriteFont font, int screenWidth, int screenHeight)
+    public void Draw(SpriteBatch spriteBatch, Texture2D pixel, SpriteFontBase font, int screenWidth, int screenHeight)
     {
         if (!IsVisible || _completedLevel == null)
         {
@@ -134,7 +135,7 @@ public class LevelCompletedPopup
         // Draw "Level Completed!" title
         var titleText = LocalizationManager.Get("level.completed");
         var titleSize = font.MeasureString(titleText);
-        spriteBatch.DrawString(font, titleText,
+        font.DrawText(spriteBatch, titleText,
             new Vector2(_bounds.X + (_bounds.Width - titleSize.X) / 2, _bounds.Y + (TitleHeight - titleSize.Y) / 2),
             TextColor);
 
@@ -150,7 +151,7 @@ public class LevelCompletedPopup
         }
         var completedText = LocalizationManager.Get("level.completed_message", levelName);
         var completedSize = font.MeasureString(completedText);
-        spriteBatch.DrawString(font, completedText,
+        font.DrawText(spriteBatch, completedText,
             new Vector2(_bounds.X + (_bounds.Width - completedSize.X) / 2, contentY),
             TextColor);
         contentY += (int)completedSize.Y + 8;
@@ -163,7 +164,7 @@ public class LevelCompletedPopup
         }
         var unlockedText = LocalizationManager.Get("level.unlocked", componentName);
         var unlockedSize = font.MeasureString(unlockedText);
-        spriteBatch.DrawString(font, unlockedText,
+        font.DrawText(spriteBatch, unlockedText,
             new Vector2(_bounds.X + (_bounds.Width - unlockedSize.X) / 2, contentY),
             HighlightColor);
         contentY += (int)unlockedSize.Y + 8;
@@ -171,7 +172,7 @@ public class LevelCompletedPopup
         // "It will be added to your collection."
         var addedText = LocalizationManager.Get("level.added_to_collection");
         var addedSize = font.MeasureString(addedText);
-        spriteBatch.DrawString(font, addedText,
+        font.DrawText(spriteBatch, addedText,
             new Vector2(_bounds.X + (_bounds.Width - addedSize.X) / 2, contentY),
             TextColor);
         contentY += (int)addedSize.Y + 12;
@@ -181,7 +182,7 @@ public class LevelCompletedPopup
             // "Start the next level?"
             var nextText = LocalizationManager.Get("level.start_next");
             var nextSize = font.MeasureString(nextText);
-            spriteBatch.DrawString(font, nextText,
+            font.DrawText(spriteBatch, nextText,
                 new Vector2(_bounds.X + (_bounds.Width - nextSize.X) / 2, contentY),
                 TextColor);
 
@@ -191,7 +192,7 @@ public class LevelCompletedPopup
 
             var yesText = LocalizationManager.Get("level.yes");
             var yesSize = font.MeasureString(yesText);
-            spriteBatch.DrawString(font, yesText,
+            font.DrawText(spriteBatch, yesText,
                 new Vector2(_yesButtonRect.X + (_yesButtonRect.Width - yesSize.X) / 2,
                            _yesButtonRect.Y + (_yesButtonRect.Height - yesSize.Y) / 2),
                 TextColor);
@@ -202,7 +203,7 @@ public class LevelCompletedPopup
 
             var noText = LocalizationManager.Get("level.no");
             var noSize = font.MeasureString(noText);
-            spriteBatch.DrawString(font, noText,
+            font.DrawText(spriteBatch, noText,
                 new Vector2(_noButtonRect.X + (_noButtonRect.Width - noSize.X) / 2,
                            _noButtonRect.Y + (_noButtonRect.Height - noSize.Y) / 2),
                 TextColor);
@@ -212,7 +213,7 @@ public class LevelCompletedPopup
             // All levels completed message
             var allDoneText = LocalizationManager.Get("level.all_completed");
             var allDoneSize = font.MeasureString(allDoneText);
-            spriteBatch.DrawString(font, allDoneText,
+            font.DrawText(spriteBatch, allDoneText,
                 new Vector2(_bounds.X + (_bounds.Width - allDoneSize.X) / 2, contentY),
                 HighlightColor);
 
@@ -222,7 +223,7 @@ public class LevelCompletedPopup
 
             var okText = LocalizationManager.Get("level.ok");
             var okSize = font.MeasureString(okText);
-            spriteBatch.DrawString(font, okText,
+            font.DrawText(spriteBatch, okText,
                 new Vector2(_noButtonRect.X + (_noButtonRect.Width - okSize.X) / 2,
                            _noButtonRect.Y + (_noButtonRect.Height - okSize.Y) / 2),
                 TextColor);

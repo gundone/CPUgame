@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using CPUgame.Core.Levels;
 using CPUgame.Core.Localization;
+using FontStashSharp;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -12,8 +13,7 @@ public class MainMenu
     private readonly List<MenuItem> _menuItems = new();
     private MenuItem? _openMenu;
     private int _hoveredSubmenuIndex = -1;
-    private SpriteFont? _font;
-    private List<GameLevel> _levels = new();
+    private SpriteFontBase? _font;
     private GameMode _currentMode = GameMode.Sandbox;
     private string? _profileName;
 
@@ -49,14 +49,13 @@ public class MainMenu
         LocalizationManager.LanguageChanged += BuildMenu;
     }
 
-    public void SetFont(SpriteFont font)
+    public void SetFont(SpriteFontBase font)
     {
         _font = font;
     }
 
     public void SetLevels(List<GameLevel> levels)
     {
-        _levels = levels;
         BuildMenu();
     }
 
@@ -277,7 +276,7 @@ public class MainMenu
         return new Rectangle(x, MenuHeight, width, height);
     }
 
-    public void Draw(SpriteBatch spriteBatch, Texture2D pixel, SpriteFont font, int screenWidth, Point mousePos)
+    public void Draw(SpriteBatch spriteBatch, Texture2D pixel, SpriteFontBase font, int screenWidth, Point mousePos)
     {
         // Store font reference for width calculations
         if (_font == null)
@@ -300,7 +299,7 @@ public class MainMenu
             }
 
             var textSize = font.MeasureString(item.Label);
-            spriteBatch.DrawString(font, item.Label,
+            font.DrawText(spriteBatch, item.Label,
                 new Vector2(x + (itemWidth - textSize.X) / 2, (MenuHeight - textSize.Y) / 2),
                 TextColor);
 
@@ -314,7 +313,7 @@ public class MainMenu
         }
     }
 
-    private void DrawSubmenu(SpriteBatch spriteBatch, Texture2D pixel, SpriteFont font, MenuItem menu, Point mousePos)
+    private void DrawSubmenu(SpriteBatch spriteBatch, Texture2D pixel, SpriteFontBase font, MenuItem menu, Point mousePos)
     {
         var rect = GetSubmenuRect(menu);
 
@@ -341,7 +340,7 @@ public class MainMenu
             {
                 // Draw header (non-clickable, dimmed)
                 var textSize = font.MeasureString(item.Label);
-                spriteBatch.DrawString(font, item.Label,
+                font.DrawText(spriteBatch, item.Label,
                     new Vector2(rect.X + 12, y + (SubmenuItemHeight - textSize.Y) / 2),
                     SeparatorColor);
             }
@@ -354,14 +353,14 @@ public class MainMenu
                 }
 
                 var textSize = font.MeasureString(item.Label);
-                spriteBatch.DrawString(font, item.Label,
+                font.DrawText(spriteBatch, item.Label,
                     new Vector2(rect.X + 12, y + (SubmenuItemHeight - textSize.Y) / 2),
                     TextColor);
 
                 // Draw arrow for submenus
                 if (item.SubItems.Count > 0)
                 {
-                    spriteBatch.DrawString(font, ">",
+                    font.DrawText(spriteBatch, ">",
                         new Vector2(rect.Right - 16, y + (SubmenuItemHeight - textSize.Y) / 2),
                         TextColor);
                 }

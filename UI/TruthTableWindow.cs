@@ -5,6 +5,7 @@ using CPUgame.Core.Circuit;
 using CPUgame.Core.Components;
 using CPUgame.Core.Levels;
 using CPUgame.Core.Localization;
+using FontStashSharp;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -44,7 +45,7 @@ public class TruthTableWindow
     private int _expectedOutputColumnWidth;
     private List<int> _inputBusWidths = new();
     private List<int> _outputBusWidths = new();
-    private SpriteFont? _font;
+    private SpriteFontBase? _font;
 
     // Animation for simulation indicator
     private double _pulseTimer;
@@ -136,7 +137,7 @@ public class TruthTableWindow
     /// <summary>
     /// Calculate window size based on input/output counts
     /// </summary>
-    public void RecalculateSize(Circuit circuit, SpriteFont? font = null)
+    public void RecalculateSize(Circuit circuit, SpriteFontBase? font = null)
     {
         if (font != null)
         {
@@ -697,7 +698,7 @@ public class TruthTableWindow
             thumbHeight);
     }
 
-    public void Draw(SpriteBatch spriteBatch, Texture2D pixel, SpriteFont font, Point mousePos)
+    public void Draw(SpriteBatch spriteBatch, Texture2D pixel, SpriteFontBase font, Point mousePos)
     {
         if (!IsVisible)
         {
@@ -739,7 +740,7 @@ public class TruthTableWindow
             titleText = LocalizationManager.Get("truthtable.title");
         }
         var titleSize = font.MeasureString(titleText);
-        spriteBatch.DrawString(font, titleText,
+        font.DrawText(spriteBatch, titleText,
             new Vector2(Bounds.X + (Bounds.Width - titleSize.X) / 2, Bounds.Y + (TitleHeight - titleSize.Y) / 2),
             IsLevelPassed ? new Color(30, 30, 40) : TextColor);
 
@@ -772,7 +773,7 @@ public class TruthTableWindow
             // Show message when no inputs/outputs
             var noDataText = LocalizationManager.Get("truthtable.no_buses");
             var noDataSize = font.MeasureString(noDataText);
-            spriteBatch.DrawString(font, noDataText,
+            font.DrawText(spriteBatch, noDataText,
                 new Vector2(Bounds.X + (Bounds.Width - noDataSize.X) / 2, contentY + 40),
                 new Color(150, 150, 170));
         }
@@ -781,7 +782,7 @@ public class TruthTableWindow
             // Show message to click simulate (sandbox mode only)
             var clickSimText = LocalizationManager.Get("truthtable.click_simulate");
             var clickSimSize = font.MeasureString(clickSimText);
-            spriteBatch.DrawString(font, clickSimText,
+            font.DrawText(spriteBatch, clickSimText,
                 new Vector2(Bounds.X + (Bounds.Width - clickSimSize.X) / 2, contentY + 40),
                 new Color(150, 150, 170));
         }
@@ -860,7 +861,7 @@ public class TruthTableWindow
         }
     }
 
-    private void DrawHeader(SpriteBatch spriteBatch, Texture2D pixel, SpriteFont font, int x, int y, int width)
+    private void DrawHeader(SpriteBatch spriteBatch, Texture2D pixel, SpriteFontBase font, int x, int y, int width)
     {
         // Header background
         spriteBatch.Draw(pixel, new Rectangle(x, y, width, HeaderHeight), HeaderColor);
@@ -868,7 +869,7 @@ public class TruthTableWindow
         // Input header - use calculated column width
         var inputText = LocalizationManager.Get("truthtable.inputs");
         var inputSize = font.MeasureString(inputText);
-        spriteBatch.DrawString(font, inputText,
+        font.DrawText(spriteBatch, inputText,
             new Vector2(x + (_inputColumnWidth - inputSize.X) / 2, y + (HeaderHeight - inputSize.Y) / 2),
             TextColor);
 
@@ -881,7 +882,7 @@ public class TruthTableWindow
         {
             var expectedText = LocalizationManager.Get("truthtable.expected");
             var expectedSize = font.MeasureString(expectedText);
-            spriteBatch.DrawString(font, expectedText,
+            font.DrawText(spriteBatch, expectedText,
                 new Vector2(separatorX + 2 + (_expectedOutputColumnWidth - expectedSize.X) / 2, y + (HeaderHeight - expectedSize.Y) / 2),
                 TextColor);
 
@@ -893,12 +894,12 @@ public class TruthTableWindow
         // Output header - use calculated column width
         var outputText = LocalizationManager.Get("truthtable.outputs");
         var outputSize = font.MeasureString(outputText);
-        spriteBatch.DrawString(font, outputText,
+        font.DrawText(spriteBatch, outputText,
             new Vector2(separatorX + 2 + (_outputColumnWidth - outputSize.X) / 2, y + (HeaderHeight - outputSize.Y) / 2),
             TextColor);
     }
 
-    private void DrawRow(SpriteBatch spriteBatch, Texture2D pixel, SpriteFont font, int x, int y, int width, int rowIndex, TruthTableRow row)
+    private void DrawRow(SpriteBatch spriteBatch, Texture2D pixel, SpriteFontBase font, int x, int y, int width, int rowIndex, TruthTableRow row)
     {
         // Row background - use match/mismatch colors when in level mode
         Color rowColor;
@@ -929,7 +930,7 @@ public class TruthTableWindow
                     var cellText = value ? "1" : "0";
                     var cellSize = font.MeasureString(cellText);
                     var cellColor = value ? HighColor : LowColor;
-                    spriteBatch.DrawString(font, cellText,
+                    font.DrawText(spriteBatch, cellText,
                         new Vector2(cellX + (pinCellWidth - cellSize.X) / 2, y + (RowHeight - cellSize.Y) / 2),
                         cellColor);
                 }
@@ -955,7 +956,7 @@ public class TruthTableWindow
                 var cellText = value ? "1" : "0";
                 var cellSize = font.MeasureString(cellText);
                 var cellColor = value ? HighColor : LowColor;
-                spriteBatch.DrawString(font, cellText,
+                font.DrawText(spriteBatch, cellText,
                     new Vector2(cellX + (pinCellWidth - cellSize.X) / 2, y + (RowHeight - cellSize.Y) / 2),
                     cellColor);
                 cellX += pinCellWidth;
@@ -983,7 +984,7 @@ public class TruthTableWindow
                     var cellText = value ? "1" : "0";
                     var cellSize = font.MeasureString(cellText);
                     var cellColor = value ? HighColor : LowColor;
-                    spriteBatch.DrawString(font, cellText,
+                    font.DrawText(spriteBatch, cellText,
                         new Vector2(cellX + (pinCellWidth - cellSize.X) / 2, y + (RowHeight - cellSize.Y) / 2),
                         cellColor);
                 }
@@ -993,7 +994,7 @@ public class TruthTableWindow
         }
     }
 
-    private void DrawLevelOnlyRow(SpriteBatch spriteBatch, Texture2D pixel, SpriteFont font, int x, int y, int width, int rowIndex)
+    private void DrawLevelOnlyRow(SpriteBatch spriteBatch, Texture2D pixel, SpriteFontBase font, int x, int y, int width, int rowIndex)
     {
         if (_currentLevel == null || rowIndex >= _currentLevel.TruthTable.Count)
         {
@@ -1015,7 +1016,7 @@ public class TruthTableWindow
             var cellText = value ? "1" : "0";
             var cellSize = font.MeasureString(cellText);
             var cellColor = value ? HighColor : LowColor;
-            spriteBatch.DrawString(font, cellText,
+            font.DrawText(spriteBatch, cellText,
                 new Vector2(cellX + (pinCellWidth - cellSize.X) / 2, y + (RowHeight - cellSize.Y) / 2),
                 cellColor);
             cellX += pinCellWidth;
@@ -1034,7 +1035,7 @@ public class TruthTableWindow
             var cellText = value ? "1" : "0";
             var cellSize = font.MeasureString(cellText);
             var cellColor = value ? HighColor : LowColor;
-            spriteBatch.DrawString(font, cellText,
+            font.DrawText(spriteBatch, cellText,
                 new Vector2(cellX + (pinCellWidth - cellSize.X) / 2, y + (RowHeight - cellSize.Y) / 2),
                 cellColor);
             cellX += pinCellWidth;
@@ -1051,14 +1052,14 @@ public class TruthTableWindow
         {
             var cellText = "?";
             var cellSize = font.MeasureString(cellText);
-            spriteBatch.DrawString(font, cellText,
+            font.DrawText(spriteBatch, cellText,
                 new Vector2(cellX + (pinCellWidth - cellSize.X) / 2, y + (RowHeight - cellSize.Y) / 2),
                 new Color(150, 150, 170));
             cellX += pinCellWidth;
         }
     }
 
-    private void DrawBusTitlesRow(SpriteBatch spriteBatch, Texture2D pixel, SpriteFont font, int x, int y, int width)
+    private void DrawBusTitlesRow(SpriteBatch spriteBatch, Texture2D pixel, SpriteFontBase font, int x, int y, int width)
     {
         // Row background - slightly highlighted
         spriteBatch.Draw(pixel, new Rectangle(x, y, width, BusTitleRowHeight), TableHeaderRowColor);
@@ -1071,7 +1072,7 @@ public class TruthTableWindow
             int busWidth = i < _inputBusWidths.Count ? _inputBusWidths[i] : bus.BitCount * CellWidth;
             var titleSize = font.MeasureString(bus.Title);
 
-            spriteBatch.DrawString(font, bus.Title,
+            font.DrawText(spriteBatch, bus.Title,
                 new Vector2(cellX + (busWidth - titleSize.X) / 2, y + (BusTitleRowHeight - titleSize.Y) / 2),
                 TextColor);
             cellX += busWidth;
@@ -1087,7 +1088,7 @@ public class TruthTableWindow
             // Just draw "-" as placeholder for expected column title
             var expectedTitle = "-";
             var expectedSize = font.MeasureString(expectedTitle);
-            spriteBatch.DrawString(font, expectedTitle,
+            font.DrawText(spriteBatch, expectedTitle,
                 new Vector2(separatorX + 2 + (_expectedOutputColumnWidth - expectedSize.X) / 2, y + (BusTitleRowHeight - expectedSize.Y) / 2),
                 new Color(150, 150, 170));
 
@@ -1103,14 +1104,14 @@ public class TruthTableWindow
             int busWidth = i < _outputBusWidths.Count ? _outputBusWidths[i] : bus.BitCount * CellWidth;
             var titleSize = font.MeasureString(bus.Title);
 
-            spriteBatch.DrawString(font, bus.Title,
+            font.DrawText(spriteBatch, bus.Title,
                 new Vector2(cellX + (busWidth - titleSize.X) / 2, y + (BusTitleRowHeight - titleSize.Y) / 2),
                 TextColor);
             cellX += busWidth;
         }
     }
 
-    private void DrawPinNumbersRow(SpriteBatch spriteBatch, Texture2D pixel, SpriteFont font, int x, int y, int width)
+    private void DrawPinNumbersRow(SpriteBatch spriteBatch, Texture2D pixel, SpriteFontBase font, int x, int y, int width)
     {
         // Row background - slightly highlighted
         spriteBatch.Draw(pixel, new Rectangle(x, y, width, PinNumberRowHeight), TableHeaderRowColor);
@@ -1127,7 +1128,7 @@ public class TruthTableWindow
             {
                 var pinText = i.ToString();
                 var pinSize = font.MeasureString(pinText);
-                spriteBatch.DrawString(font, pinText,
+                font.DrawText(spriteBatch, pinText,
                     new Vector2(cellX + (pinCellWidth - pinSize.X) / 2, y + (PinNumberRowHeight - pinSize.Y) / 2),
                     new Color(150, 150, 170));
                 cellX += pinCellWidth;
@@ -1146,7 +1147,7 @@ public class TruthTableWindow
             {
                 var pinText = i.ToString();
                 var pinSize = font.MeasureString(pinText);
-                spriteBatch.DrawString(font, pinText,
+                font.DrawText(spriteBatch, pinText,
                     new Vector2(separatorX + 2 + (_currentLevel.OutputCount - 1 - i) * pinCellWidth + (pinCellWidth - pinSize.X) / 2,
                         y + (PinNumberRowHeight - pinSize.Y) / 2),
                     new Color(150, 150, 170));
@@ -1168,7 +1169,7 @@ public class TruthTableWindow
             {
                 var pinText = i.ToString();
                 var pinSize = font.MeasureString(pinText);
-                spriteBatch.DrawString(font, pinText,
+                font.DrawText(spriteBatch, pinText,
                     new Vector2(cellX + (pinCellWidth - pinSize.X) / 2, y + (PinNumberRowHeight - pinSize.Y) / 2),
                     new Color(150, 150, 170));
                 cellX += pinCellWidth;
@@ -1194,7 +1195,7 @@ public class TruthTableWindow
         }
     }
 
-    private void DrawIconButton(SpriteBatch spriteBatch, Texture2D pixel, SpriteFont font, Rectangle rect, string icon, bool isHovered, bool isActive)
+    private void DrawIconButton(SpriteBatch spriteBatch, Texture2D pixel, SpriteFontBase font, Rectangle rect, string icon, bool isHovered, bool isActive)
     {
         Color buttonColor;
         if (isActive)
@@ -1214,12 +1215,12 @@ public class TruthTableWindow
         DrawBorder(spriteBatch, pixel, rect, BorderColor, 1);
 
         var iconSize = font.MeasureString(icon);
-        spriteBatch.DrawString(font, icon,
+        font.DrawText(spriteBatch, icon,
             new Vector2(rect.X + (rect.Width - iconSize.X) / 2, rect.Y + (rect.Height - iconSize.Y) / 2),
             isActive ? new Color(30, 30, 40) : TextColor);
     }
 
-    private void DrawTooltip(SpriteBatch spriteBatch, Texture2D pixel, SpriteFont font, string text, Point position)
+    private void DrawTooltip(SpriteBatch spriteBatch, Texture2D pixel, SpriteFontBase font, string text, Point position)
     {
         var textSize = font.MeasureString(text);
         int tooltipPadding = 4;
@@ -1234,7 +1235,7 @@ public class TruthTableWindow
 
         spriteBatch.Draw(pixel, tooltipRect, new Color(60, 60, 70, 240));
         DrawBorder(spriteBatch, pixel, tooltipRect, BorderColor, 1);
-        spriteBatch.DrawString(font, text,
+        font.DrawText(spriteBatch, text,
             new Vector2(tooltipX + tooltipPadding, tooltipY + tooltipPadding),
             TextColor);
     }

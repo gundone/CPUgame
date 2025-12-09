@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using FontStashSharp;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -219,7 +220,7 @@ public class Toolbox
         return Bounds.Contains(p);
     }
 
-    public void Draw(SpriteBatch spriteBatch, Texture2D pixel, SpriteFont font, Point mousePos)
+    public void Draw(SpriteBatch spriteBatch, Texture2D pixel, SpriteFontBase font, Point mousePos)
     {
         if (!IsVisible) return;
 
@@ -236,7 +237,7 @@ public class Toolbox
         // Title text
         var titleText = IsUserComponentsToolbox ? "User Components" : "Toolbox";
         var titleSize = font.MeasureString(titleText);
-        spriteBatch.DrawString(font, titleText,
+        font.DrawText(spriteBatch, titleText,
             new Vector2(Bounds.X + (Bounds.Width - titleSize.X) / 2, Bounds.Y + (TitleHeight - titleSize.Y) / 2),
             TextColor);
 
@@ -257,7 +258,7 @@ public class Toolbox
             // Item label
             var label = item.IsCustom ? item.CustomName! : item.Label;
             var labelSize = font.MeasureString(label);
-            spriteBatch.DrawString(font, label,
+            font.DrawText(spriteBatch, label,
                 new Vector2(itemRect.X + (itemRect.Width - labelSize.X) / 2,
                            itemRect.Y + (itemRect.Height - labelSize.Y) / 2),
                 TextColor);
@@ -272,7 +273,7 @@ public class Toolbox
                 // Draw X
                 var xText = "X";
                 var xSize = font.MeasureString(xText);
-                spriteBatch.DrawString(font, xText,
+                font.DrawText(spriteBatch, xText,
                     new Vector2(deleteRect.X + (deleteRect.Width - xSize.X) / 2,
                                deleteRect.Y + (deleteRect.Height - xSize.Y) / 2),
                     TextColor);
@@ -290,7 +291,7 @@ public class Toolbox
             DrawBorder(spriteBatch, pixel, previewRect, BorderColor, 1);
 
             var labelSize = font.MeasureString(label);
-            spriteBatch.DrawString(font, label,
+            font.DrawText(spriteBatch, label,
                 new Vector2(previewRect.X + (previewRect.Width - labelSize.X) / 2,
                            previewRect.Y + (previewRect.Height - labelSize.Y) / 2),
                 TextColor);

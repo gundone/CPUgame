@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using CPUgame.Core.Levels;
 using CPUgame.Core.Localization;
+using FontStashSharp;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -79,7 +80,7 @@ public class LevelDescriptionPopup
         }
     }
 
-    public void Draw(SpriteBatch spriteBatch, Texture2D pixel, SpriteFont font, int screenWidth, int screenHeight)
+    public void Draw(SpriteBatch spriteBatch, Texture2D pixel, SpriteFontBase font, int screenWidth, int screenHeight)
     {
         if (!IsVisible || _level == null)
         {
@@ -106,7 +107,7 @@ public class LevelDescriptionPopup
             titleText = _level.Name;
         }
         var titleSize = font.MeasureString(titleText);
-        spriteBatch.DrawString(font, titleText,
+        font.DrawText(spriteBatch, titleText,
             new Vector2(_bounds.X + (_bounds.Width - titleSize.X) / 2, _bounds.Y + (TitleHeight - titleSize.Y) / 2),
             TextColor);
 
@@ -135,7 +136,7 @@ public class LevelDescriptionPopup
             {
                 break; // Stop drawing to avoid overlapping with button
             }
-            spriteBatch.DrawString(font, line, new Vector2(_bounds.X + Padding, contentY), DescriptionColor);
+            font.DrawText(spriteBatch, line, new Vector2(_bounds.X + Padding, contentY), DescriptionColor);
             contentY += lineHeight;
         }
 
@@ -145,13 +146,13 @@ public class LevelDescriptionPopup
 
         var startText = LocalizationManager.Get("level.start");
         var startSize = font.MeasureString(startText);
-        spriteBatch.DrawString(font, startText,
+        font.DrawText(spriteBatch, startText,
             new Vector2(_startButtonRect.X + (_startButtonRect.Width - startSize.X) / 2,
                        _startButtonRect.Y + (_startButtonRect.Height - startSize.Y) / 2),
             TextColor);
     }
 
-    private List<string> WrapText(SpriteFont font, string text, int maxWidth)
+    private List<string> WrapText(SpriteFontBase font, string text, int maxWidth)
     {
         var lines = new List<string>();
         var words = text.Split(' ');

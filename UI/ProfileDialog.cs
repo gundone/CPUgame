@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using CPUgame.Core;
 using CPUgame.Core.Input;
 using CPUgame.Core.Localization;
+using FontStashSharp;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -238,7 +239,7 @@ public class ProfileDialog
         }
     }
 
-    public void Draw(SpriteBatch spriteBatch, Texture2D pixel, SpriteFont font, int screenWidth, int screenHeight)
+    public void Draw(SpriteBatch spriteBatch, Texture2D pixel, SpriteFontBase font, int screenWidth, int screenHeight)
     {
         if (!IsVisible)
         {
@@ -260,7 +261,7 @@ public class ProfileDialog
             ? LocalizationManager.Get("profile.create")
             : LocalizationManager.Get("profile.select");
         var titleSize = font.MeasureString(titleText);
-        spriteBatch.DrawString(font, titleText,
+        font.DrawText(spriteBatch, titleText,
             new Vector2(_bounds.X + Padding, _bounds.Y + (TitleHeight - titleSize.Y) / 2),
             TextColor);
 
@@ -270,7 +271,7 @@ public class ProfileDialog
             spriteBatch.Draw(pixel, _closeButtonRect, _closeButtonHovered ? CloseButtonHoverColor : CloseButtonColor);
             var xText = "X";
             var xSize = font.MeasureString(xText);
-            spriteBatch.DrawString(font, xText,
+            font.DrawText(spriteBatch, xText,
                 new Vector2(_closeButtonRect.X + (_closeButtonRect.Width - xSize.X) / 2,
                            _closeButtonRect.Y + (_closeButtonRect.Height - xSize.Y) / 2),
                 TextColor);
@@ -284,14 +285,14 @@ public class ProfileDialog
 
             var displayText = _newProfileName + "_";
             var textSize = font.MeasureString(displayText);
-            spriteBatch.DrawString(font, displayText,
+            font.DrawText(spriteBatch, displayText,
                 new Vector2(_inputRect.X + Padding, _inputRect.Y + (_inputRect.Height - textSize.Y) / 2),
                 TextColor);
 
             // Draw hint
             var hintText = LocalizationManager.Get("profile.name_hint");
             var hintSize = font.MeasureString(hintText);
-            spriteBatch.DrawString(font, hintText,
+            font.DrawText(spriteBatch, hintText,
                 new Vector2(_bounds.X + (_bounds.Width - hintSize.X) / 2, _inputRect.Bottom + (float)Padding / 2),
                 HintColor);
 
@@ -301,7 +302,7 @@ public class ProfileDialog
 
             var createText = LocalizationManager.Get("profile.confirm");
             var createSize = font.MeasureString(createText);
-            spriteBatch.DrawString(font, createText,
+            font.DrawText(spriteBatch, createText,
                 new Vector2(_createButtonRect.X + (_createButtonRect.Width - createSize.X) / 2,
                            _createButtonRect.Y + (_createButtonRect.Height - createSize.Y) / 2),
                 TextColor);
@@ -315,7 +316,7 @@ public class ProfileDialog
             {
                 var noProfileText = LocalizationManager.Get("profile.no_profiles");
                 var noProfileSize = font.MeasureString(noProfileText);
-                spriteBatch.DrawString(font, noProfileText,
+                font.DrawText(spriteBatch, noProfileText,
                     new Vector2(_bounds.X + (_bounds.Width - noProfileSize.X) / 2, y + Padding),
                     HintColor);
             }
@@ -331,7 +332,7 @@ public class ProfileDialog
 
                     var profileName = _profiles[i];
                     var profileSize = font.MeasureString(profileName);
-                    spriteBatch.DrawString(font, profileName,
+                    font.DrawText(spriteBatch, profileName,
                         new Vector2(profileRect.X + Padding, profileRect.Y + (ProfileItemHeight - profileSize.Y) / 2),
                         TextColor);
 
@@ -345,7 +346,7 @@ public class ProfileDialog
 
             var newProfileText = LocalizationManager.Get("profile.new");
             var newProfileSize = font.MeasureString(newProfileText);
-            spriteBatch.DrawString(font, newProfileText,
+            font.DrawText(spriteBatch, newProfileText,
                 new Vector2(_createButtonRect.X + (_createButtonRect.Width - newProfileSize.X) / 2,
                            _createButtonRect.Y + (_createButtonRect.Height - newProfileSize.Y) / 2),
                 TextColor);

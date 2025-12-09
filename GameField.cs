@@ -20,7 +20,7 @@ public class GameField : Game, IGameField
 {
     private readonly GraphicsDeviceManager _graphics;
     private SpriteBatch _spriteBatch = null!;
-    private SpriteFont _font = null!;
+    private FontService _fontService = null!;
 
     private readonly IPlatformServices _platformServices;
     private readonly IInputHandler _inputHandler;
@@ -139,8 +139,8 @@ public class GameField : Game, IGameField
     protected override void LoadContent()
     {
         _spriteBatch = new SpriteBatch(GraphicsDevice);
-        _font = Content.Load<SpriteFont>("DefaultFont");
-        _gameRenderer.Initialize(GraphicsDevice, _font);
+        _fontService = new FontService(GraphicsDevice);
+        _gameRenderer.Initialize(GraphicsDevice, _fontService);
         _toolboxManager.Initialize(ScreenWidth, _componentBuilder);
         _toolboxManager.LoadCustomComponents(_circuitManager.CustomComponents.Keys);
         _truthTableService.Initialize(ScreenWidth);
@@ -203,7 +203,7 @@ public class GameField : Game, IGameField
             if (_levelService.CurrentLevel != null)
             {
                 _truthTableService.SetCurrentLevel(_levelService.CurrentLevel);
-                _truthTableService.Show(_circuitManager.Circuit, _font);
+                _truthTableService.Show(_circuitManager.Circuit, _fontService.GetFont());
             }
             _statusService.Show(LocalizationManager.Get("status.mode_levels"));
         };
@@ -239,7 +239,7 @@ public class GameField : Game, IGameField
                 _levelService.SetupLevelCircuit(_circuitManager.Circuit, _gameRenderer.GridSize);
                 _selection = new SelectionManager(_circuitManager.Circuit);
                 _truthTableService.SetCurrentLevel(_levelService.CurrentLevel);
-                _truthTableService.Show(_circuitManager.Circuit, _font);
+                _truthTableService.Show(_circuitManager.Circuit, _fontService.GetFont());
             }
         };
 
@@ -653,20 +653,21 @@ public class GameField : Game, IGameField
     {
         GraphicsDevice.Clear(CircuitRenderer.BackgroundColor);
 
-        _spriteBatch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: _camera.GetTransform());
+        _spriteBatch.Begin(samplerState: SamplerState.LinearClamp, transformMatrix: _camera.GetTransform());
         _gameRenderer.DrawWorld(_spriteBatch, _circuitManager.Circuit, _camera, _selection, _wireManager, _manualWireService, _wireManager.HoveredPin, _inputState.PointerPosition, ScreenWidth, ScreenHeight, _toolboxManager.MainToolbox.IsDraggingItem);
         _spriteBatch.End();
 
         _spriteBatch.Begin(samplerState: SamplerState.LinearClamp);
-        _gameRenderer.DrawUI(_spriteBatch, _toolboxManager, _mainMenu, _statusService, _dialogService, _truthTableService, _camera, _inputState.PointerPosition, ScreenWidth, ScreenHeight, _font);
+        var uiFont = _fontService.GetFont();
+        _gameRenderer.DrawUI(_spriteBatch, _toolboxManager, _mainMenu, _statusService, _dialogService, _truthTableService, _camera, _inputState.PointerPosition, ScreenWidth, ScreenHeight, uiFont);
 
         // Draw modal dialogs on top
-        _profileDialog.Draw(_spriteBatch, _gameRenderer.Pixel, _font, ScreenWidth, ScreenHeight);
-        _levelSelectionPopup.Draw(_spriteBatch, _gameRenderer.Pixel, _font, ScreenWidth, ScreenHeight);
-        _levelDescriptionPopup.Draw(_spriteBatch, _gameRenderer.Pixel, _font, ScreenWidth, ScreenHeight);
-        _levelCompletedPopup.Draw(_spriteBatch, _gameRenderer.Pixel, _font, ScreenWidth, ScreenHeight);
-        _componentEditDialog.Draw(_spriteBatch, _gameRenderer.Pixel, _font, ScreenWidth, ScreenHeight);
-        _controlsPopup.Draw(_spriteBatch, _gameRenderer.Pixel, _font, ScreenWidth, ScreenHeight);
+        _profileDialog.Draw(_spriteBatch, _gameRenderer.Pixel, uiFont, ScreenWidth, ScreenHeight);
+        _levelSelectionPopup.Draw(_spriteBatch, _gameRenderer.Pixel, uiFont, ScreenWidth, ScreenHeight);
+        _levelDescriptionPopup.Draw(_spriteBatch, _gameRenderer.Pixel, uiFont, ScreenWidth, ScreenHeight);
+        _levelCompletedPopup.Draw(_spriteBatch, _gameRenderer.Pixel, uiFont, ScreenWidth, ScreenHeight);
+        _componentEditDialog.Draw(_spriteBatch, _gameRenderer.Pixel, uiFont, ScreenWidth, ScreenHeight);
+        _controlsPopup.Draw(_spriteBatch, _gameRenderer.Pixel, uiFont, ScreenWidth, ScreenHeight);
         _spriteBatch.End();
 
         base.Draw(gameTime);

@@ -7,6 +7,7 @@ using CPUgame.Core.Primitives;
 using CPUgame.Core.Selection;
 using CPUgame.Core.Services;
 using CPUgame.UI;
+using FontStashSharp;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -17,15 +18,15 @@ public interface IGameRenderer
     int GridSize { get; }
     Texture2D Pixel { get; }
     float TitleFontScale { get; set; }
-    void Initialize(GraphicsDevice graphicsDevice, SpriteFont font);
+    void Initialize(GraphicsDevice graphicsDevice, FontService fontService);
     void DrawWorld(SpriteBatch spriteBatch, Circuit circuit, CameraController camera, SelectionManager selection, IWireManager wireManager, IManualWireService manualWireService, Pin? hoveredPin, Point2 mousePos, int screenWidth, int screenHeight, bool isDraggingItem);
-    void DrawUI(SpriteBatch spriteBatch, IToolboxManager toolboxManager, MainMenu mainMenu, IStatusService statusService, IDialogService dialogService, ITruthTableService truthTableService, CameraController camera, Point2 mousePos, int screenWidth, int screenHeight, SpriteFont font);
+    void DrawUI(SpriteBatch spriteBatch, IToolboxManager toolboxManager, MainMenu mainMenu, IStatusService statusService, IDialogService dialogService, ITruthTableService truthTableService, CameraController camera, Point2 mousePos, int screenWidth, int screenHeight, SpriteFontBase font);
 }
 
 public class GameRenderer : IGameRenderer
 {
     private readonly ICircuitRenderer _circuitRenderer;
-    private SpriteFont _font = null!;
+    private FontService _fontService = null!;
 
     public int GridSize => _circuitRenderer.GridSize;
     public Texture2D Pixel => _circuitRenderer.Pixel;
@@ -36,19 +37,22 @@ public class GameRenderer : IGameRenderer
         _circuitRenderer = circuitRenderer;
     }
 
-    public void Initialize(GraphicsDevice graphicsDevice, SpriteFont font)
+    public void Initialize(GraphicsDevice graphicsDevice, FontService fontService)
     {
-        _circuitRenderer.Initialize(graphicsDevice, font);
-        _font = font;
+        _circuitRenderer.Initialize(graphicsDevice, fontService);
+        _fontService = fontService;
     }
 
     public void DrawWorld(SpriteBatch spriteBatch, Circuit circuit, CameraController camera, SelectionManager selection, IWireManager wireManager, IManualWireService manualWireService, Pin? hoveredPin, Point2 mousePos, int screenWidth, int screenHeight, bool isDraggingItem)
     {
+        // Set zoom for circuit renderer so fonts scale appropriately
+        _circuitRenderer.CurrentZoom = camera.Zoom;
+
         _circuitRenderer.DrawGrid(spriteBatch, camera.Offset.X, camera.Offset.Y, screenWidth, screenHeight, camera.Zoom);
         _circuitRenderer.DrawCircuit(spriteBatch, circuit, selection.SelectedWire);
 
         // Draw component titles
-        DrawComponentTitles(spriteBatch, circuit);
+        DrawComponentTitles(spriteBatch, circuit, camera.Zoom);
 
         if (hoveredPin != null && !isDraggingItem)
         {
@@ -88,9 +92,11 @@ public class GameRenderer : IGameRenderer
         }
     }
 
-    private void DrawComponentTitles(SpriteBatch spriteBatch, Circuit circuit)
+    private void DrawComponentTitles(SpriteBatch spriteBatch, Circuit circuit, float zoom)
     {
         var titleColor = new Color(180, 180, 200);
+        var font = _fontService.GetFontForZoom(zoom * TitleFontScale);
+        var scale = new Vector2(1f / zoom);
 
         foreach (var component in circuit.Components)
         {
@@ -99,22 +105,18 @@ public class GameRenderer : IGameRenderer
                 continue;
             }
 
-            var textSize = _font.MeasureString(component.Title) * TitleFontScale;
+            var textSize = font.MeasureString(component.Title) / zoom;
             float x = component.X + (component.Width - textSize.X) / 2;
             float y = component.Y + component.Height + 2;
 
-            spriteBatch.DrawString(_font, component.Title,
+            font.DrawText(spriteBatch, component.Title,
                 new Vector2(x, y),
                 titleColor,
-                0f,
-                Vector2.Zero,
-                TitleFontScale,
-                SpriteEffects.None,
-                0f);
+                scale: scale);
         }
     }
 
-    public void DrawUI(SpriteBatch spriteBatch, IToolboxManager toolboxManager, MainMenu mainMenu, IStatusService statusService, IDialogService dialogService, ITruthTableService truthTableService, CameraController camera, Point2 mousePos, int screenWidth, int screenHeight, SpriteFont font)
+    public void DrawUI(SpriteBatch spriteBatch, IToolboxManager toolboxManager, MainMenu mainMenu, IStatusService statusService, IDialogService dialogService, ITruthTableService truthTableService, CameraController camera, Point2 mousePos, int screenWidth, int screenHeight, SpriteFontBase font)
     {
         var mousePosMonoGame = mousePos.ToMonoGame();
         DrawZoomIndicator(spriteBatch, camera.Zoom, mainMenu.Height);
@@ -152,28 +154,31 @@ public class GameRenderer : IGameRenderer
 
     private void DrawStatusBar(SpriteBatch spriteBatch, string statusMessage, int screenWidth, int screenHeight)
     {
+        var font = _fontService.GetFont();
         var barHeight = 44;
         var barY = screenHeight - barHeight;
         spriteBatch.Draw(Pixel, new Rectangle(0, barY, screenWidth, barHeight), new Color(40, 40, 50));
 
         var helpText = LocalizationManager.Get("help.shortcuts");
-        spriteBatch.DrawString(_font, helpText, new Vector2(8, barY + 4), new Color(120, 120, 140));
-        spriteBatch.DrawString(_font, statusMessage, new Vector2(8, barY + 24), new Color(200, 200, 210));
+        font.DrawText(spriteBatch, helpText, new Vector2(8, barY + 4), new Color(120, 120, 140));
+        font.DrawText(spriteBatch, statusMessage, new Vector2(8, barY + 24), new Color(200, 200, 210));
     }
 
     private void DrawZoomIndicator(SpriteBatch spriteBatch, float zoom, int menuHeight)
     {
+        var font = _fontService.GetFont();
         var zoomText = $"Zoom: {zoom:P0}";
-        spriteBatch.DrawString(_font, zoomText, new Vector2(8, menuHeight + 8), new Color(150, 150, 170));
+        font.DrawText(spriteBatch, zoomText, new Vector2(8, menuHeight + 8), new Color(150, 150, 170));
     }
 
     private void DrawInputDialog(SpriteBatch spriteBatch, string title, string inputText, int screenWidth, int screenHeight)
     {
+        var font = _fontService.GetFont();
         spriteBatch.Draw(Pixel, new Rectangle(0, 0, screenWidth, screenHeight), new Color(0, 0, 0, 150));
 
         var hintText = LocalizationManager.Get("dialog.name_hint");
-        var titleSize = _font.MeasureString(title);
-        var hintSize = _font.MeasureString(hintText);
+        var titleSize = font.MeasureString(title);
+        var hintSize = font.MeasureString(hintText);
 
         int minWidth = 300;
         int contentWidth = Math.Max((int)titleSize.X, (int)hintSize.X) + 60;
@@ -186,7 +191,7 @@ public class GameRenderer : IGameRenderer
         spriteBatch.Draw(Pixel, dialogRect, new Color(45, 45, 55));
         DrawBorder(spriteBatch, dialogRect, new Color(80, 80, 100), 2);
 
-        spriteBatch.DrawString(_font, title,
+        font.DrawText(spriteBatch, title,
             new Vector2(dialogX + (dialogWidth - titleSize.X) / 2, dialogY + 10),
             new Color(220, 220, 230));
 
@@ -195,11 +200,11 @@ public class GameRenderer : IGameRenderer
         DrawBorder(spriteBatch, inputRect, new Color(100, 100, 120), 1);
 
         var displayText = inputText + "_";
-        spriteBatch.DrawString(_font, displayText,
+        font.DrawText(spriteBatch, displayText,
             new Vector2(inputRect.X + 5, inputRect.Y + 5),
             new Color(220, 220, 230));
 
-        spriteBatch.DrawString(_font, hintText,
+        font.DrawText(spriteBatch, hintText,
             new Vector2(dialogX + (dialogWidth - hintSize.X) / 2, dialogY + dialogHeight - 30),
             new Color(150, 150, 170));
     }

@@ -1,8 +1,10 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using CPUgame.Core.Circuit;
 using CPUgame.Core.Components;
 using CPUgame.Core.Primitives;
+using FontStashSharp;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -11,7 +13,7 @@ namespace CPUgame.Rendering;
 public class CircuitRenderer : ICircuitRenderer
 {
     private PrimitiveDrawer _drawer = null!;
-    private SpriteFont? _font;
+    private FontService? _fontService;
 
     // Colors
     public static readonly Color BackgroundColor = new(30, 30, 35);
@@ -30,13 +32,22 @@ public class CircuitRenderer : ICircuitRenderer
     public static readonly Color SwitchOffColor = new(60, 80, 100);
 
     public int GridSize { get; set; } = 20;
+    public float CurrentZoom { get; set; } = 1f;
 
     public Texture2D Pixel => _drawer.Pixel;
 
-    public void Initialize(GraphicsDevice graphicsDevice, SpriteFont font)
+    public void Initialize(GraphicsDevice graphicsDevice, FontService fontService)
     {
         _drawer = new PrimitiveDrawer(graphicsDevice);
-        _font = font;
+        _fontService = fontService;
+    }
+
+    /// <summary>
+    /// Gets a font appropriately sized for the current zoom level.
+    /// </summary>
+    private SpriteFontBase GetFont()
+    {
+        return _fontService?.GetFontForZoom(CurrentZoom) ?? throw new InvalidOperationException("FontService not initialized");
     }
 
     public void DrawGrid(SpriteBatch spriteBatch, float cameraX, float cameraY, int screenWidth, int screenHeight, float zoom)
@@ -154,10 +165,10 @@ public class CircuitRenderer : ICircuitRenderer
     private (int, int, int, int) NormalizeSegment(Vector2 a, Vector2 b)
     {
         // Snap to grid and normalize order for consistent keys
-        int x1 = (int)System.Math.Round(a.X / GridSize) * GridSize;
-        int y1 = (int)System.Math.Round(a.Y / GridSize) * GridSize;
-        int x2 = (int)System.Math.Round(b.X / GridSize) * GridSize;
-        int y2 = (int)System.Math.Round(b.Y / GridSize) * GridSize;
+        int x1 = (int)Math.Round(a.X / GridSize) * GridSize;
+        int y1 = (int)Math.Round(a.Y / GridSize) * GridSize;
+        int x2 = (int)Math.Round(b.X / GridSize) * GridSize;
+        int y2 = (int)Math.Round(b.Y / GridSize) * GridSize;
 
         // Normalize order: smaller coordinates first
         if (x1 > x2 || (x1 == x2 && y1 > y2))
@@ -244,8 +255,8 @@ public class CircuitRenderer : ICircuitRenderer
 
             // Determine wrap direction (go above or below)
             float wrapY;
-            float minY = System.Math.Min(start.Y, end.Y);
-            float maxY = System.Math.Max(start.Y, end.Y);
+            float minY = Math.Min(start.Y, end.Y);
+            float maxY = Math.Max(start.Y, end.Y);
 
             // Find clear Y for horizontal segment
             wrapY = FindClearHorizontalY(leftX, rightX, minY, maxY);
@@ -298,8 +309,8 @@ public class CircuitRenderer : ICircuitRenderer
         float belowY = bottomMost + GridSize;
 
         // Choose the closer option
-        float distAbove = System.Math.Abs((minY + maxY) / 2 - aboveY);
-        float distBelow = System.Math.Abs((minY + maxY) / 2 - belowY);
+        float distAbove = Math.Abs((minY + maxY) / 2 - aboveY);
+        float distBelow = Math.Abs((minY + maxY) / 2 - belowY);
 
         return distAbove <= distBelow ? SnapToGrid(aboveY) : SnapToGrid(belowY);
     }
@@ -310,8 +321,8 @@ public class CircuitRenderer : ICircuitRenderer
     /// </summary>
     private float FindClearVerticalX(Vector2 start, Vector2 end, float minAllowedX, float maxAllowedX)
     {
-        float minY = System.Math.Min(start.Y, end.Y);
-        float maxY = System.Math.Max(start.Y, end.Y);
+        float minY = Math.Min(start.Y, end.Y);
+        float maxY = Math.Max(start.Y, end.Y);
 
         // Collect all components that could block a vertical line between start.Y and end.Y
         var blockingRects = new List<Rectangle>();
@@ -348,11 +359,11 @@ public class CircuitRenderer : ICircuitRenderer
         // Clamp to allowed range
         if (minAllowedX > float.MinValue + 1000)
         {
-            preferredX = System.Math.Max(preferredX, minAllowedX);
+            preferredX = Math.Max(preferredX, minAllowedX);
         }
         if (maxAllowedX < float.MaxValue - 1000)
         {
-            preferredX = System.Math.Min(preferredX, maxAllowedX);
+            preferredX = Math.Min(preferredX, maxAllowedX);
         }
 
         // If no blocking components, use preferred position
@@ -362,8 +373,8 @@ public class CircuitRenderer : ICircuitRenderer
         }
 
         // Determine search range
-        float rangeStart = minAllowedX > float.MinValue + 1000 ? minAllowedX : System.Math.Min(start.X, end.X) - GridSize * 4;
-        float rangeEnd = maxAllowedX < float.MaxValue - 1000 ? maxAllowedX : System.Math.Max(start.X, end.X) + GridSize * 4;
+        float rangeStart = minAllowedX > float.MinValue + 1000 ? minAllowedX : Math.Min(start.X, end.X) - GridSize * 4;
+        float rangeEnd = maxAllowedX < float.MaxValue - 1000 ? maxAllowedX : Math.Max(start.X, end.X) + GridSize * 4;
 
         // Find gaps between components where we can route
         var gaps = FindVerticalGaps(blockingRects, rangeStart, rangeEnd);
@@ -387,7 +398,7 @@ public class CircuitRenderer : ICircuitRenderer
             float rightMost = float.MinValue;
             foreach (var rect in blockingRects)
             {
-                rightMost = System.Math.Max(rightMost, rect.Right);
+                rightMost = Math.Max(rightMost, rect.Right);
             }
             float rightRoute = rightMost + GridSize;
             if (minAllowedX <= float.MinValue + 1000 || rightRoute >= minAllowedX)
@@ -402,7 +413,7 @@ public class CircuitRenderer : ICircuitRenderer
             float leftMost = float.MaxValue;
             foreach (var rect in blockingRects)
             {
-                leftMost = System.Math.Min(leftMost, rect.Left);
+                leftMost = Math.Min(leftMost, rect.Left);
             }
             float leftRoute = leftMost - GridSize;
             if (maxAllowedX >= float.MaxValue - 1000 || leftRoute <= maxAllowedX)
@@ -463,7 +474,7 @@ public class CircuitRenderer : ICircuitRenderer
     /// </summary>
     private float SnapToGrid(float value)
     {
-        return (float)(System.Math.Round(value / GridSize) * GridSize);
+        return (float)(Math.Round(value / GridSize) * GridSize);
     }
 
     public void DrawWirePreview(SpriteBatch spriteBatch, Vector2 start, Vector2 end)
@@ -492,17 +503,17 @@ public class CircuitRenderer : ICircuitRenderer
         {
             var p1 = new Vector2(pathPoints[i].X, pathPoints[i].Y);
             var p2 = new Vector2(pathPoints[i + 1].X, pathPoints[i + 1].Y);
-            _drawer.DrawLine(spriteBatch, p1, p2, wireColor, 2);
+            _drawer.DrawLine(spriteBatch, p1, p2, wireColor);
         }
 
         // Draw preview line to current mouse position (snapped to grid)
         var lastPoint = new Vector2(pathPoints[^1].X, pathPoints[^1].Y);
         var snappedMouse = new Vector2(
-            (float)(System.Math.Round(currentMousePos.X / GridSize) * GridSize),
-            (float)(System.Math.Round(currentMousePos.Y / GridSize) * GridSize));
+            (float)(Math.Round(currentMousePos.X / GridSize) * GridSize),
+            (float)(Math.Round(currentMousePos.Y / GridSize) * GridSize));
 
         var previewColor = new Color(100, 180, 255, 100);
-        _drawer.DrawLine(spriteBatch, lastPoint, snappedMouse, previewColor, 2);
+        _drawer.DrawLine(spriteBatch, lastPoint, snappedMouse, previewColor);
 
         // Draw nodes at each path point
         foreach (var point in pathPoints)
@@ -564,13 +575,15 @@ public class CircuitRenderer : ICircuitRenderer
         var center = new Vector2(rect.X + (float)rect.Width / 2, rect.Y + (float)rect.Height / 2);
 
         // Draw label
-        if (_font != null)
+        if (_fontService != null)
         {
+            var font = GetFont();
             var text = "&";
-            var textSize = _font.MeasureString(text);
-            spriteBatch.DrawString(_font, text,
-                center - textSize / 2,
-                TextColor);
+            var textSize = font.MeasureString(text);
+            font.DrawText(spriteBatch, text,
+                center - textSize / 2 / CurrentZoom,
+                TextColor,
+                scale: new Vector2(1f / CurrentZoom));
         }
 
         // Small circle for negation
@@ -583,12 +596,14 @@ public class CircuitRenderer : ICircuitRenderer
         _drawer.DrawRectangle(spriteBatch, rect, color);
         _drawer.DrawRectangleOutline(spriteBatch, rect, borderColor, 2);
 
-        if (_font != null)
+        if (_fontService != null)
         {
+            var font = GetFont();
             var text = sw.IsOn ? "1" : "0";
-            var textSize = _font.MeasureString(text);
+            var textSize = font.MeasureString(text);
             var center = new Vector2(rect.X + (float)rect.Width / 2, rect.Y + (float)rect.Height / 2);
-            spriteBatch.DrawString(_font, text, center - textSize / 2, TextColor);
+            font.DrawText(spriteBatch, text, center - textSize / 2 / CurrentZoom, TextColor,
+                scale: new Vector2(1f / CurrentZoom));
         }
     }
 
@@ -608,12 +623,14 @@ public class CircuitRenderer : ICircuitRenderer
         _drawer.DrawRectangle(spriteBatch, rect, ComponentColor);
         _drawer.DrawRectangleOutline(spriteBatch, rect, borderColor, 2);
 
-        if (_font != null)
+        if (_fontService != null)
         {
+            var font = GetFont();
             var text = "CLK";
-            var textSize = _font.MeasureString(text);
+            var textSize = font.MeasureString(text);
             var center = new Vector2(rect.X + (float)rect.Width / 2, rect.Y + (float)rect.Height / 2);
-            spriteBatch.DrawString(_font, text, center - textSize / 2, TextColor);
+            font.DrawText(spriteBatch, text, center - textSize / 2 / CurrentZoom, TextColor,
+                scale: new Vector2(1f / CurrentZoom));
         }
     }
 
@@ -624,15 +641,19 @@ public class CircuitRenderer : ICircuitRenderer
         _drawer.DrawRectangle(spriteBatch, rect, customColor);
         _drawer.DrawRectangleOutline(spriteBatch, rect, borderColor, 2);
 
-        if (_font != null)
+        if (_fontService != null)
         {
+            var font = GetFont();
             var text = custom.ComponentName;
             // Truncate if too long
             if (text.Length > 8)
+            {
                 text = text.Substring(0, 7) + "..";
-            var textSize = _font.MeasureString(text);
+            }
+            var textSize = font.MeasureString(text);
             var center = new Vector2(rect.X + (float)rect.Width / 2, rect.Y + (float)rect.Height / 2);
-            spriteBatch.DrawString(_font, text, center - textSize / 2, TextColor);
+            font.DrawText(spriteBatch, text, center - textSize / 2 / CurrentZoom, TextColor,
+                scale: new Vector2(1f / CurrentZoom));
         }
     }
 
@@ -643,21 +664,23 @@ public class CircuitRenderer : ICircuitRenderer
         _drawer.DrawRectangle(spriteBatch, rect, busColor);
         _drawer.DrawRectangleOutline(spriteBatch, rect, borderColor, 2);
 
-        if (_font != null)
+        if (_fontService != null)
         {
-            var centerX = rect.X + rect.Width / 2;
+            var font = GetFont();
+            var scale = new Vector2(1f / CurrentZoom);
+            var centerX = rect.X + rect.Width / 2f;
 
             // Draw decimal value above the component
             var decText = busIn.Value.ToString();
-            var decSize = _font.MeasureString(decText);
-            spriteBatch.DrawString(_font, decText,
-                new Vector2(centerX - decSize.X / 2, rect.Y - decSize.Y - 2), WireOnColor);
+            var decSize = font.MeasureString(decText) / CurrentZoom;
+            font.DrawText(spriteBatch, decText,
+                new Vector2(centerX - decSize.X / 2, rect.Y - decSize.Y - 2), WireOnColor, scale: scale);
 
             // Draw label inside
             var label = "IN";
-            var labelSize = _font.MeasureString(label);
-            spriteBatch.DrawString(_font, label,
-                new Vector2(centerX - labelSize.X / 2, rect.Y + 4), TextColor);
+            var labelSize = font.MeasureString(label) / CurrentZoom;
+            font.DrawText(spriteBatch, label,
+                new Vector2(centerX - labelSize.X / 2, rect.Y + 4), TextColor, scale: scale);
 
             // Draw pin values if enabled
             if (busIn.ShowPinValues)
@@ -666,11 +689,11 @@ public class CircuitRenderer : ICircuitRenderer
                 {
                     var pin = busIn.Outputs[i];
                     var bitValue = pin.Value == Signal.High ? "1" : "0";
-                    var bitSize = _font.MeasureString(bitValue);
+                    var bitSize = font.MeasureString(bitValue) / CurrentZoom;
                     // Draw inside the component, left of the pin
-                    spriteBatch.DrawString(_font, bitValue,
+                    font.DrawText(spriteBatch, bitValue,
                         new Vector2(rect.Right - bitSize.X - 8, pin.WorldY - bitSize.Y / 2),
-                        pin.Value == Signal.High ? WireOnColor : WireOffColor);
+                        pin.Value == Signal.High ? WireOnColor : WireOffColor, scale: scale);
                 }
             }
         }
@@ -683,21 +706,23 @@ public class CircuitRenderer : ICircuitRenderer
         _drawer.DrawRectangle(spriteBatch, rect, busColor);
         _drawer.DrawRectangleOutline(spriteBatch, rect, borderColor, 2);
 
-        if (_font != null)
+        if (_fontService != null)
         {
-            var centerX = rect.X + rect.Width / 2;
+            var font = GetFont();
+            var scale = new Vector2(1f / CurrentZoom);
+            var centerX = rect.X + rect.Width / 2f;
 
             // Draw decimal value above the component (unconnected pins treated as 0)
             var decText = busOut.GetValue().ToString();
-            var decSize = _font.MeasureString(decText);
-            spriteBatch.DrawString(_font, decText,
-                new Vector2(centerX - decSize.X / 2, rect.Y - decSize.Y - 2), WireOnColor);
+            var decSize = font.MeasureString(decText) / CurrentZoom;
+            font.DrawText(spriteBatch, decText,
+                new Vector2(centerX - decSize.X / 2, rect.Y - decSize.Y - 2), WireOnColor, scale: scale);
 
             // Draw label inside
             var label = "OUT";
-            var labelSize = _font.MeasureString(label);
-            spriteBatch.DrawString(_font, label,
-                new Vector2(centerX - labelSize.X / 2, rect.Y + 4), TextColor);
+            var labelSize = font.MeasureString(label) / CurrentZoom;
+            font.DrawText(spriteBatch, label,
+                new Vector2(centerX - labelSize.X / 2, rect.Y + 4), TextColor, scale: scale);
 
             // Draw pin values if enabled
             if (busOut.ShowPinValues)
@@ -707,11 +732,11 @@ public class CircuitRenderer : ICircuitRenderer
                     var pin = busOut.Inputs[i];
                     // Unconnected/undefined pins are treated as 0
                     var bitValue = pin.Value == Signal.High ? "1" : "0";
-                    var bitSize = _font.MeasureString(bitValue);
+                    var bitSize = font.MeasureString(bitValue) / CurrentZoom;
                     var pinColor = pin.Value == Signal.High ? WireOnColor : WireOffColor;
                     // Draw inside the component, right of the pin
-                    spriteBatch.DrawString(_font, bitValue,
-                        new Vector2(rect.X + 8, pin.WorldY - bitSize.Y / 2), pinColor);
+                    font.DrawText(spriteBatch, bitValue,
+                        new Vector2(rect.X + 8, pin.WorldY - bitSize.Y / 2), pinColor, scale: scale);
                 }
             }
         }
@@ -722,12 +747,14 @@ public class CircuitRenderer : ICircuitRenderer
         _drawer.DrawRectangle(spriteBatch, rect, ComponentColor);
         _drawer.DrawRectangleOutline(spriteBatch, rect, borderColor, 2);
 
-        if (_font != null)
+        if (_fontService != null)
         {
+            var font = GetFont();
             var text = component.Name;
-            var textSize = _font.MeasureString(text);
+            var textSize = font.MeasureString(text);
             var center = new Vector2(rect.X + (float)rect.Width / 2, rect.Y + (float)rect.Height / 2);
-            spriteBatch.DrawString(_font, text, center - textSize / 2, TextColor);
+            font.DrawText(spriteBatch, text, center - textSize / 2 / CurrentZoom, TextColor,
+                scale: new Vector2(1f / CurrentZoom));
         }
     }
 

@@ -1,4 +1,5 @@
 using CPUgame.Core.Localization;
+using FontStashSharp;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -76,7 +77,7 @@ public class ControlsPopup
         }
     }
 
-    public void Draw(SpriteBatch spriteBatch, Texture2D pixel, SpriteFont font, int screenWidth, int screenHeight)
+    public void Draw(SpriteBatch spriteBatch, Texture2D pixel, SpriteFontBase font, int screenWidth, int screenHeight)
     {
         if (!IsVisible)
         {
@@ -96,7 +97,7 @@ public class ControlsPopup
 
         var titleText = LocalizationManager.Get("controls.title");
         var titleSize = font.MeasureString(titleText);
-        spriteBatch.DrawString(font, titleText,
+        font.DrawText(spriteBatch, titleText,
             new Vector2(_bounds.X + Padding, _bounds.Y + (TitleHeight - titleSize.Y) / 2),
             TextColor);
 
@@ -104,7 +105,7 @@ public class ControlsPopup
         spriteBatch.Draw(pixel, _closeButtonRect, _closeButtonHovered ? CloseButtonHoverColor : CloseButtonColor);
         var xText = "X";
         var xSize = font.MeasureString(xText);
-        spriteBatch.DrawString(font, xText,
+        font.DrawText(spriteBatch, xText,
             new Vector2(_closeButtonRect.X + (_closeButtonRect.Width - xSize.X) / 2,
                        _closeButtonRect.Y + (_closeButtonRect.Height - xSize.Y) / 2),
             TextColor);
@@ -158,13 +159,13 @@ public class ControlsPopup
         });
     }
 
-    private int DrawSection(SpriteBatch spriteBatch, SpriteFont font, Texture2D pixel, int startY, string headerKey, (string descKey, string keyKey)[] items)
+    private int DrawSection(SpriteBatch spriteBatch, SpriteFontBase font, Texture2D pixel, int startY, string headerKey, (string descKey, string keyKey)[] items)
     {
         int y = startY;
 
         // Draw section header
         var headerText = LocalizationManager.Get(headerKey);
-        spriteBatch.DrawString(font, headerText,
+        font.DrawText(spriteBatch, headerText,
             new Vector2(_bounds.X + Padding, y),
             HeaderColor);
         y += LineHeight;
@@ -179,12 +180,12 @@ public class ControlsPopup
             var desc = LocalizationManager.Get(descKey);
             var key = LocalizationManager.Get(keyKey);
 
-            spriteBatch.DrawString(font, desc,
+            font.DrawText(spriteBatch, desc,
                 new Vector2(_bounds.X + Padding + 10, y),
                 TextColor);
 
             var keySize = font.MeasureString(key);
-            spriteBatch.DrawString(font, key,
+            font.DrawText(spriteBatch, key,
                 new Vector2(_bounds.Right - Padding - keySize.X, y),
                 KeyColor);
 

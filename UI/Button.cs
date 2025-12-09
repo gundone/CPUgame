@@ -1,4 +1,5 @@
 using System;
+using FontStashSharp;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -43,7 +44,7 @@ public class Button
         }
     }
 
-    public void Draw(SpriteBatch spriteBatch, Texture2D pixel, SpriteFont font)
+    public void Draw(SpriteBatch spriteBatch, Texture2D pixel, SpriteFontBase font)
     {
         var color = IsPressed ? PressedColor : (IsHovered ? HoverColor : NormalColor);
 
@@ -61,6 +62,6 @@ public class Button
         var textPos = new Vector2(
             Bounds.X + (Bounds.Width - textSize.X) / 2,
             Bounds.Y + (Bounds.Height - textSize.Y) / 2);
-        spriteBatch.DrawString(font, Text, textPos, TextColor);
+        font.DrawText(spriteBatch, Text, textPos, TextColor);
     }
 }

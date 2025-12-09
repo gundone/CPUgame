@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using CPUgame.Core.Circuit;
 using CPUgame.Core.Input;
 using CPUgame.Core.Localization;
+using FontStashSharp;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -256,7 +257,7 @@ public class ComponentEditDialog
         OnSave?.Invoke();
     }
 
-    public void Draw(SpriteBatch spriteBatch, Texture2D pixel, SpriteFont font, int screenWidth, int screenHeight)
+    public void Draw(SpriteBatch spriteBatch, Texture2D pixel, SpriteFontBase font, int screenWidth, int screenHeight)
     {
         if (!IsVisible || _component == null || _fieldValues.Count == 0)
         {
@@ -276,7 +277,7 @@ public class ComponentEditDialog
 
         var titleText = LocalizationManager.Get("dialog.edit_component");
         var titleSize = font.MeasureString(titleText);
-        spriteBatch.DrawString(font, titleText,
+        font.DrawText(spriteBatch, titleText,
             new Vector2(_bounds.X + Padding, _bounds.Y + (TitleHeight - titleSize.Y) / 2),
             TextColor);
 
@@ -293,7 +294,7 @@ public class ComponentEditDialog
             // Draw label
             var labelText = _fieldLabels[i];
             var labelSize = font.MeasureString(labelText);
-            spriteBatch.DrawString(font, labelText,
+            font.DrawText(spriteBatch, labelText,
                 new Vector2(_bounds.X + Padding, y + (FieldHeight - labelSize.Y) / 2),
                 LabelColor);
 
@@ -323,7 +324,7 @@ public class ComponentEditDialog
                 fieldText += "_"; // Cursor
             }
             var fieldSize = font.MeasureString(fieldText);
-            spriteBatch.DrawString(font, fieldText,
+            font.DrawText(spriteBatch, fieldText,
                 new Vector2(fieldRect.X + 8, fieldRect.Y + (fieldRect.Height - fieldSize.Y) / 2),
                 TextColor);
 
@@ -335,7 +336,7 @@ public class ComponentEditDialog
         DrawBorder(spriteBatch, pixel, _cancelButtonRect, BorderColor, 1);
         var cancelText = LocalizationManager.Get("dialog.cancel");
         var cancelSize = font.MeasureString(cancelText);
-        spriteBatch.DrawString(font, cancelText,
+        font.DrawText(spriteBatch, cancelText,
             new Vector2(_cancelButtonRect.X + (_cancelButtonRect.Width - cancelSize.X) / 2,
                        _cancelButtonRect.Y + (_cancelButtonRect.Height - cancelSize.Y) / 2),
             TextColor);
@@ -345,7 +346,7 @@ public class ComponentEditDialog
         DrawBorder(spriteBatch, pixel, _saveButtonRect, BorderColor, 1);
         var saveText = LocalizationManager.Get("dialog.save");
         var saveSize = font.MeasureString(saveText);
-        spriteBatch.DrawString(font, saveText,
+        font.DrawText(spriteBatch, saveText,
             new Vector2(_saveButtonRect.X + (_saveButtonRect.Width - saveSize.X) / 2,
                        _saveButtonRect.Y + (_saveButtonRect.Height - saveSize.Y) / 2),
             TextColor);

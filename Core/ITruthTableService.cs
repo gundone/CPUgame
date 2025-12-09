@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using CPUgame.Core.Levels;
 using CPUgame.UI;
+using FontStashSharp;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -16,9 +17,9 @@ public interface ITruthTableService
     List<TruthTableRow> TruthTableRows { get; }
     event Action? OnLevelPassed;
     void Initialize(int screenWidth);
-    void Show(Circuit.Circuit circuit, SpriteFont font);
+    void Show(Circuit.Circuit circuit, SpriteFontBase font);
     void Update(Point mousePos, bool mousePressed, bool mouseJustPressed, bool mouseJustReleased, int scrollDelta, Circuit.Circuit circuit, double deltaTime);
-    void Draw(SpriteBatch spriteBatch, Texture2D pixel, SpriteFont font, Point mousePos);
+    void Draw(SpriteBatch spriteBatch, Texture2D pixel, SpriteFontBase font, Point mousePos);
     bool ContainsPoint(Point p);
     void SetCurrentLevel(GameLevel? level);
 }
@@ -117,7 +118,7 @@ public class TruthTableService : ITruthTableService
         _wasLevelPassed = false;
     }
 
-    public void Show(Circuit.Circuit circuit, SpriteFont font)
+    public void Show(Circuit.Circuit circuit, SpriteFontBase font)
     {
         if (_window != null)
         {
@@ -126,7 +127,7 @@ public class TruthTableService : ITruthTableService
         }
     }
 
-    public void Draw(SpriteBatch spriteBatch, Texture2D pixel, SpriteFont font, Point mousePos)
+    public void Draw(SpriteBatch spriteBatch, Texture2D pixel, SpriteFontBase font, Point mousePos)
     {
         _window?.Draw(spriteBatch, pixel, font, mousePos);
     }

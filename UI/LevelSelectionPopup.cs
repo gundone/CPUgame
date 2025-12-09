@@ -4,6 +4,7 @@ using System.Linq;
 using CPUgame.Core;
 using CPUgame.Core.Levels;
 using CPUgame.Core.Localization;
+using FontStashSharp;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -183,7 +184,7 @@ public class LevelSelectionPopup
         }
     }
 
-    public void Draw(SpriteBatch spriteBatch, Texture2D pixel, SpriteFont font, int screenWidth, int screenHeight)
+    public void Draw(SpriteBatch spriteBatch, Texture2D pixel, SpriteFontBase font, int screenWidth, int screenHeight)
     {
         if (!IsVisible)
         {
@@ -203,7 +204,7 @@ public class LevelSelectionPopup
 
         var titleText = LocalizationManager.Get("levelselect.title");
         var titleSize = font.MeasureString(titleText);
-        spriteBatch.DrawString(font, titleText,
+        font.DrawText(spriteBatch, titleText,
             new Vector2(_bounds.X + Padding, _bounds.Y + (TitleHeight - titleSize.Y) / 2),
             TextColor);
 
@@ -211,13 +212,11 @@ public class LevelSelectionPopup
         spriteBatch.Draw(pixel, _closeButtonRect, _closeButtonHovered ? CloseButtonHoverColor : CloseButtonColor);
         var xText = "X";
         var xSize = font.MeasureString(xText);
-        spriteBatch.DrawString(font, xText,
+        font.DrawText(spriteBatch, xText,
             new Vector2(_closeButtonRect.X + (_closeButtonRect.Width - xSize.X) / 2,
                        _closeButtonRect.Y + (_closeButtonRect.Height - xSize.Y) / 2),
             TextColor);
 
-        // Set up scissor rectangle for content clipping
-        var contentArea = new Rectangle(_bounds.X, _bounds.Y + TitleHeight, _bounds.Width, _bounds.Height - TitleHeight);
 
         // Draw tiers and levels
         int y = _bounds.Y + TitleHeight + Padding - _scrollOffset;
@@ -245,7 +244,7 @@ public class LevelSelectionPopup
                 }
 
                 var tierSize = font.MeasureString(tierName);
-                spriteBatch.DrawString(font, tierName,
+                font.DrawText(spriteBatch, tierName,
                     new Vector2(tierHeaderRect.X + Padding, tierHeaderRect.Y + (TierHeaderHeight - tierSize.Y) / 2),
                     tier.IsUnlocked ? TextColor : LockedTextColor);
             }
@@ -287,7 +286,7 @@ public class LevelSelectionPopup
                         levelName = level.Name;
                     }
                     var levelSize = font.MeasureString(levelName);
-                    spriteBatch.DrawString(font, levelName,
+                    font.DrawText(spriteBatch, levelName,
                         new Vector2(levelRect.X + Padding, levelRect.Y + (LevelItemHeight - levelSize.Y) / 2),
                         tier.IsUnlocked ? TextColor : LockedTextColor);
 
@@ -303,7 +302,7 @@ public class LevelSelectionPopup
                         // Draw checkmark (V)
                         var checkText = "V";
                         var checkSize = font.MeasureString(checkText);
-                        spriteBatch.DrawString(font, checkText,
+                        font.DrawText(spriteBatch, checkText,
                             new Vector2(checkRect.X + (checkRect.Width - checkSize.X) / 2,
                                        checkRect.Y + (checkRect.Height - checkSize.Y) / 2),
                             CheckMarkColor);
