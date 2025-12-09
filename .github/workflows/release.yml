@@ -35,8 +35,8 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: GameRelease
-        path: GameRelease.zip
+        name: CpuGame
+        path: CpuGame.zip
 
   release:
     needs: build
