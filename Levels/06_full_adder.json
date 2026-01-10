@@ -7,14 +7,16 @@
   "componentName": "full_adder",
   "inputCount": 3,
   "outputCount": 2,
+  "inputPinTitles": ["A", "B", "Cin"],
+  "outputPinTitles": ["Sum", "Cout"],
   "truthTable": [
     { "inputs": [false, false, false], "outputs": [false, false] },
-    { "inputs": [false, false, true], "outputs": [false, true] },
-    { "inputs": [false, true, false], "outputs": [false, true] },
-    { "inputs": [false, true, true], "outputs": [true, false] },
-    { "inputs": [true, false, false], "outputs": [false, true] },
-    { "inputs": [true, false, true], "outputs": [true, false] },
-    { "inputs": [true, true, false], "outputs": [true, false] },
+    { "inputs": [false, false, true], "outputs": [true, false] },
+    { "inputs": [false, true, false], "outputs": [true, false] },
+    { "inputs": [false, true, true], "outputs": [false, true] },
+    { "inputs": [true, false, false], "outputs": [true, false] },
+    { "inputs": [true, false, true], "outputs": [false, true] },
+    { "inputs": [true, true, false], "outputs": [false, true] },
     { "inputs": [true, true, true], "outputs": [true, true] }
   ]
 }

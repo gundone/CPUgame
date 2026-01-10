@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CPUgame.Core.Circuit;
 using CPUgame.Core.Components;
+using CPUgame.Core.Designer;
 using CPUgame.Core.Primitives;
 using FontStashSharp;
 using Microsoft.Xna.Framework;
@@ -13,6 +14,7 @@ namespace CPUgame.Rendering;
 public class CircuitRenderer : ICircuitRenderer
 {
     private readonly IPrimitiveDrawer _drawer;
+    private readonly IAppearanceService _appearanceService;
     private IFontService? _fontService;
 
     // Colors
@@ -36,15 +38,68 @@ public class CircuitRenderer : ICircuitRenderer
 
     public Texture2D Pixel => _drawer.Pixel;
 
-    public CircuitRenderer(IPrimitiveDrawer drawer)
+    public CircuitRenderer(IPrimitiveDrawer drawer, IAppearanceService appearanceService)
     {
         _drawer = drawer;
+        _appearanceService = appearanceService;
     }
 
     public void Initialize(GraphicsDevice graphicsDevice, IFontService fontService)
     {
         _drawer.Initialize(graphicsDevice);
         _fontService = fontService;
+        _appearanceService.LoadAll();
+    }
+
+    /// <summary>
+    /// Gets the fill color for a component, checking for custom appearance.
+    /// </summary>
+    private Color GetComponentFillColor(Component component, Color defaultColor)
+    {
+        var componentType = _appearanceService.GetComponentType(component);
+        var appearance = _appearanceService.GetAppearance(componentType);
+
+        if (appearance?.FillColor != null)
+        {
+            return HexToColor(appearance.FillColor);
+        }
+        return defaultColor;
+    }
+
+    /// <summary>
+    /// Gets the custom title for a component, or null if using default.
+    /// </summary>
+    private string? GetCustomTitle(Component component)
+    {
+        var componentType = _appearanceService.GetComponentType(component);
+        var appearance = _appearanceService.GetAppearance(componentType);
+
+        if (appearance != null && !string.IsNullOrEmpty(appearance.Title))
+        {
+            return appearance.Title;
+        }
+        return null;
+    }
+
+    private static Color HexToColor(string hex)
+    {
+        if (string.IsNullOrEmpty(hex) || hex.Length < 7)
+        {
+            return ComponentColor;
+        }
+
+        try
+        {
+            hex = hex.TrimStart('#');
+            int r = Convert.ToInt32(hex.Substring(0, 2), 16);
+            int g = Convert.ToInt32(hex.Substring(2, 2), 16);
+            int b = Convert.ToInt32(hex.Substring(4, 2), 16);
+            return new Color(r, g, b);
+        }
+        catch
+        {
+            return ComponentColor;
+        }
     }
 
     /// <summary>
@@ -569,52 +624,78 @@ public class CircuitRenderer : ICircuitRenderer
         {
             DrawPin(spriteBatch, pin);
         }
+
+        // Draw pin titles if enabled
+        DrawPinTitles(spriteBatch, component);
     }
 
-    private void DrawNandGate(SpriteBatch spriteBatch, Component _, Rectangle rect, Color borderColor)
+    private void DrawNandGate(SpriteBatch spriteBatch, Component component, Rectangle rect, Color borderColor)
     {
-        _drawer.DrawRectangle(spriteBatch, rect, ComponentColor);
+        var fillColor = GetComponentFillColor(component, ComponentColor);
+        _drawer.DrawRectangle(spriteBatch, rect, fillColor);
         _drawer.DrawRectangleOutline(spriteBatch, rect, borderColor, 2);
 
         // Draw NAND symbol (simplified)
         var center = new Vector2(rect.X + (float)rect.Width / 2, rect.Y + (float)rect.Height / 2);
 
-        // Draw label
+        // Draw label (custom title or default)
         if (_fontService != null)
         {
-            var font = GetFont();
-            var text = "&";
+            var text = GetCustomTitle(component) ?? "&";
+
+            // Get appearance for font scale and offset
+            var componentType = _appearanceService.GetComponentType(component);
+            var appearance = _appearanceService.GetAppearance(componentType);
+            float fontScale = appearance?.TitleFontScale ?? 1.0f;
+            int offsetX = appearance?.TitleOffsetX ?? 0;
+            int offsetY = appearance?.TitleOffsetY ?? 0;
+
+            var font = _fontService.GetFontForZoom(CurrentZoom * fontScale);
             var textSize = font.MeasureString(text);
-            font.DrawText(spriteBatch, text,
-                center - textSize / 2 / CurrentZoom,
-                TextColor,
+            var position = center - textSize / 2 / CurrentZoom + new Vector2(offsetX, offsetY);
+            font.DrawText(spriteBatch, text, position, TextColor,
                 scale: new Vector2(1f / CurrentZoom));
         }
 
-        // Small circle for negation
-        _drawer.DrawFilledCircle(spriteBatch, new Vector2(rect.Right - 5, center.Y), 4, TextColor);
+        // Small circle for negation (only if using default title)
+        if (GetCustomTitle(component) == null)
+        {
+            _drawer.DrawFilledCircle(spriteBatch, new Vector2(rect.Right - 5, center.Y), 4, TextColor);
+        }
     }
 
     private void DrawSwitch(SpriteBatch spriteBatch, InputSwitch sw, Rectangle rect, Color borderColor)
     {
-        var color = sw.IsOn ? SwitchOnColor : SwitchOffColor;
+        var customFill = GetComponentFillColor(sw, Color.Transparent);
+        var color = customFill != Color.Transparent ? customFill : (sw.IsOn ? SwitchOnColor : SwitchOffColor);
         _drawer.DrawRectangle(spriteBatch, rect, color);
         _drawer.DrawRectangleOutline(spriteBatch, rect, borderColor, 2);
 
         if (_fontService != null)
         {
-            var font = GetFont();
-            var text = sw.IsOn ? "1" : "0";
+            var customTitle = GetCustomTitle(sw);
+            var text = customTitle ?? (sw.IsOn ? "1" : "0");
+
+            // Get appearance for font scale and offset
+            var componentType = _appearanceService.GetComponentType(sw);
+            var appearance = _appearanceService.GetAppearance(componentType);
+            float fontScale = appearance?.TitleFontScale ?? 1.0f;
+            int offsetX = appearance?.TitleOffsetX ?? 0;
+            int offsetY = appearance?.TitleOffsetY ?? 0;
+
+            var font = _fontService.GetFontForZoom(CurrentZoom * fontScale);
             var textSize = font.MeasureString(text);
             var center = new Vector2(rect.X + (float)rect.Width / 2, rect.Y + (float)rect.Height / 2);
-            font.DrawText(spriteBatch, text, center - textSize / 2 / CurrentZoom, TextColor,
+            var position = center - textSize / 2 / CurrentZoom + new Vector2(offsetX, offsetY);
+            font.DrawText(spriteBatch, text, position, TextColor,
                 scale: new Vector2(1f / CurrentZoom));
         }
     }
 
     private void DrawLed(SpriteBatch spriteBatch, OutputLed led, Rectangle rect, Color borderColor)
     {
-        _drawer.DrawRectangle(spriteBatch, rect, ComponentColor);
+        var fillColor = GetComponentFillColor(led, ComponentColor);
+        _drawer.DrawRectangle(spriteBatch, rect, fillColor);
         _drawer.DrawRectangleOutline(spriteBatch, rect, borderColor, 2);
 
         // Draw LED circle
@@ -623,41 +704,61 @@ public class CircuitRenderer : ICircuitRenderer
         _drawer.DrawFilledCircle(spriteBatch, center, 12, color);
     }
 
-    private void DrawClock(SpriteBatch spriteBatch, Clock _, Rectangle rect, Color borderColor)
+    private void DrawClock(SpriteBatch spriteBatch, Clock clk, Rectangle rect, Color borderColor)
     {
-        _drawer.DrawRectangle(spriteBatch, rect, ComponentColor);
+        var fillColor = GetComponentFillColor(clk, ComponentColor);
+        _drawer.DrawRectangle(spriteBatch, rect, fillColor);
         _drawer.DrawRectangleOutline(spriteBatch, rect, borderColor, 2);
 
         if (_fontService != null)
         {
-            var font = GetFont();
-            var text = "CLK";
+            var text = GetCustomTitle(clk) ?? "CLK";
+
+            // Get appearance for font scale and offset
+            var componentType = _appearanceService.GetComponentType(clk);
+            var appearance = _appearanceService.GetAppearance(componentType);
+            float fontScale = appearance?.TitleFontScale ?? 1.0f;
+            int offsetX = appearance?.TitleOffsetX ?? 0;
+            int offsetY = appearance?.TitleOffsetY ?? 0;
+
+            var font = _fontService.GetFontForZoom(CurrentZoom * fontScale);
             var textSize = font.MeasureString(text);
             var center = new Vector2(rect.X + (float)rect.Width / 2, rect.Y + (float)rect.Height / 2);
-            font.DrawText(spriteBatch, text, center - textSize / 2 / CurrentZoom, TextColor,
+            var position = center - textSize / 2 / CurrentZoom + new Vector2(offsetX, offsetY);
+            font.DrawText(spriteBatch, text, position, TextColor,
                 scale: new Vector2(1f / CurrentZoom));
         }
     }
 
     private void DrawCustomComponent(SpriteBatch spriteBatch, CustomComponent custom, Rectangle rect, Color borderColor)
     {
-        // Custom components have a distinct purple tint
-        var customColor = new Color(70, 60, 90);
-        _drawer.DrawRectangle(spriteBatch, rect, customColor);
+        // Custom components have a distinct purple tint by default
+        var defaultColor = new Color(70, 60, 90);
+        var fillColor = GetComponentFillColor(custom, defaultColor);
+        _drawer.DrawRectangle(spriteBatch, rect, fillColor);
         _drawer.DrawRectangleOutline(spriteBatch, rect, borderColor, 2);
 
         if (_fontService != null)
         {
-            var font = GetFont();
-            var text = custom.ComponentName;
+            var text = GetCustomTitle(custom) ?? custom.ComponentName;
             // Truncate if too long
             if (text.Length > 8)
             {
                 text = text.Substring(0, 7) + "..";
             }
+
+            // Get appearance for font scale and offset
+            var componentType = _appearanceService.GetComponentType(custom);
+            var appearance = _appearanceService.GetAppearance(componentType);
+            float fontScale = appearance?.TitleFontScale ?? 1.0f;
+            int offsetX = appearance?.TitleOffsetX ?? 0;
+            int offsetY = appearance?.TitleOffsetY ?? 0;
+
+            var font = _fontService.GetFontForZoom(CurrentZoom * fontScale);
             var textSize = font.MeasureString(text);
             var center = new Vector2(rect.X + (float)rect.Width / 2, rect.Y + (float)rect.Height / 2);
-            font.DrawText(spriteBatch, text, center - textSize / 2 / CurrentZoom, TextColor,
+            var position = center - textSize / 2 / CurrentZoom + new Vector2(offsetX, offsetY);
+            font.DrawText(spriteBatch, text, position, TextColor,
                 scale: new Vector2(1f / CurrentZoom));
         }
     }
@@ -754,11 +855,23 @@ public class CircuitRenderer : ICircuitRenderer
 
         if (_fontService != null)
         {
-            var font = GetFont();
             var text = component.Name;
+
+            // Get appearance for font scale and offset
+            var componentType = _appearanceService.GetComponentType(component);
+            var appearance = _appearanceService.GetAppearance(componentType);
+            float fontScale = appearance?.TitleFontScale ?? 1.0f;
+            int offsetX = appearance?.TitleOffsetX ?? 0;
+            int offsetY = appearance?.TitleOffsetY ?? 0;
+
+            // Get font at the appropriate size for zoom and scale
+            var font = _fontService.GetFontForZoom(CurrentZoom * fontScale);
             var textSize = font.MeasureString(text);
+
             var center = new Vector2(rect.X + (float)rect.Width / 2, rect.Y + (float)rect.Height / 2);
-            font.DrawText(spriteBatch, text, center - textSize / 2 / CurrentZoom, TextColor,
+            var position = center - textSize / 2 / CurrentZoom + new Vector2(offsetX, offsetY);
+
+            font.DrawText(spriteBatch, text, position, TextColor,
                 scale: new Vector2(1f / CurrentZoom));
         }
     }
@@ -773,6 +886,37 @@ public class CircuitRenderer : ICircuitRenderer
         };
 
         _drawer.DrawFilledCircle(spriteBatch, new Vector2(pin.WorldX, pin.WorldY), 5, color);
+    }
+
+    private void DrawPinTitles(SpriteBatch spriteBatch, Component component)
+    {
+        if (_fontService == null || !component.ShowPinTitles)
+        {
+            return;
+        }
+
+        var font = GetFont();
+        var scale = new Vector2(1f / CurrentZoom);
+
+        // Draw titles for input pins (placed to the left of the pin, above the wire)
+        foreach (var pin in component.Inputs)
+        {
+            var titleSize = font.MeasureString(pin.Title) / CurrentZoom;
+            // Position: outside the component (to the left), above the wire line
+            var titleX = pin.WorldX - titleSize.X - 8;
+            var titleY = pin.WorldY - titleSize.Y - 2;
+            font.DrawText(spriteBatch, pin.Title, new Vector2(titleX, titleY), TextColor, scale: scale);
+        }
+
+        // Draw titles for output pins (placed to the right of the pin, above the wire)
+        foreach (var pin in component.Outputs)
+        {
+            var titleSize = font.MeasureString(pin.Title) / CurrentZoom;
+            // Position: outside the component (to the right), above the wire line
+            var titleX = pin.WorldX + 8;
+            var titleY = pin.WorldY - titleSize.Y - 2;
+            font.DrawText(spriteBatch, pin.Title, new Vector2(titleX, titleY), TextColor, scale: scale);
+        }
     }
 
     public void DrawPinHighlight(SpriteBatch spriteBatch, Pin pin)

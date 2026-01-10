@@ -7,10 +7,12 @@
   "componentName": "demux",
   "inputCount": 2,
   "outputCount": 2,
+  "inputPinTitles": ["D", "Sel"],
+  "outputPinTitles": ["Y0", "Y1"],
   "truthTable": [
     { "inputs": [false, false], "outputs": [false, false] },
-    { "inputs": [false, true], "outputs": [true, false] },
-    { "inputs": [true, false], "outputs": [false, false] },
+    { "inputs": [false, true], "outputs": [false, false] },
+    { "inputs": [true, false], "outputs": [true, false] },
     { "inputs": [true, true], "outputs": [false, true] }
   ]
 }

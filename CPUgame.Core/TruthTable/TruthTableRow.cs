@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace CPUgame.Core.TruthTable
+﻿namespace CPUgame.Core.TruthTable
 {
     /// <summary>
     /// Represents a single row in the truth table

@@ -213,12 +213,29 @@ namespace CPUgame.Core.Services
             circuit.AddComponent(inputBus);
             _levelComponents.Add(inputBus);
 
+            // Apply custom input pin titles
+            ApplyPinTitles(inputBus.Outputs, CurrentLevel.InputPinTitles);
+
             // Create output bus(es) based on level output count
             int outputCount = CurrentLevel.OutputCount;
             var outputBus = new BusOutput(gridSize * 12, gridSize * 4, outputCount, gridSize);
             outputBus.Title = "OUT";
             circuit.AddComponent(outputBus);
             _levelComponents.Add(outputBus);
+
+            // Apply custom output pin titles
+            ApplyPinTitles(outputBus.Inputs, CurrentLevel.OutputPinTitles);
+        }
+
+        private static void ApplyPinTitles(List<Pin> pins, List<string> titles)
+        {
+            for (int i = 0; i < pins.Count && i < titles.Count; i++)
+            {
+                if (!string.IsNullOrEmpty(titles[i]))
+                {
+                    pins[i].Title = titles[i];
+                }
+            }
         }
 
         public bool IsLevelComponent(Component component)

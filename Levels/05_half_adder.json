@@ -7,10 +7,12 @@
   "componentName": "half_adder",
   "inputCount": 2,
   "outputCount": 2,
+  "inputPinTitles": ["A", "B"],
+  "outputPinTitles": ["Sum", "Carry"],
   "truthTable": [
     { "inputs": [false, false], "outputs": [false, false] },
-    { "inputs": [false, true], "outputs": [false, true] },
-    { "inputs": [true, false], "outputs": [false, true] },
-    { "inputs": [true, true], "outputs": [true, false] }
+    { "inputs": [false, true], "outputs": [true, false] },
+    { "inputs": [true, false], "outputs": [true, false] },
+    { "inputs": [true, true], "outputs": [false, true] }
   ]
 }

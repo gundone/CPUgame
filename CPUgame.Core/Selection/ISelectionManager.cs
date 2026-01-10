@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using CPUgame.Core.Circuit;
 using CPUgame.Core.Primitives;
 

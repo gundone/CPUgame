@@ -12,6 +12,7 @@
   "menu.game.mode": "Mode",
   "menu.game.sandbox": "Sandbox",
   "menu.game.levels": "Levels",
+  "menu.game.designer": "Designer",
   "menu.game.selectlevel": "Select Level",
 
   "menu.view": "View",
@@ -89,6 +90,7 @@
   "status.level_passed": "Level passed!",
   "status.mode_sandbox": "Switched to Sandbox mode",
   "status.mode_levels": "Switched to Levels mode",
+  "status.mode_designer": "Switched to Designer mode",
   "status.cannot_delete_level_components": "Cannot delete level input/output buses",
   "status.profile_required": "Create a profile to play levels",
 
@@ -209,5 +211,27 @@
   "controls.load": "Load circuit",
   "controls.load.key": "Ctrl + O",
   "controls.build": "Build component",
-  "controls.build.key": "Ctrl + B"
+  "controls.build.key": "Ctrl + B",
+
+  "designer.title": "Component Designer",
+  "designer.select_component": "Select a component to edit",
+  "designer.builtin": "Built-in",
+  "designer.custom": "Custom",
+  "designer.properties": "Properties",
+  "designer.width": "Width",
+  "designer.height": "Height",
+  "designer.title_position": "Title Position",
+  "designer.title_offset_x": "Title Offset X",
+  "designer.title_offset_y": "Title Offset Y",
+  "designer.pin_positions": "Pin Positions",
+  "designer.reset_default": "Reset to Default",
+  "designer.save": "Save",
+  "designer.cancel": "Cancel",
+  "designer.drag_pins": "Drag pins to reposition",
+  "designer.position_top": "Top",
+  "designer.position_center": "Center",
+  "designer.position_bottom": "Bottom",
+  "designer.position_custom": "Custom",
+  "designer.paste": "Paste",
+  "designer.font_scale": "Font Scale"
 }

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CPUgame.Core.Circuit;
 using CPUgame.Core.Components;
+using CPUgame.Core.Designer;
 using CPUgame.Core.Localization;
 using CPUgame.Core.Services;
 using CPUgame.UI;
@@ -13,7 +14,7 @@ public interface IToolboxManager
     Toolbox MainToolbox { get; }
     Toolbox UserToolbox { get; }
     bool IsInteracting { get; }
-    void Initialize(int screenWidth, IComponentBuilder componentBuilder);
+    void Initialize(int screenWidth, IComponentBuilder componentBuilder, IAppearanceService appearanceService);
     void LoadCustomComponents(IEnumerable<string> componentNames);
     void SetLevelModeFilter(bool isLevelMode, IEnumerable<string>? unlockedComponents);
     void Update(Point mousePos, bool primaryPressed, bool primaryJustPressed, bool primaryJustReleased);
@@ -27,6 +28,7 @@ public class ToolboxManager : IToolboxManager
     public Toolbox MainToolbox { get; private set; } = null!;
     public Toolbox UserToolbox { get; private set; } = null!;
 
+    private IAppearanceService? _appearanceService;
     private bool _isLevelMode;
     private HashSet<string> _unlockedComponents = new();
     private HashSet<string> _allComponents = new();
@@ -34,10 +36,11 @@ public class ToolboxManager : IToolboxManager
     public bool IsInteracting => MainToolbox.IsDraggingItem || MainToolbox.IsDraggingWindow ||
                                   UserToolbox.IsDraggingItem || UserToolbox.IsDraggingWindow;
 
-    public void Initialize(int screenWidth, IComponentBuilder componentBuilder)
+    public void Initialize(int screenWidth, IComponentBuilder componentBuilder, IAppearanceService appearanceService)
     {
-        MainToolbox = new Toolbox(screenWidth - 200, 60);
-        UserToolbox = new Toolbox(screenWidth - 200, 300, isUserComponents: true);
+        _appearanceService = appearanceService;
+        MainToolbox = new Toolbox(screenWidth - 200, 60, isUserComponents: false, appearanceService: appearanceService);
+        UserToolbox = new Toolbox(screenWidth - 200, 300, isUserComponents: true, appearanceService: appearanceService);
         UserToolbox.OnDeleteComponent += name => componentBuilder.DeleteComponent(name);
     }
 
@@ -118,7 +121,7 @@ public class ToolboxManager : IToolboxManager
         {
             if (!UserToolbox.ContainsPoint(mousePos))
             {
-                placedComponent = PlaceFromUserToolbox(worldMousePos, circuit, gridSize, statusService, componentBuilder);
+                placedComponent = PlaceFromUserToolbox(worldMousePos, circuit, gridSize, showPinValues, statusService, componentBuilder);
             }
             UserToolbox.ClearDragState();
         }
@@ -144,10 +147,18 @@ public class ToolboxManager : IToolboxManager
 
         if (newComponent != null)
         {
+            // Apply custom appearance
+            _appearanceService?.ApplyAppearance(newComponent);
+
+            newComponent.ShowPinTitles = showPinValues;
             if (newComponent is BusInput busInput)
+            {
                 busInput.ShowPinValues = showPinValues;
+            }
             else if (newComponent is BusOutput busOutput)
+            {
                 busOutput.ShowPinValues = showPinValues;
+            }
 
             circuit.AddComponent(newComponent);
             statusService.Show(LocalizationManager.Get("status.placed", newComponent.Name));
@@ -156,7 +167,7 @@ public class ToolboxManager : IToolboxManager
         return newComponent;
     }
 
-    private Component? PlaceFromUserToolbox(Point worldMousePos, Circuit.Circuit circuit, int gridSize, IStatusService statusService, IComponentBuilder componentBuilder)
+    private Component? PlaceFromUserToolbox(Point worldMousePos, Circuit.Circuit circuit, int gridSize, bool showPinValues, IStatusService statusService, IComponentBuilder componentBuilder)
     {
         var x = (worldMousePos.X / gridSize) * gridSize;
         var y = (worldMousePos.Y / gridSize) * gridSize;
@@ -167,6 +178,10 @@ public class ToolboxManager : IToolboxManager
             var newComponent = componentBuilder.CreateInstance(componentName, x, y);
             if (newComponent != null)
             {
+                // Apply custom appearance
+                _appearanceService?.ApplyAppearance(newComponent);
+
+                newComponent.ShowPinTitles = showPinValues;
                 circuit.AddComponent(newComponent);
                 statusService.Show(LocalizationManager.Get("status.placed", newComponent.Name));
                 return newComponent;

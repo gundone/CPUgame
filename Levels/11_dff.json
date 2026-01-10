@@ -7,6 +7,8 @@
   "componentName": "dff",
   "inputCount": 2,
   "outputCount": 1,
+  "inputPinTitles": ["D", "CLK"],
+  "outputPinTitles": ["Q"],
   "truthTable": [
     { "inputs": [false, true], "outputs": [false] },
     { "inputs": [true, true], "outputs": [true] }

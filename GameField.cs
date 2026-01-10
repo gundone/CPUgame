@@ -1,6 +1,7 @@
 using System.Linq;
 using CPUgame.Core;
 using CPUgame.Core.Components;
+using CPUgame.Core.Designer;
 using CPUgame.Core.Input;
 using CPUgame.Core.Primitives;
 using CPUgame.Converters;
@@ -11,6 +12,7 @@ using CPUgame.Core.Selection;
 using CPUgame.Core.Services;
 using CPUgame.Rendering;
 using CPUgame.UI;
+using CPUgame.UI.Designer;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -38,8 +40,10 @@ public class GameField : Game, IGameField
     private readonly ITruthTableService _truthTableService;
     private readonly ILevelService _levelService;
     private readonly IProfileService _profileService;
+    private readonly IAppearanceService _appearanceService;
 
     private ISelectionManager _selection = null!;
+    private DesignerMode _designerMode = null!;
     private MainMenu _mainMenu = null!;
     private ProfileDialog _profileDialog = null!;
     private LevelSelectionPopup _levelSelectionPopup = null!;
@@ -47,6 +51,11 @@ public class GameField : Game, IGameField
     private LevelCompletedPopup _levelCompletedPopup = null!;
     private ComponentEditDialog _componentEditDialog = null!;
     private ControlsPopup _controlsPopup = null!;
+    private LevelInfoWindow _levelInfoWindow = null!;
+
+    // Text input from Window.TextInput event (supports Unicode)
+    private char? _pendingTextInput;
+    private bool _pendingPaste;
 
     private int ScreenWidth => GraphicsDevice?.Viewport.Width ?? _graphics.PreferredBackBufferWidth;
     private int ScreenHeight => GraphicsDevice?.Viewport.Height ?? _graphics.PreferredBackBufferHeight;
@@ -56,7 +65,7 @@ public class GameField : Game, IGameField
         IComponentBuilder componentBuilder, IDialogService dialogService, IFontService fontService,
         IWireManager wireManager, IManualWireService manualWireService, ICommandHandler commandHandler,
         IToolboxManager toolboxManager, IGameRenderer gameRenderer, ITruthTableService truthTableService,
-        ILevelService levelService, IProfileService profileService)
+        ILevelService levelService, IProfileService profileService, IAppearanceService appearanceService)
     {
         _inputHandler = inputHandler;
         _statusService = statusService;
@@ -73,6 +82,7 @@ public class GameField : Game, IGameField
         _truthTableService = truthTableService;
         _levelService = levelService;
         _profileService = profileService;
+        _appearanceService = appearanceService;
 
         _graphics = new GraphicsDeviceManager(this) { PreferredBackBufferWidth = 1280, PreferredBackBufferHeight = 720 };
         Content.RootDirectory = "Content";
@@ -130,6 +140,9 @@ public class GameField : Game, IGameField
             }
         };
 
+        // Use Window.TextInput for proper Unicode character input
+        Window.TextInput += OnTextInput;
+
         _componentBuilder.LoadCustomComponents();
         _statusService.Show(LocalizationManager.Get("help.drag"));
 
@@ -141,7 +154,7 @@ public class GameField : Game, IGameField
         _spriteBatch = new SpriteBatch(GraphicsDevice);
         _fontService.Initialize(GraphicsDevice);
         _gameRenderer.Initialize(GraphicsDevice, _fontService);
-        _toolboxManager.Initialize(ScreenWidth, _componentBuilder);
+        _toolboxManager.Initialize(ScreenWidth, _componentBuilder, _appearanceService);
         _toolboxManager.LoadCustomComponents(_circuitManager.CustomComponents.Keys);
         _truthTableService.Initialize(ScreenWidth);
 
@@ -178,14 +191,22 @@ public class GameField : Game, IGameField
         _levelCompletedPopup = new LevelCompletedPopup();
         _componentEditDialog = new ComponentEditDialog();
         _controlsPopup = new ControlsPopup();
+        _levelInfoWindow = new LevelInfoWindow(50, 80);
+        _designerMode = new DesignerMode(_appearanceService, _componentBuilder, _fontService);
+        _designerMode.SetClipboardGetter(GetClipboardText);
+        _designerMode.OnAppearanceSaved += ApplyAppearancesToCircuit;
+
+        _circuitManager.OnCircuitChanged += ApplyAppearancesToCircuit;
 
         _mainMenu.OnSandboxMode += () =>
         {
+            _designerMode.Deactivate();
             _levelService.SetMode(GameMode.Sandbox);
             _mainMenu.SetCurrentMode(GameMode.Sandbox);
             _mainMenu.SetProfileName(null);
             _truthTableService.SetCurrentLevel(null);
             _toolboxManager.SetLevelModeFilter(false, null);
+            _levelInfoWindow.SetLevel(null, null);
             _statusService.Show(LocalizationManager.Get("status.mode_sandbox"));
         };
         _mainMenu.OnLevelsMode += () =>
@@ -196,6 +217,7 @@ public class GameField : Game, IGameField
                 _statusService.Show(LocalizationManager.Get("status.profile_required"));
                 return;
             }
+            _designerMode.Deactivate();
             _levelService.SetMode(GameMode.Levels);
             _mainMenu.SetCurrentMode(GameMode.Levels);
             _mainMenu.SetProfileName(_profileService.CurrentProfile?.Name);
@@ -221,6 +243,15 @@ public class GameField : Game, IGameField
         {
             _controlsPopup.Show();
         };
+        _mainMenu.OnDesignerMode += () =>
+        {
+            _levelService.SetMode(GameMode.Designer);
+            _mainMenu.SetCurrentMode(GameMode.Designer);
+            _mainMenu.SetProfileName(null);
+            _levelInfoWindow.SetLevel(null, null);
+            _designerMode.Activate();
+            _statusService.Show(LocalizationManager.Get("status.mode_designer"));
+        };
 
         _levelSelectionPopup.OnLevelSelected += index =>
         {
@@ -240,6 +271,7 @@ public class GameField : Game, IGameField
                 _selection = new SelectionManager(_circuitManager.Circuit);
                 _truthTableService.SetCurrentLevel(_levelService.CurrentLevel);
                 _truthTableService.Show(_circuitManager.Circuit, _fontService.GetFont());
+                _levelInfoWindow.SetLevel(_levelService.CurrentLevel, _fontService.GetFont());
             }
         };
 
@@ -359,9 +391,41 @@ public class GameField : Game, IGameField
         _mainMenu.Update(mousePosMonoGame, _inputState.PrimaryJustPressed, _inputState.PrimaryJustReleased, ScreenWidth);
         if (_mainMenu.ContainsPoint(mousePosMonoGame)) { base.Update(gameTime); return; }
 
+        // Handle Designer mode (full-screen UI, blocks other gameplay)
+        if (_designerMode.IsActive)
+        {
+            // Handle paste (Ctrl+V) - check this first before text input
+            if (_pendingPaste)
+            {
+                var clipboardText = GetClipboardText();
+                if (!string.IsNullOrEmpty(clipboardText))
+                {
+                    _designerMode.HandlePaste(clipboardText);
+                }
+                _pendingPaste = false;
+            }
+
+            // Handle text input for editing fields (from Window.TextInput event)
+            if (_pendingTextInput.HasValue)
+            {
+                _designerMode.HandleTextInput(_pendingTextInput.Value);
+            }
+            _pendingTextInput = null; // Clear after processing
+
+            _designerMode.HandleKeyPress(_inputState.BackspacePressed, _inputState.EnterPressed, _inputState.EscapeCommand);
+            _designerMode.Update(mousePosMonoGame, _inputState.PrimaryPressed, _inputState.PrimaryJustPressed,
+                _inputState.PrimaryJustReleased, _inputState.SecondaryJustPressed, _inputState.ScrollDelta, ScreenWidth, ScreenHeight, gameTime.ElapsedGameTime.TotalSeconds);
+            base.Update(gameTime);
+            return;
+        }
+
         // Update truth table window
         _truthTableService.Update(mousePosMonoGame, _inputState.PrimaryPressed, _inputState.PrimaryJustPressed, _inputState.PrimaryJustReleased, _inputState.ScrollDelta, circuit, gameTime.ElapsedGameTime.TotalSeconds);
         if (_truthTableService.ContainsPoint(mousePosMonoGame)) { base.Update(gameTime); return; }
+
+        // Update level info window
+        _levelInfoWindow.Update(mousePosMonoGame, _inputState.PrimaryPressed, _inputState.PrimaryJustPressed, _inputState.PrimaryJustReleased, ScreenWidth, ScreenHeight, _fontService.GetFont());
+        if (_levelInfoWindow.ContainsPoint(mousePosMonoGame)) { base.Update(gameTime); return; }
 
         if (_inputState.CtrlHeld && _inputState.ScrollDelta != 0)
         {
@@ -370,6 +434,7 @@ public class GameField : Game, IGameField
 
         var worldMousePos = _camera.ScreenToWorldPoint(mousePos);
         bool clickedOnEmpty = !_toolboxManager.ContainsPoint(mousePosMonoGame) && !_truthTableService.ContainsPoint(mousePosMonoGame) &&
+                              !_levelInfoWindow.ContainsPoint(mousePosMonoGame) &&
                               circuit.GetComponentAt(worldMousePos.X, worldMousePos.Y) == null &&
                               circuit.GetPinAt(worldMousePos.X, worldMousePos.Y) == null;
 
@@ -536,6 +601,61 @@ public class GameField : Game, IGameField
         }
     }
 
+    private void ApplyAppearancesToCircuit()
+    {
+        foreach (var component in _circuitManager.Circuit.Components)
+        {
+            _appearanceService.ApplyAppearance(component);
+        }
+
+        // Update wire endpoints after pin positions may have changed
+        UpdateAllWireEndpoints();
+    }
+
+    private void UpdateAllWireEndpoints()
+    {
+        foreach (var component in _circuitManager.Circuit.Components)
+        {
+            foreach (var input in component.Inputs)
+            {
+                if (input.ManualWirePath != null && input.ConnectedTo != null)
+                {
+                    _manualWireService.UpdateWireEndpoints(input);
+                }
+            }
+        }
+    }
+
+    private static string? GetClipboardText()
+    {
+        try
+        {
+            return TextCopy.ClipboardService.GetText();
+        }
+        catch
+        {
+            // Clipboard access failed
+            return null;
+        }
+    }
+
+    private void OnTextInput(object? sender, TextInputEventArgs e)
+    {
+        // Ctrl+V produces ASCII 22 (0x16) - detect paste
+        if (e.Character == '\x16')
+        {
+            _pendingPaste = true;
+            return;
+        }
+
+        // Store the character for processing in Update
+        // Don't capture control characters except for specific cases
+        if (!char.IsControl(e.Character) || e.Character == '\b' || e.Character == '\r' || e.Character == '\t')
+        {
+            _pendingTextInput = e.Character;
+        }
+    }
+
     private void HandleWireNodeEditing(Point2 worldMousePos)
     {
         // Escape to exit editing mode
@@ -654,21 +774,36 @@ public class GameField : Game, IGameField
     {
         GraphicsDevice.Clear(CircuitRenderer.BackgroundColor);
 
+        // Designer mode has its own full-screen UI
+        if (_designerMode.IsActive)
+        {
+            _spriteBatch.Begin(samplerState: SamplerState.LinearClamp);
+            var uiFont = _fontService.GetFont();
+            _designerMode.Draw(_spriteBatch, _gameRenderer.Pixel, uiFont, ScreenWidth, ScreenHeight, _inputState.PointerPosition.ToMonoGame());
+            _mainMenu.Draw(_spriteBatch, _gameRenderer.Pixel, uiFont, ScreenWidth, _inputState.PointerPosition.ToMonoGame());
+            _spriteBatch.End();
+            base.Draw(gameTime);
+            return;
+        }
+
         _spriteBatch.Begin(samplerState: SamplerState.LinearClamp, transformMatrix: _camera.GetTransform());
         _gameRenderer.DrawWorld(_spriteBatch, _circuitManager.Circuit, _camera, _selection, _wireManager, _manualWireService, _wireManager.HoveredPin, _inputState.PointerPosition, ScreenWidth, ScreenHeight, _toolboxManager.MainToolbox.IsDraggingItem);
         _spriteBatch.End();
 
         _spriteBatch.Begin(samplerState: SamplerState.LinearClamp);
-        var uiFont = _fontService.GetFont();
-        _gameRenderer.DrawUI(_spriteBatch, _toolboxManager, _mainMenu, _statusService, _dialogService, _truthTableService, _camera, _inputState.PointerPosition, ScreenWidth, ScreenHeight, uiFont);
+        var uiFontNormal = _fontService.GetFont();
+        _gameRenderer.DrawUI(_spriteBatch, _toolboxManager, _mainMenu, _statusService, _dialogService, _truthTableService, _camera, _inputState.PointerPosition, ScreenWidth, ScreenHeight, uiFontNormal);
+
+        // Draw level info window (floating, non-modal)
+        _levelInfoWindow.Draw(_spriteBatch, _gameRenderer.Pixel, uiFontNormal);
 
         // Draw modal dialogs on top
-        _profileDialog.Draw(_spriteBatch, _gameRenderer.Pixel, uiFont, ScreenWidth, ScreenHeight);
-        _levelSelectionPopup.Draw(_spriteBatch, _gameRenderer.Pixel, uiFont, ScreenWidth, ScreenHeight);
-        _levelDescriptionPopup.Draw(_spriteBatch, _gameRenderer.Pixel, uiFont, ScreenWidth, ScreenHeight);
-        _levelCompletedPopup.Draw(_spriteBatch, _gameRenderer.Pixel, uiFont, ScreenWidth, ScreenHeight);
-        _componentEditDialog.Draw(_spriteBatch, _gameRenderer.Pixel, uiFont, ScreenWidth, ScreenHeight);
-        _controlsPopup.Draw(_spriteBatch, _gameRenderer.Pixel, uiFont, ScreenWidth, ScreenHeight);
+        _profileDialog.Draw(_spriteBatch, _gameRenderer.Pixel, uiFontNormal, ScreenWidth, ScreenHeight);
+        _levelSelectionPopup.Draw(_spriteBatch, _gameRenderer.Pixel, uiFontNormal, ScreenWidth, ScreenHeight);
+        _levelDescriptionPopup.Draw(_spriteBatch, _gameRenderer.Pixel, uiFontNormal, ScreenWidth, ScreenHeight);
+        _levelCompletedPopup.Draw(_spriteBatch, _gameRenderer.Pixel, uiFontNormal, ScreenWidth, ScreenHeight);
+        _componentEditDialog.Draw(_spriteBatch, _gameRenderer.Pixel, uiFontNormal, ScreenWidth, ScreenHeight);
+        _controlsPopup.Draw(_spriteBatch, _gameRenderer.Pixel, uiFontNormal, ScreenWidth, ScreenHeight);
         _spriteBatch.End();
 
         base.Draw(gameTime);

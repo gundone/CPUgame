@@ -7,14 +7,16 @@
   "componentName": "mux",
   "inputCount": 3,
   "outputCount": 1,
+  "inputPinTitles": ["D0", "D1", "Sel"],
+  "outputPinTitles": ["Y"],
   "truthTable": [
     { "inputs": [false, false, false], "outputs": [false] },
     { "inputs": [false, false, true], "outputs": [false] },
-    { "inputs": [false, true, false], "outputs": [true] },
+    { "inputs": [false, true, false], "outputs": [false] },
     { "inputs": [false, true, true], "outputs": [true] },
-    { "inputs": [true, false, false], "outputs": [false] },
-    { "inputs": [true, false, true], "outputs": [true] },
-    { "inputs": [true, true, false], "outputs": [false] },
+    { "inputs": [true, false, false], "outputs": [true] },
+    { "inputs": [true, false, true], "outputs": [false] },
+    { "inputs": [true, true, false], "outputs": [true] },
     { "inputs": [true, true, true], "outputs": [true] }
   ]
 }

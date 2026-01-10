@@ -1,5 +1,3 @@
-using System;
-
 namespace CPUgame.Core;
 
 public interface IGameSettings

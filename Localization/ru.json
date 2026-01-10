@@ -12,6 +12,7 @@
   "menu.game.mode": "Режим",
   "menu.game.sandbox": "Песочница",
   "menu.game.levels": "Уровни",
+  "menu.game.designer": "Дизайнер",
   "menu.game.selectlevel": "Выбор уровня",
 
   "menu.view": "Вид",
@@ -89,6 +90,7 @@
   "status.level_passed": "Уровень пройден!",
   "status.mode_sandbox": "Переключено в режим Песочница",
   "status.mode_levels": "Переключено в режим Уровни",
+  "status.mode_designer": "Переключено в режим Дизайнер",
   "status.cannot_delete_level_components": "Нельзя удалить входные/выходные шины уровня",
   "status.profile_required": "Создайте профиль для прохождения уровней",
 
@@ -118,7 +120,7 @@
   "level.ok": "ОК",
   "level.all_completed": "Поздравляем! Вы прошли все уровни!",
 
-  "level.inv.name": "INV (НЕ)",
+  "level.inv.name": "НЕ (NOT)",
   "level.inv.description": "Инвертор (элемент НЕ) - простейший логический элемент. Он выдаёт противоположное значение входа: когда вход 0, выход 1, и наоборот. Инверторы - базовые строительные блоки почти любой цифровой схемы, от триггеров до сложных процессоров. Постройте его из одного элемента И-НЕ, соединив оба входа вместе.",
 
   "level.and.name": "И (AND)",
@@ -209,5 +211,27 @@
   "controls.load": "Загрузить схему",
   "controls.load.key": "Ctrl + O",
   "controls.build": "Собрать компонент",
-  "controls.build.key": "Ctrl + B"
+  "controls.build.key": "Ctrl + B",
+
+  "designer.title": "Дизайнер компонентов",
+  "designer.select_component": "Выберите компонент для редактирования",
+  "designer.builtin": "Встроенные",
+  "designer.custom": "Пользовательские",
+  "designer.properties": "Свойства",
+  "designer.width": "Ширина",
+  "designer.height": "Высота",
+  "designer.title_position": "Позиция названия",
+  "designer.title_offset_x": "Смещение X",
+  "designer.title_offset_y": "Смещение Y",
+  "designer.pin_positions": "Позиции выводов",
+  "designer.reset_default": "Сбросить",
+  "designer.save": "Сохранить",
+  "designer.cancel": "Отмена",
+  "designer.drag_pins": "Перетащите выводы для перемещения",
+  "designer.position_top": "Сверху",
+  "designer.position_center": "По центру",
+  "designer.position_bottom": "Снизу",
+  "designer.position_custom": "Произвольно",
+  "designer.paste": "Вставить",
+  "designer.font_scale": "Размер шрифта"
 }

@@ -194,22 +194,36 @@ public class TruthTableWindow
             int outputHeaderWidth = (int)_font.MeasureString(outputHeaderText).X + Padding * 2;
             int expectedHeaderWidth = (int)_font.MeasureString(expectedHeaderText).X + Padding * 2;
 
-            // Calculate minimum width needed for each input bus
+            // Calculate minimum width needed for each input bus (considering pin titles)
             int inputBusTitlesWidth = 0;
             foreach (var bus in _inputBuses)
             {
                 int titleWidth = (int)_font.MeasureString(bus.Title).X + Padding;
-                int minBusWidth = Math.Max(titleWidth, bus.BitCount * CellWidth);
+                // Calculate width needed for pin titles
+                int pinTitlesWidth = 0;
+                for (int i = 0; i < bus.BitCount; i++)
+                {
+                    int pinTitleWidth = (int)_font.MeasureString(bus.GetPinTitle(i)).X + 4;
+                    pinTitlesWidth += Math.Max(pinTitleWidth, CellWidth);
+                }
+                int minBusWidth = Math.Max(titleWidth, Math.Max(bus.BitCount * CellWidth, pinTitlesWidth));
                 _inputBusWidths.Add(minBusWidth);
                 inputBusTitlesWidth += minBusWidth;
             }
 
-            // Calculate minimum width needed for each output bus
+            // Calculate minimum width needed for each output bus (considering pin titles)
             int outputBusTitlesWidth = 0;
             foreach (var bus in _outputBuses)
             {
                 int titleWidth = (int)_font.MeasureString(bus.Title).X + Padding;
-                int minBusWidth = Math.Max(titleWidth, bus.BitCount * CellWidth);
+                // Calculate width needed for pin titles
+                int pinTitlesWidth = 0;
+                for (int i = 0; i < bus.BitCount; i++)
+                {
+                    int pinTitleWidth = (int)_font.MeasureString(bus.GetPinTitle(i)).X + 4;
+                    pinTitlesWidth += Math.Max(pinTitleWidth, CellWidth);
+                }
+                int minBusWidth = Math.Max(titleWidth, Math.Max(bus.BitCount * CellWidth, pinTitlesWidth));
                 _outputBusWidths.Add(minBusWidth);
                 outputBusTitlesWidth += minBusWidth;
             }
@@ -217,11 +231,20 @@ public class TruthTableWindow
             _inputColumnWidth = Math.Max(inputCellsWidth, Math.Max(inputHeaderWidth, inputBusTitlesWidth));
             _outputColumnWidth = Math.Max(outputCellsWidth, Math.Max(outputHeaderWidth, outputBusTitlesWidth));
 
-            // Expected output column (only in level mode)
+            // Expected output column (only in level mode, considering pin titles)
             if (_currentLevel != null)
             {
                 int expectedBits = _currentLevel.OutputCount;
-                _expectedOutputColumnWidth = Math.Max(expectedBits * CellWidth, expectedHeaderWidth);
+                int expectedPinTitlesWidth = 0;
+                for (int i = 0; i < expectedBits; i++)
+                {
+                    string pinTitle = (i < _currentLevel.OutputPinTitles.Count && !string.IsNullOrEmpty(_currentLevel.OutputPinTitles[i]))
+                        ? _currentLevel.OutputPinTitles[i]
+                        : i.ToString();
+                    int pinTitleWidth = (int)_font.MeasureString(pinTitle).X + 4;
+                    expectedPinTitlesWidth += Math.Max(pinTitleWidth, CellWidth);
+                }
+                _expectedOutputColumnWidth = Math.Max(expectedBits * CellWidth, Math.Max(expectedHeaderWidth, expectedPinTitlesWidth));
             }
         }
         else
@@ -255,22 +278,26 @@ public class TruthTableWindow
         _inputBuses.Clear();
         _outputBuses.Clear();
 
-        // Count input pins from BusInput components
+        // Count input pins from BusInput components (pin 0 at top)
         foreach (var component in circuit.Components.OfType<BusInput>().OrderBy(c => c.Y).ThenBy(c => c.X))
         {
-            _inputBuses.Add(new BusHeaderInfo(component.Title!, component.BitCount));
-            for (int i = component.BitCount - 1; i >= 0; i--)
+            // Get pin titles from the Outputs (BusInput outputs to circuit)
+            var pinTitles = component.Outputs.Select(p => p.Title).ToList();
+            _inputBuses.Add(new BusHeaderInfo(component.Title!, component.BitCount, pinTitles));
+            for (int i = 0; i < component.BitCount; i++)
             {
                 _inputLabels.Add($"{component.Title ?? component.Name}[{i}]");
                 _totalInputBits++;
             }
         }
 
-        // Count output pins from BusOutput components
+        // Count output pins from BusOutput components (pin 0 at top)
         foreach (var component in circuit.Components.OfType<BusOutput>().OrderBy(c => c.Y).ThenBy(c => c.X))
         {
-            _outputBuses.Add(new BusHeaderInfo(component.Title ?? component.Name, component.BitCount));
-            for (int i = component.BitCount - 1; i >= 0; i--)
+            // Get pin titles from the Inputs (BusOutput receives from circuit)
+            var pinTitles = component.Inputs.Select(p => p.Title).ToList();
+            _outputBuses.Add(new BusHeaderInfo(component.Title ?? component.Name, component.BitCount, pinTitles));
+            for (int i = 0; i < component.BitCount; i++)
             {
                 _outputLabels.Add($"{component.Title ?? component.Name}[{i}]");
                 _totalOutputBits++;
@@ -338,12 +365,12 @@ public class TruthTableWindow
 
         foreach (var levelEntry in _currentLevel.TruthTable)
         {
-            // Set input values from level truth table entry
+            // Set input values from level truth table entry (pin 0 = bit 0 at top)
             int bitOffset = 0;
             foreach (var inputBus in inputBuses)
             {
                 int busValue = 0;
-                for (int bit = inputBus.BitCount - 1; bit >= 0; bit--)
+                for (int bit = 0; bit < inputBus.BitCount; bit++)
                 {
                     if (bitOffset < levelEntry.Inputs.Count && levelEntry.Inputs[bitOffset])
                     {
@@ -360,16 +387,15 @@ public class TruthTableWindow
             // Read input values (from level entry)
             var inputValues = new List<bool>(levelEntry.Inputs);
 
-            // Read output values from circuit
+            // Read output values from circuit (pin index = bit index)
             var outputValues = new List<bool>();
             foreach (var outputBus in outputBuses)
             {
-                for (int bit = outputBus.BitCount - 1; bit >= 0; bit--)
+                for (int i = 0; i < outputBus.BitCount; i++)
                 {
-                    int inputIndex = outputBus.BitCount - 1 - bit;
-                    if (inputIndex < outputBus.Inputs.Count)
+                    if (i < outputBus.Inputs.Count)
                     {
-                        outputValues.Add(outputBus.Inputs[inputIndex].Value == Signal.High);
+                        outputValues.Add(outputBus.Inputs[i].Value == Signal.High);
                     }
                     else
                     {
@@ -393,15 +419,14 @@ public class TruthTableWindow
 
         for (int combo = 0; combo < totalCombinations; combo++)
         {
-            // Set input values for this combination
+            // Set input values for this combination (pin 0 = bit 0 at top)
             int bitOffset = 0;
             foreach (var inputBus in inputBuses)
             {
                 int busValue = 0;
-                for (int bit = inputBus.BitCount - 1; bit >= 0; bit--)
+                for (int bit = 0; bit < inputBus.BitCount; bit++)
                 {
-                    int globalBit = effectiveInputBits - 1 - bitOffset;
-                    if (globalBit >= 0 && (combo & (1 << globalBit)) != 0)
+                    if (bitOffset < effectiveInputBits && (combo & (1 << bitOffset)) != 0)
                     {
                         busValue |= (1 << bit);
                     }
@@ -413,29 +438,27 @@ public class TruthTableWindow
             // Simulate the circuit
             circuit.Simulate();
 
-            // Read output values
+            // Read input and output values (pin index = bit index)
             var inputValues = new List<bool>();
             var outputValues = new List<bool>();
 
             bitOffset = 0;
             foreach (var inputBus in inputBuses)
             {
-                for (int bit = inputBus.BitCount - 1; bit >= 0; bit--)
+                for (int bit = 0; bit < inputBus.BitCount; bit++)
                 {
-                    int globalBit = effectiveInputBits - 1 - bitOffset;
-                    inputValues.Add(globalBit >= 0 && (combo & (1 << globalBit)) != 0);
+                    inputValues.Add(bitOffset < effectiveInputBits && (combo & (1 << bitOffset)) != 0);
                     bitOffset++;
                 }
             }
 
             foreach (var outputBus in outputBuses)
             {
-                for (int bit = outputBus.BitCount - 1; bit >= 0; bit--)
+                for (int i = 0; i < outputBus.BitCount; i++)
                 {
-                    int inputIndex = outputBus.BitCount - 1 - bit;
-                    if (inputIndex < outputBus.Inputs.Count)
+                    if (i < outputBus.Inputs.Count)
                     {
-                        outputValues.Add(outputBus.Inputs[inputIndex].Value == Signal.High);
+                        outputValues.Add(outputBus.Inputs[i].Value == Signal.High);
                     }
                     else
                     {
@@ -794,7 +817,7 @@ public class TruthTableWindow
             DrawBusTitlesRow(spriteBatch, pixel, font, Bounds.X + Padding, busTitleY, tableWidth);
 
             int pinNumberY = busTitleY + BusTitleRowHeight;
-            DrawPinNumbersRow(spriteBatch, pixel, font, Bounds.X + Padding, pinNumberY, tableWidth);
+            DrawPinTitlesRow(spriteBatch, pixel, font, Bounds.X + Padding, pinNumberY, tableWidth);
 
             // Draw expected rows with "?" for outputs
             int rowsY = pinNumberY + PinNumberRowHeight;
@@ -824,9 +847,9 @@ public class TruthTableWindow
             int busTitleY = contentY + HeaderHeight;
             DrawBusTitlesRow(spriteBatch, pixel, font, Bounds.X + Padding, busTitleY, tableWidth);
 
-            // Draw pin numbers row
+            // Draw pin titles row
             int pinNumberY = busTitleY + BusTitleRowHeight;
-            DrawPinNumbersRow(spriteBatch, pixel, font, Bounds.X + Padding, pinNumberY, tableWidth);
+            DrawPinTitlesRow(spriteBatch, pixel, font, Bounds.X + Padding, pinNumberY, tableWidth);
 
             // Draw table rows
             int rowsY = pinNumberY + PinNumberRowHeight;
@@ -1110,12 +1133,12 @@ public class TruthTableWindow
         }
     }
 
-    private void DrawPinNumbersRow(SpriteBatch spriteBatch, Texture2D pixel, SpriteFontBase font, int x, int y, int width)
+    private void DrawPinTitlesRow(SpriteBatch spriteBatch, Texture2D pixel, SpriteFontBase font, int x, int y, int width)
     {
         // Row background - slightly highlighted
         spriteBatch.Draw(pixel, new Rectangle(x, y, width, PinNumberRowHeight), TableHeaderRowColor);
 
-        // Draw input pin numbers using calculated bus widths
+        // Draw input pin titles using calculated bus widths (pin 0 first, left to right)
         int cellX = x;
         for (int busIdx = 0; busIdx < _inputBuses.Count; busIdx++)
         {
@@ -1123,9 +1146,9 @@ public class TruthTableWindow
             int busWidth = busIdx < _inputBusWidths.Count ? _inputBusWidths[busIdx] : bus.BitCount * CellWidth;
             int pinCellWidth = busWidth / bus.BitCount;
 
-            for (int i = bus.BitCount - 1; i >= 0; i--)
+            for (int i = 0; i < bus.BitCount; i++)
             {
-                var pinText = i.ToString();
+                var pinText = bus.GetPinTitle(i);
                 var pinSize = font.MeasureString(pinText);
                 font.DrawText(spriteBatch, pinText,
                     new Vector2(cellX + (pinCellWidth - pinSize.X) / 2, y + (PinNumberRowHeight - pinSize.Y) / 2),
@@ -1138,16 +1161,19 @@ public class TruthTableWindow
         int separatorX = x + _inputColumnWidth;
         spriteBatch.Draw(pixel, new Rectangle(separatorX, y, 2, PinNumberRowHeight), SeparatorColor);
 
-        // Draw expected output pin numbers (in level mode)
+        // Draw expected output pin titles (in level mode, pin 0 first)
         if (_currentLevel != null)
         {
             int pinCellWidth = _expectedOutputColumnWidth / Math.Max(1, _currentLevel.OutputCount);
-            for (int i = _currentLevel.OutputCount - 1; i >= 0; i--)
+            for (int i = 0; i < _currentLevel.OutputCount; i++)
             {
-                var pinText = i.ToString();
+                // Use level's output pin titles if available, otherwise fall back to index
+                var pinText = (i < _currentLevel.OutputPinTitles.Count && !string.IsNullOrEmpty(_currentLevel.OutputPinTitles[i]))
+                    ? _currentLevel.OutputPinTitles[i]
+                    : i.ToString();
                 var pinSize = font.MeasureString(pinText);
                 font.DrawText(spriteBatch, pinText,
-                    new Vector2(separatorX + 2 + (_currentLevel.OutputCount - 1 - i) * pinCellWidth + (pinCellWidth - pinSize.X) / 2,
+                    new Vector2(separatorX + 2 + i * pinCellWidth + (pinCellWidth - pinSize.X) / 2,
                         y + (PinNumberRowHeight - pinSize.Y) / 2),
                     new Color(150, 150, 170));
             }
@@ -1156,7 +1182,7 @@ public class TruthTableWindow
             spriteBatch.Draw(pixel, new Rectangle(separatorX, y, 2, PinNumberRowHeight), SeparatorColor);
         }
 
-        // Draw output pin numbers using calculated bus widths
+        // Draw output pin titles using calculated bus widths (pin 0 first, left to right)
         cellX = separatorX + 2;
         for (int busIdx = 0; busIdx < _outputBuses.Count; busIdx++)
         {
@@ -1164,9 +1190,9 @@ public class TruthTableWindow
             int busWidth = busIdx < _outputBusWidths.Count ? _outputBusWidths[busIdx] : bus.BitCount * CellWidth;
             int pinCellWidth = busWidth / bus.BitCount;
 
-            for (int i = bus.BitCount - 1; i >= 0; i--)
+            for (int i = 0; i < bus.BitCount; i++)
             {
-                var pinText = i.ToString();
+                var pinText = bus.GetPinTitle(i);
                 var pinSize = font.MeasureString(pinText);
                 font.DrawText(spriteBatch, pinText,
                     new Vector2(cellX + (pinCellWidth - pinSize.X) / 2, y + (PinNumberRowHeight - pinSize.Y) / 2),

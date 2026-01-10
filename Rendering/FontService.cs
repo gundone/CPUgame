@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using FontStashSharp;
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
 namespace CPUgame.Rendering;
@@ -13,7 +12,7 @@ namespace CPUgame.Rendering;
 public class FontService : IFontService
 {
     private FontSystem? _fontSystem;
-    private const int BaseFontSize = 14;
+    private const int BaseFontSize = 16;
 
     public void Initialize(GraphicsDevice graphicsDevice)
     {
@@ -26,23 +25,53 @@ public class FontService : IFontService
 
         _fontSystem = new FontSystem(settings);
 
-        // Try to load Arial from Windows fonts
-        var arialPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Fonts), "arial.ttf");
-        if (File.Exists(arialPath))
+        var fontsFolder = Environment.GetFolderPath(Environment.SpecialFolder.Fonts);
+        bool primaryFontLoaded = false;
+
+        // Try to load primary font (Arial or Segoe UI)
+        var arialPath = Path.Combine(fontsFolder, "arial.ttf");
+        var segoePath = Path.Combine(fontsFolder, "segoeui.ttf");
+        if (File.Exists(segoePath))
         {
-            _fontSystem.AddFont(File.ReadAllBytes(arialPath));
+            _fontSystem.AddFont(File.ReadAllBytes(segoePath));
+            primaryFontLoaded = true;
         }
         else
         {
-            // Fallback: try segoeui or other common fonts
-            var segoePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Fonts), "segoeui.ttf");
-            if (File.Exists(segoePath))
+            
+            if (File.Exists(arialPath))
             {
-                _fontSystem.AddFont(File.ReadAllBytes(segoePath));
+                _fontSystem.AddFont(File.ReadAllBytes(arialPath));
+                primaryFontLoaded = true;
             }
-            else
+        }
+
+        if (!primaryFontLoaded)
+        {
+            throw new FileNotFoundException("Could not find a suitable TTF font file.");
+        }
+
+        // Add fallback fonts for extended Unicode support
+        AddFallbackFont(fontsFolder, "seguisym.ttf");  // Segoe UI Symbol - various symbols
+        AddFallbackFont(fontsFolder, "seguiemj.ttf");  // Segoe UI Emoji - emoji support
+        AddFallbackFont(fontsFolder, "segmdl2.ttf");   // Segoe MDL2 Assets - icons
+        AddFallbackFont(fontsFolder, "msyh.ttc");      // Microsoft YaHei - CJK characters
+        AddFallbackFont(fontsFolder, "malgun.ttf");    // Malgun Gothic - Korean
+        AddFallbackFont(fontsFolder, "yugothm.ttc");   // Yu Gothic - Japanese
+    }
+
+    private void AddFallbackFont(string fontsFolder, string fontFileName)
+    {
+        var fontPath = Path.Combine(fontsFolder, fontFileName);
+        if (File.Exists(fontPath))
+        {
+            try
             {
-                throw new FileNotFoundException("Could not find a suitable TTF font file.");
+                _fontSystem!.AddFont(File.ReadAllBytes(fontPath));
+            }
+            catch
+            {
+                // Ignore errors loading fallback fonts
             }
         }
     }

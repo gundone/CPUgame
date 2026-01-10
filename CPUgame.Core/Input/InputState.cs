@@ -40,6 +40,7 @@ public class InputState
     public bool BackspacePressed { get; set; }
     public bool TabPressed { get; set; }
     public char? CharacterInput { get; set; }
+    public bool PasteCommand { get; set; }
 
     // Movement commands for selected components
     public bool MoveUp { get; set; }
@@ -73,6 +74,7 @@ public class InputState
         BackspacePressed = false;
         TabPressed = false;
         CharacterInput = null;
+        PasteCommand = false;
         MoveUp = false;
         MoveDown = false;
         MoveLeft = false;

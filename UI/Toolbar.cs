@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using CPUgame.Core.Designer;
 using FontStashSharp;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -32,30 +34,32 @@ public class Toolbox
 
     private readonly List<ToolboxItem> _items = new();
     private readonly List<ToolboxItem> _customItems = new();
+    private readonly IAppearanceService? _appearanceService;
     private Point _windowDragOffset;
 
-    private const int ItemWidth = 80;
-    private const int ItemHeight = 50;
-    private const int Padding = 8;
-    private const int TitleHeight = 24;
-    private const int DeleteButtonSize = 16;
+    private const int _itemWidth = 80;
+    private const int _itemHeight = 50;
+    private const int _padding = 8;
+    private const int _titleHeight = 24;
+    private const int _deleteButtonSize = 16;
 
-    private static readonly Color BackgroundColor = new(45, 45, 55, 240);
-    private static readonly Color TitleColor = new(55, 55, 65);
-    private static readonly Color BorderColor = new(80, 80, 100);
-    private static readonly Color TextColor = new(220, 220, 230);
-    private static readonly Color ItemNormalColor = new(60, 60, 75);
-    private static readonly Color ItemHoverColor = new(80, 80, 100);
-    private static readonly Color DragPreviewColor = new(70, 120, 180, 180);
-    private static readonly Color DeleteButtonColor = new(180, 60, 60);
-    private static readonly Color DeleteButtonHoverColor = new(220, 80, 80);
+    private static readonly Color _backgroundColor = new(45, 45, 55, 240);
+    private static readonly Color _titleColor = new(55, 55, 65);
+    private static readonly Color _borderColor = new(80, 80, 100);
+    private static readonly Color _textColor = new(220, 220, 230);
+    private static readonly Color _itemNormalColor = new(60, 60, 75);
+    private static readonly Color _itemHoverColor = new(80, 80, 100);
+    private static readonly Color _dragPreviewColor = new(70, 120, 180, 180);
+    private static readonly Color _deleteButtonColor = new(180, 60, 60);
+    private static readonly Color _deleteButtonHoverColor = new(220, 80, 80);
 
     public int BusInputBits { get; set; } = 4;
     public int BusOutputBits { get; set; } = 4;
 
-    public Toolbox(int x, int y, bool isUserComponents = false)
+    public Toolbox(int x, int y, bool isUserComponents = false, IAppearanceService? appearanceService = null)
     {
         IsUserComponentsToolbox = isUserComponents;
+        _appearanceService = appearanceService;
 
         if (!isUserComponents)
         {
@@ -77,8 +81,8 @@ public class Toolbox
     {
         int totalItems = _items.Count + _customItems.Count;
         int rows = (totalItems + 1) / 2; // 2 columns
-        int width = ItemWidth * 2 + Padding * 3;
-        int height = TitleHeight + rows * (ItemHeight + Padding) + Padding;
+        int width = _itemWidth * 2 + _padding * 3;
+        int height = _titleHeight + rows * (_itemHeight + _padding) + _padding;
         Bounds = new Rectangle(x, y, width, height);
     }
 
@@ -98,7 +102,7 @@ public class Toolbox
     }
 
     // Event for delete button clicks
-    public event System.Action<string>? OnDeleteComponent;
+    public event Action<string>? OnDeleteComponent;
 
     public void Update(Point mousePos, bool mousePressed, bool mouseJustPressed, bool mouseJustReleased)
     {
@@ -126,7 +130,7 @@ public class Toolbox
             DraggingCustomComponent = null;
         }
 
-        var titleBar = new Rectangle(Bounds.X, Bounds.Y, Bounds.Width, TitleHeight);
+        var titleBar = new Rectangle(Bounds.X, Bounds.Y, Bounds.Width, _titleHeight);
 
         // Handle dragging the window
         if (mouseJustPressed && titleBar.Contains(mousePos) && !IsDraggingItem)
@@ -206,9 +210,9 @@ public class Toolbox
     {
         int col = index % 2;
         int row = index / 2;
-        int x = Bounds.X + Padding + col * (ItemWidth + Padding);
-        int y = Bounds.Y + TitleHeight + Padding + row * (ItemHeight + Padding);
-        return new Rectangle(x, y, ItemWidth, ItemHeight);
+        int x = Bounds.X + _padding + col * (_itemWidth + _padding);
+        int y = Bounds.Y + _titleHeight + _padding + row * (_itemHeight + _padding);
+        return new Rectangle(x, y, _itemWidth, _itemHeight);
     }
 
     public bool ContainsPoint(Point p)
@@ -226,21 +230,21 @@ public class Toolbox
         if (IsUserComponentsToolbox && !HasCustomComponents) return;
 
         // Background
-        spriteBatch.Draw(pixel, Bounds, BackgroundColor);
+        spriteBatch.Draw(pixel, Bounds, _backgroundColor);
 
         // Title bar
-        var titleBar = new Rectangle(Bounds.X, Bounds.Y, Bounds.Width, TitleHeight);
-        spriteBatch.Draw(pixel, titleBar, TitleColor);
+        var titleBar = new Rectangle(Bounds.X, Bounds.Y, Bounds.Width, _titleHeight);
+        spriteBatch.Draw(pixel, titleBar, _titleColor);
 
         // Title text
         var titleText = IsUserComponentsToolbox ? "User Components" : "Toolbox";
         var titleSize = font.MeasureString(titleText);
         font.DrawText(spriteBatch, titleText,
-            new Vector2(Bounds.X + (Bounds.Width - titleSize.X) / 2, Bounds.Y + (TitleHeight - titleSize.Y) / 2),
-            TextColor);
+            new Vector2(Bounds.X + (Bounds.Width - titleSize.X) / 2, Bounds.Y + (_titleHeight - titleSize.Y) / 2),
+            _textColor);
 
         // Border
-        DrawBorder(spriteBatch, pixel, Bounds, BorderColor, 2);
+        DrawBorder(spriteBatch, pixel, Bounds, _borderColor, 2);
 
         // Items
         int index = 0;
@@ -249,24 +253,25 @@ public class Toolbox
             var itemRect = GetItemRect(index);
             bool isHovered = itemRect.Contains(mousePos);
 
-            var color = isHovered ? ItemHoverColor : ItemNormalColor;
+            var baseColor = GetItemFillColor(item);
+            var color = isHovered ? LightenColor(baseColor, 0.2f) : baseColor;
             spriteBatch.Draw(pixel, itemRect, color);
-            DrawBorder(spriteBatch, pixel, itemRect, BorderColor, 1);
+            DrawBorder(spriteBatch, pixel, itemRect, _borderColor, 1);
 
             // Item label
-            var label = item.IsCustom ? item.CustomName! : item.Label;
+            var label = GetItemLabel(item);
             var labelSize = font.MeasureString(label);
             font.DrawText(spriteBatch, label,
                 new Vector2(itemRect.X + (itemRect.Width - labelSize.X) / 2,
                            itemRect.Y + (itemRect.Height - labelSize.Y) / 2),
-                TextColor);
+                _textColor);
 
             // Draw delete button for user components toolbox items
             if (IsUserComponentsToolbox && item.IsCustom)
             {
                 var deleteRect = GetDeleteButtonRect(itemRect);
                 bool deleteHovered = deleteRect.Contains(mousePos);
-                spriteBatch.Draw(pixel, deleteRect, deleteHovered ? DeleteButtonHoverColor : DeleteButtonColor);
+                spriteBatch.Draw(pixel, deleteRect, deleteHovered ? _deleteButtonHoverColor : _deleteButtonColor);
 
                 // Draw X
                 var xText = "X";
@@ -274,7 +279,7 @@ public class Toolbox
                 font.DrawText(spriteBatch, xText,
                     new Vector2(deleteRect.X + (deleteRect.Width - xSize.X) / 2,
                                deleteRect.Y + (deleteRect.Height - xSize.Y) / 2),
-                    TextColor);
+                    _textColor);
             }
 
             index++;
@@ -285,24 +290,126 @@ public class Toolbox
         {
             var label = DraggingCustomComponent ?? GetToolLabel(DraggingTool);
             var previewRect = new Rectangle(DragPosition.X - 30, DragPosition.Y - 20, 60, 40);
-            spriteBatch.Draw(pixel, previewRect, DragPreviewColor);
-            DrawBorder(spriteBatch, pixel, previewRect, BorderColor, 1);
+            spriteBatch.Draw(pixel, previewRect, _dragPreviewColor);
+            DrawBorder(spriteBatch, pixel, previewRect, _borderColor, 1);
 
             var labelSize = font.MeasureString(label);
             font.DrawText(spriteBatch, label,
                 new Vector2(previewRect.X + (previewRect.Width - labelSize.X) / 2,
                            previewRect.Y + (previewRect.Height - labelSize.Y) / 2),
-                TextColor);
+                _textColor);
         }
+    }
+
+    /// <summary>
+    /// Gets the fill color for a toolbox item, checking for custom appearance.
+    /// </summary>
+    private Color GetItemFillColor(ToolboxItem item)
+    {
+        if (_appearanceService == null)
+        {
+            return _itemNormalColor;
+        }
+
+        string componentType = GetComponentType(item);
+        var appearance = _appearanceService.GetAppearance(componentType);
+
+        if (appearance?.FillColor != null)
+        {
+            return HexToColor(appearance.FillColor);
+        }
+
+        return _itemNormalColor;
+    }
+
+    /// <summary>
+    /// Gets the display label for a toolbox item, checking for custom title.
+    /// </summary>
+    private string GetItemLabel(ToolboxItem item)
+    {
+        if (item.IsCustom)
+        {
+            if (_appearanceService != null)
+            {
+                string componentType = $"Custom:{item.CustomName}";
+                var appearance = _appearanceService.GetAppearance(componentType);
+                if (appearance != null && !string.IsNullOrEmpty(appearance.Title))
+                {
+                    return appearance.Title;
+                }
+            }
+            return item.CustomName!;
+        }
+
+        // For built-in components, check for custom title
+        if (_appearanceService != null)
+        {
+            string componentType = GetComponentType(item);
+            var appearance = _appearanceService.GetAppearance(componentType);
+            if (appearance != null && !string.IsNullOrEmpty(appearance.Title))
+            {
+                return appearance.Title;
+            }
+        }
+
+        return item.Label;
+    }
+
+    private static string GetComponentType(ToolboxItem item)
+    {
+        if (item.IsCustom)
+        {
+            return $"Custom:{item.CustomName}";
+        }
+
+        return item.Tool switch
+        {
+            ToolType.PlaceNand => "NAND",
+            ToolType.PlaceSwitch => "Switch",
+            ToolType.PlaceLed => "LED",
+            ToolType.PlaceClock => "Clock",
+            ToolType.PlaceBusInput => "BusInput",
+            ToolType.PlaceBusOutput => "BusOutput",
+            _ => ""
+        };
+    }
+
+    private static Color HexToColor(string hex)
+    {
+        if (string.IsNullOrEmpty(hex) || hex.Length < 7)
+        {
+            return _itemNormalColor;
+        }
+
+        try
+        {
+            hex = hex.TrimStart('#');
+            int r = Convert.ToInt32(hex.Substring(0, 2), 16);
+            int g = Convert.ToInt32(hex.Substring(2, 2), 16);
+            int b = Convert.ToInt32(hex.Substring(4, 2), 16);
+            return new Color(r, g, b);
+        }
+        catch
+        {
+            return _itemNormalColor;
+        }
+    }
+
+    private static Color LightenColor(Color color, float amount)
+    {
+        int r = Math.Min(255, (int)(color.R + (255 - color.R) * amount));
+        int g = Math.Min(255, (int)(color.G + (255 - color.G) * amount));
+        int b = Math.Min(255, (int)(color.B + (255 - color.B) * amount));
+        return new Color(r, g, b, color.A);
     }
 
     private Rectangle GetDeleteButtonRect(Rectangle itemRect)
     {
         return new Rectangle(
-            itemRect.Right - DeleteButtonSize - 2,
+            itemRect.Right - _deleteButtonSize - 2,
             itemRect.Y + 2,
-            DeleteButtonSize,
-            DeleteButtonSize);
+            _deleteButtonSize,
+            _deleteButtonSize);
     }
 
     private string GetToolLabel(ToolType? tool)

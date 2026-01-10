@@ -7,6 +7,8 @@
   "componentName": "and",
   "inputCount": 2,
   "outputCount": 1,
+  "inputPinTitles": ["A", "B"],
+  "outputPinTitles": ["A AND B"],
   "truthTable": [
     { "inputs": [false, false], "outputs": [false] },
     { "inputs": [false, true], "outputs": [false] },

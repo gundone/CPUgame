@@ -33,6 +33,18 @@ public class GameLevel
 
     [JsonPropertyName("componentName")]
     public string ComponentName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Custom titles for input pins (e.g., ["A", "B"] or ["Data", "Clock"])
+    /// </summary>
+    [JsonPropertyName("inputPinTitles")]
+    public List<string> InputPinTitles { get; set; } = new();
+
+    /// <summary>
+    /// Custom titles for output pins (e.g., ["Sum", "Carry"] or ["Q", "Q'"])
+    /// </summary>
+    [JsonPropertyName("outputPinTitles")]
+    public List<string> OutputPinTitles { get; set; } = new();
 }
 
 /// <summary>
@@ -53,5 +65,6 @@ public class TruthTableEntry
 public enum GameMode
 {
     Sandbox,
-    Levels
+    Levels,
+    Designer
 }

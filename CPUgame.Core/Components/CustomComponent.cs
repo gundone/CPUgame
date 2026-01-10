@@ -43,8 +43,8 @@ public class CustomComponent : Component
         int totalOutputPins = _busOutputs.Sum(b => b.BitCount);
 
         // Calculate dimensions based on pin count
-        int maxPins = System.Math.Max(totalInputPins, totalOutputPins);
-        Height = System.Math.Max(40, maxPins * 20 + 20);
+        int maxPins = Math.Max(totalInputPins, totalOutputPins);
+        Height = Math.Max(40, maxPins * 20 + 20);
         Width = 80;
 
         // Create external input pins (one per bit across all BusInputs)
@@ -92,12 +92,13 @@ public class CustomComponent : Component
         InternalCircuit.Simulate();
 
         // Transfer internal BusOutput values to external outputs
+        // Pin index equals bit index (pin 0 at top = bit 0)
         for (int i = 0; i < Outputs.Count && i < _outputPinMap.Count; i++)
         {
             var (busIndex, bitIndex) = _outputPinMap[i];
-            if (busIndex < _busOutputs.Count)
+            if (busIndex < _busOutputs.Count && bitIndex < _busOutputs[busIndex].Inputs.Count)
             {
-                bool bitValue = _busOutputs[busIndex].Inputs[_busOutputs[busIndex].BitCount - 1 - bitIndex].Value == Signal.High;
+                bool bitValue = _busOutputs[busIndex].Inputs[bitIndex].Value == Signal.High;
                 Outputs[i].Value = bitValue ? Signal.High : Signal.Low;
             }
         }

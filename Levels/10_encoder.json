@@ -7,10 +7,12 @@
   "componentName": "encoder",
   "inputCount": 4,
   "outputCount": 2,
+  "inputPinTitles": ["I0", "I1", "I2", "I3"],
+  "outputPinTitles": ["A0", "A1"],
   "truthTable": [
     { "inputs": [false, false, false, true], "outputs": [false, false] },
-    { "inputs": [false, false, true, false], "outputs": [false, true] },
-    { "inputs": [false, true, false, false], "outputs": [true, false] },
+    { "inputs": [false, false, true, false], "outputs": [true, false] },
+    { "inputs": [false, true, false, false], "outputs": [false, true] },
     { "inputs": [true, false, false, false], "outputs": [true, true] }
   ]
 }

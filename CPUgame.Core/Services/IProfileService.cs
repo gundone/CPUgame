@@ -1,11 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using CPUgame.Core.Services;
 
-namespace CPUgame.Core;
+namespace CPUgame.Core.Services;
 
 /// <summary>
 /// User profile containing progress and settings

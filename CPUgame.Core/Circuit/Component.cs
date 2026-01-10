@@ -1,3 +1,5 @@
+using CPUgame.Core.Designer;
+
 namespace CPUgame.Core.Circuit;
 
 /// <summary>
@@ -7,8 +9,8 @@ public abstract class Component
 {
     public int X { get; set; }
     public int Y { get; set; }
-    public int Width { get; protected set; } = 40;
-    public int Height { get; protected set; } = 60;
+    public int Width { get; set; } = 40;
+    public int Height { get; set; } = 60;
     public string Name { get; protected set; } = "Component";
     public string Title { get; set; } = "";
 
@@ -16,6 +18,26 @@ public abstract class Component
     public List<Pin> Outputs { get; } = new();
 
     public bool IsSelected { get; set; }
+
+    /// <summary>
+    /// When true, pin titles are displayed near the wires connected to pins.
+    /// </summary>
+    public bool ShowPinTitles { get; set; }
+
+    /// <summary>
+    /// Position of the component title relative to the component body.
+    /// </summary>
+    public TitlePosition TitlePosition { get; set; } = TitlePosition.Center;
+
+    /// <summary>
+    /// Custom X offset for the title when TitlePosition is Custom.
+    /// </summary>
+    public int TitleOffsetX { get; set; }
+
+    /// <summary>
+    /// Custom Y offset for the title when TitlePosition is Custom.
+    /// </summary>
+    public int TitleOffsetY { get; set; }
 
     protected Component(int x, int y)
     {

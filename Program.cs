@@ -1,5 +1,6 @@
 using CPUgame;
 using CPUgame.Core;
+using CPUgame.Core.Designer;
 using CPUgame.Core.Input;
 using CPUgame.Core.Services;
 using CPUgame.Input;
@@ -30,6 +31,7 @@ services.AddSingleton<IGameRenderer, GameRenderer>();
 services.AddSingleton<ITruthTableService, TruthTableService>();
 services.AddSingleton<ILevelService, LevelService>();
 services.AddSingleton<IProfileService, ProfileService>();
+services.AddSingleton<IAppearanceService, AppearanceService>();
 
 // Game
 services.AddSingleton<IGameField, GameField>();

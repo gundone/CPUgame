@@ -7,6 +7,8 @@
   "componentName": "register",
   "inputCount": 3,
   "outputCount": 1,
+  "inputPinTitles": ["D", "CLK", "LD"],
+  "outputPinTitles": ["Q"],
   "truthTable": [
     { "inputs": [false, true, true], "outputs": [false] },
     { "inputs": [true, true, true], "outputs": [true] }

@@ -20,6 +20,7 @@ public class BusOutput : Component
         _gridSize = gridSize;
         BitCount = Math.Max(1, Math.Min(bitCount, 16)); // Limit to 1-16 bits
         SetupPins();
+        ShowPinTitles = true;
     }
 
     private void SetupPins()
@@ -31,11 +32,11 @@ public class BusOutput : Component
         // Clear existing pins
         Inputs.Clear();
 
-        // Create input pins (MSB at top), aligned to grid
+        // Create input pins (pin 0 at top), aligned to grid
         for (int i = 0; i < BitCount; i++)
         {
             int pinY = _gridSize + i * _gridSize;
-            AddInput($"I{BitCount - 1 - i}", 0, pinY);
+            AddInput($"I{i}", 0, pinY);
         }
     }
 
@@ -64,19 +65,15 @@ public class BusOutput : Component
             return; // No change
         }
 
-        int oldBitCount = BitCount;
-
-        // Store connections: map from bit index to connected output pin
-        // Bit index is from LSB (0) to MSB (BitCount-1)
-        var connectionsByBit = new Dictionary<int, Pin>();
+        // Store connections: map from pin index to connected output pin
+        // Pin index 0 is at top
+        var connectionsByPinIndex = new Dictionary<int, Pin>();
 
         for (int i = 0; i < Inputs.Count; i++)
         {
             if (Inputs[i].ConnectedTo != null)
             {
-                // Convert input index to bit index (MSB at top, so index 0 = MSB)
-                int bitIndex = oldBitCount - 1 - i;
-                connectionsByBit[bitIndex] = Inputs[i].ConnectedTo!;
+                connectionsByPinIndex[i] = Inputs[i].ConnectedTo!;
             }
         }
 
@@ -85,31 +82,26 @@ public class BusOutput : Component
         SetupPins();
 
         // Restore connections for pins that still exist
-        foreach (var kvp in connectionsByBit)
+        foreach (var kvp in connectionsByPinIndex)
         {
-            int bitIndex = kvp.Key;
-            if (bitIndex < BitCount)
+            int pinIndex = kvp.Key;
+            if (pinIndex < Inputs.Count)
             {
-                // Convert bit index back to input index
-                int inputIndex = BitCount - 1 - bitIndex;
-                if (inputIndex >= 0 && inputIndex < Inputs.Count)
-                {
-                    Inputs[inputIndex].ConnectedTo = kvp.Value;
-                }
+                Inputs[pinIndex].ConnectedTo = kvp.Value;
             }
-            // If bitIndex >= BitCount, the pin was removed and connections are lost
+            // If pinIndex >= Inputs.Count, the pin was removed and connections are lost
         }
     }
 
     public int GetValue()
     {
         int value = 0;
+        // Pin index equals bit index (pin 0 at top = bit 0)
         for (int i = 0; i < Inputs.Count; i++)
         {
-            int bitIndex = BitCount - 1 - i; // MSB at top (index 0)
             if (Inputs[i].Value == Signal.High)
             {
-                value |= (1 << bitIndex);
+                value |= (1 << i);
             }
         }
         return value;
@@ -117,13 +109,16 @@ public class BusOutput : Component
 
     public string GetBinaryString()
     {
+        // Binary string is MSB first (standard notation)
+        // Pin 0 is bit 0 (LSB) at top, so reverse for display
         var chars = new char[BitCount];
         for (int i = 0; i < BitCount; i++)
         {
             bool isHigh = false;
-            if (i < Inputs.Count)
+            int pinIndex = BitCount - 1 - i;
+            if (pinIndex < Inputs.Count)
             {
-                isHigh = Inputs[i].Value == Signal.High;
+                isHigh = Inputs[pinIndex].Value == Signal.High;
             }
             chars[i] = isHigh ? '1' : '0';
         }

@@ -1,12 +1,9 @@
-using System;
-using System.Linq;
 using CPUgame.Core.Components;
 using CPUgame.Core.Input;
 using CPUgame.Core.Localization;
 using CPUgame.Core.Selection;
-using CPUgame.Core.Services;
 
-namespace CPUgame.Core;
+namespace CPUgame.Core.Services;
 
 public interface ICommandHandler
 {
@@ -69,10 +66,15 @@ public class CommandHandler : ICommandHandler
             ShowPinValues = !ShowPinValues;
             foreach (var comp in circuit.Components)
             {
+                comp.ShowPinTitles = ShowPinValues;
                 if (comp is BusInput busInput)
+                {
                     busInput.ShowPinValues = ShowPinValues;
+                }
                 else if (comp is BusOutput busOutput)
+                {
                     busOutput.ShowPinValues = ShowPinValues;
+                }
             }
             return;
         }

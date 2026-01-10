@@ -86,13 +86,14 @@ public class DesktopInputHandler : IInputHandler
         state.LoadCommand = state.CtrlHeld && IsKeyJustPressed(Keys.O, keyboard);
         state.BuildCommand = state.CtrlHeld && IsKeyJustPressed(Keys.B, keyboard);
         state.EscapeCommand = IsKeyJustPressed(Keys.Escape, keyboard);
-        state.TogglePinValuesCommand = IsKeyJustPressed(Keys.V, keyboard);
+        state.TogglePinValuesCommand = !state.CtrlHeld && IsKeyJustPressed(Keys.V, keyboard);
 
         // Text input
         state.EnterPressed = IsKeyJustPressed(Keys.Enter, keyboard);
         state.BackspacePressed = IsKeyJustPressed(Keys.Back, keyboard);
         state.TabPressed = IsKeyJustPressed(Keys.Tab, keyboard);
         state.CharacterInput = GetCharacterInput(keyboard);
+        state.PasteCommand = state.CtrlHeld && IsKeyJustPressed(Keys.V, keyboard);
 
         // Movement
         state.MoveUp = IsKeyJustPressed(Keys.Up, keyboard);
@@ -143,6 +144,13 @@ public class DesktopInputHandler : IInputHandler
     private char? GetCharacterInput(KeyboardState keyboard)
     {
         bool shift = keyboard.IsKeyDown(Keys.LeftShift) || keyboard.IsKeyDown(Keys.RightShift);
+        bool ctrl = keyboard.IsKeyDown(Keys.LeftControl) || keyboard.IsKeyDown(Keys.RightControl);
+
+        // Don't capture character input when Ctrl is held (for shortcuts like Ctrl+V)
+        if (ctrl)
+        {
+            return null;
+        }
 
         foreach (Keys key in keyboard.GetPressedKeys())
         {

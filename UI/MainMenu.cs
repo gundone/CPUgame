@@ -37,6 +37,7 @@ public class MainMenu
     public event Action? OnToggleTruthTable;
     public event Action? OnSandboxMode;
     public event Action? OnLevelsMode;
+    public event Action? OnDesignerMode;
     public event Action? OnSelectLevelPopup;
     public event Action? OnShowControls;
 
@@ -121,6 +122,14 @@ public class MainMenu
             levelsLabel = "* " + levelsLabel;
         }
         gameMenu.SubItems.Add(new MenuItem(levelsLabel, () => OnLevelsMode?.Invoke()));
+
+        // Designer mode
+        string designerLabel = LocalizationManager.Get("menu.game.designer");
+        if (_currentMode == GameMode.Designer)
+        {
+            designerLabel = "* " + designerLabel;
+        }
+        gameMenu.SubItems.Add(new MenuItem(designerLabel, () => OnDesignerMode?.Invoke()));
 
         // Add select level option (only in levels mode)
         if (_currentMode == GameMode.Levels)

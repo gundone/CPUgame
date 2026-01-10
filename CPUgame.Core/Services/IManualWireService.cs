@@ -459,7 +459,7 @@ public class ManualWireService : IManualWireService
         }
 
         // Project point onto line
-        float t = System.Math.Max(0, System.Math.Min(1, ((px - x1) * dx + (py - y1) * dy) / lengthSq));
+        float t = Math.Max(0, Math.Min(1, ((px - x1) * dx + (py - y1) * dy) / lengthSq));
         float projX = x1 + t * dx;
         float projY = y1 + t * dy;
 
@@ -469,8 +469,8 @@ public class ManualWireService : IManualWireService
 
     private Point2 SnapToGrid(Point2 p)
     {
-        int x = (int)(System.Math.Round((double)p.X / _gridSize) * _gridSize);
-        int y = (int)(System.Math.Round((double)p.Y / _gridSize) * _gridSize);
+        int x = (int)(Math.Round((double)p.X / _gridSize) * _gridSize);
+        int y = (int)(Math.Round((double)p.Y / _gridSize) * _gridSize);
         return new Point2(x, y);
     }
 }

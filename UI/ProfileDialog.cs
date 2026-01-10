@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using CPUgame.Core;
 using CPUgame.Core.Input;
 using CPUgame.Core.Localization;
+using CPUgame.Core.Services;
 using FontStashSharp;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;

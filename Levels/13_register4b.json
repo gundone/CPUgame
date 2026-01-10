@@ -7,6 +7,8 @@
   "componentName": "register4b",
   "inputCount": 6,
   "outputCount": 4,
+  "inputPinTitles": ["D0", "D1", "D2", "D3", "CLK", "LD"],
+  "outputPinTitles": ["Q0", "Q1", "Q2", "Q3"],
   "truthTable": [
     { "inputs": [false, false, false, false, true, true], "outputs": [false, false, false, false] },
     { "inputs": [true, false, false, false, true, true], "outputs": [true, false, false, false] },
