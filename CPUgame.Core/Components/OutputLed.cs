@@ -24,4 +24,11 @@ public class OutputLed : Component
     {
         // LED just displays the input value, no processing needed
     }
+
+    public override Component Clone(int gridSize)
+    {
+        var clone = new OutputLed(X, Y);
+        CopyTitles(this, clone);
+        return clone;
+    }
 }

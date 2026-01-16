@@ -9,6 +9,7 @@
   "outputCount": 1,
   "inputPinTitles": ["D0", "D1", "Sel"],
   "outputPinTitles": ["Y"],
+  "truthTableColumnOrder": [2, 1, 0],
   "truthTable": [
     { "inputs": [false, false, false], "outputs": [false] },
     { "inputs": [false, false, true], "outputs": [false] },

@@ -29,4 +29,11 @@ public class InputSwitch : Component
     {
         Output.Value = IsOn ? Signal.High : Signal.Low;
     }
+
+    public override Component Clone(int gridSize)
+    {
+        var clone = new InputSwitch(X, Y, IsOn);
+        CopyTitles(this, clone);
+        return clone;
+    }
 }

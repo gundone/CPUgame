@@ -227,4 +227,11 @@ public class BusInput : Component
             }
         }
     }
+
+    public override Component Clone(int gridSize)
+    {
+        var clone = new BusInput(X, Y, BitCount, gridSize) { Value = Value };
+        CopyTitles(this, clone);
+        return clone;
+    }
 }

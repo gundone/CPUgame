@@ -28,4 +28,9 @@ public interface ICircuitRenderer
     /// Draw editable nodes for a selected manual wire.
     /// </summary>
     void DrawManualWireNodes(SpriteBatch spriteBatch, Pin inputPin, int draggingNodeIndex = -1);
+
+    /// <summary>
+    /// Draw a selected wire node at the given position.
+    /// </summary>
+    void DrawSelectedWireNode(SpriteBatch spriteBatch, int x, int y);
 }

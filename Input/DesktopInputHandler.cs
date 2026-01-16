@@ -87,6 +87,7 @@ public class DesktopInputHandler : IInputHandler
         state.BuildCommand = state.CtrlHeld && IsKeyJustPressed(Keys.B, keyboard);
         state.EscapeCommand = IsKeyJustPressed(Keys.Escape, keyboard);
         state.TogglePinValuesCommand = !state.CtrlHeld && IsKeyJustPressed(Keys.V, keyboard);
+        state.ToggleMenuCommand = state.CtrlHeld && state.ShiftHeld && IsKeyJustPressed(Keys.M, keyboard);
 
         // Text input
         state.EnterPressed = IsKeyJustPressed(Keys.Enter, keyboard);

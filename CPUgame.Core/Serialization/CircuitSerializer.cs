@@ -1,6 +1,8 @@
+using System.Linq;
 using System.Text.Json;
 using CPUgame.Core.Circuit;
 using CPUgame.Core.Components;
+using CPUgame.Core.Designer;
 using CPUgame.Core.Primitives;
 
 namespace CPUgame.Core.Serialization;
@@ -31,11 +33,12 @@ public static class CircuitSerializer
         return DeserializeCircuit(data, customComponents);
     }
 
-    public static void SaveCustomComponent(Circuit.Circuit circuit, string name, string filePath)
+    public static void SaveCustomComponent(Circuit.Circuit circuit, string name, string filePath, ComponentAppearance? appearance = null)
     {
         var data = SerializeCircuit(circuit);
         data.Name = name;
         data.IsCustomComponent = true;
+        data.Appearance = appearance;
         var json = JsonSerializer.Serialize(data, Options);
         File.WriteAllText(filePath, json);
     }
@@ -95,6 +98,16 @@ public static class CircuitSerializer
             else if (component is BusOutput busOut)
             {
                 compData.BitCount = busOut.BitCount;
+            }
+
+            // Save pin titles
+            if (component.Inputs.Count > 0)
+            {
+                compData.InputTitles = component.Inputs.Select(p => p.Title).ToList();
+            }
+            if (component.Outputs.Count > 0)
+            {
+                compData.OutputTitles = component.Outputs.Select(p => p.Title).ToList();
             }
 
             data.Components.Add(compData);
@@ -169,6 +182,22 @@ public static class CircuitSerializer
                     component.Title = compData.Title;
                 }
 
+                // Restore pin titles
+                if (compData.InputTitles != null)
+                {
+                    for (int i = 0; i < Math.Min(compData.InputTitles.Count, component.Inputs.Count); i++)
+                    {
+                        component.Inputs[i].Title = compData.InputTitles[i];
+                    }
+                }
+                if (compData.OutputTitles != null)
+                {
+                    for (int i = 0; i < Math.Min(compData.OutputTitles.Count, component.Outputs.Count); i++)
+                    {
+                        component.Outputs[i].Title = compData.OutputTitles[i];
+                    }
+                }
+
                 circuit.AddComponent(component);
                 componentMap[compData.Id] = component;
             }
@@ -231,6 +260,7 @@ public class CircuitData
     public bool IsCustomComponent { get; set; }
     public List<ComponentData> Components { get; set; } = new();
     public List<ConnectionData> Connections { get; set; } = new();
+    public ComponentAppearance? Appearance { get; set; }
 }
 
 public class ComponentData
@@ -245,6 +275,8 @@ public class ComponentData
     public string? CustomName { get; set; }
     public int? BitCount { get; set; }
     public int? Value { get; set; }
+    public List<string>? InputTitles { get; set; }
+    public List<string>? OutputTitles { get; set; }
 }
 
 public class ConnectionData

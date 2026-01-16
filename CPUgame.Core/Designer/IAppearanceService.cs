@@ -55,14 +55,11 @@ public interface IAppearanceService
     IEnumerable<string> GetAllComponentTypes();
 
     /// <summary>
-    /// Saves all appearances to persistent storage.
+    /// Updates a custom component's appearance in its file.
     /// </summary>
-    void SaveAll();
-
-    /// <summary>
-    /// Loads all appearances from persistent storage.
-    /// </summary>
-    void LoadAll();
+    /// <param name="componentName">The custom component name (without "Custom:" prefix)</param>
+    /// <param name="appearance">The new appearance</param>
+    bool UpdateCustomComponentAppearance(string componentName, ComponentAppearance appearance);
 
     /// <summary>
     /// Event fired when an appearance is changed.

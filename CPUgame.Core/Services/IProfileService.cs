@@ -36,6 +36,7 @@ public interface IProfileService
     UserProfile? CurrentProfile { get; }
     bool HasProfile { get; }
     List<string> GetAvailableProfiles();
+    string GetProfileComponentsFolder();
 
     void CreateProfile(string name);
     void LoadProfile(string name);
@@ -54,7 +55,8 @@ public interface IProfileService
 public class ProfileService : IProfileService
 {
     private const string ProfilesFolder = "Profiles";
-    private const string ProfileExtension = ".json";
+    private const string ProfileFileName = "profile.json";
+    private const string ComponentsFolderName = "Components";
     private UserProfile? _currentProfile;
 
     public UserProfile? CurrentProfile => _currentProfile;
@@ -73,13 +75,35 @@ public class ProfileService : IProfileService
             return profiles;
         }
 
-        var files = Directory.GetFiles(profilesPath, "*" + ProfileExtension);
-        foreach (var file in files)
+        var directories = Directory.GetDirectories(profilesPath);
+        foreach (var dir in directories)
         {
-            profiles.Add(Path.GetFileNameWithoutExtension(file));
+            string profileFile = Path.Combine(dir, ProfileFileName);
+            if (File.Exists(profileFile))
+            {
+                profiles.Add(Path.GetFileName(dir));
+            }
         }
 
         return profiles;
+    }
+
+    public string GetProfileComponentsFolder()
+    {
+        if (_currentProfile == null)
+        {
+            throw new InvalidOperationException("No profile loaded");
+        }
+
+        string profilePath = GetProfileFolderPath(_currentProfile.Name);
+        string componentsPath = Path.Combine(profilePath, ComponentsFolderName);
+
+        if (!Directory.Exists(componentsPath))
+        {
+            Directory.CreateDirectory(componentsPath);
+        }
+
+        return componentsPath;
     }
 
     public void CreateProfile(string name)
@@ -95,13 +119,26 @@ public class ProfileService : IProfileService
             CreatedAt = DateTime.Now
         };
 
+        // Create profile folder structure
+        string profileFolderPath = GetProfileFolderPath(name);
+        if (!Directory.Exists(profileFolderPath))
+        {
+            Directory.CreateDirectory(profileFolderPath);
+        }
+
+        string componentsPath = Path.Combine(profileFolderPath, ComponentsFolderName);
+        if (!Directory.Exists(componentsPath))
+        {
+            Directory.CreateDirectory(componentsPath);
+        }
+
         SaveProfile();
         OnProfileChanged?.Invoke();
     }
 
     public void LoadProfile(string name)
     {
-        string profilePath = GetProfilePath(name);
+        string profilePath = Path.Combine(GetProfileFolderPath(name), ProfileFileName);
 
         if (!File.Exists(profilePath))
         {
@@ -127,13 +164,13 @@ public class ProfileService : IProfileService
             return;
         }
 
-        string profilesPath = GetProfilesPath();
-        if (!Directory.Exists(profilesPath))
+        string profileFolderPath = GetProfileFolderPath(_currentProfile.Name);
+        if (!Directory.Exists(profileFolderPath))
         {
-            Directory.CreateDirectory(profilesPath);
+            Directory.CreateDirectory(profileFolderPath);
         }
 
-        string profilePath = GetProfilePath(_currentProfile.Name);
+        string profilePath = Path.Combine(profileFolderPath, ProfileFileName);
 
         try
         {
@@ -149,11 +186,18 @@ public class ProfileService : IProfileService
 
     public void DeleteProfile(string name)
     {
-        string profilePath = GetProfilePath(name);
+        string profileFolderPath = GetProfileFolderPath(name);
 
-        if (File.Exists(profilePath))
+        if (Directory.Exists(profileFolderPath))
         {
-            File.Delete(profilePath);
+            try
+            {
+                Directory.Delete(profileFolderPath, true);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to delete profile folder: {ex.Message}");
+            }
         }
 
         if (_currentProfile?.Name == name)
@@ -226,8 +270,8 @@ public class ProfileService : IProfileService
         return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ProfilesFolder);
     }
 
-    private string GetProfilePath(string name)
+    private string GetProfileFolderPath(string name)
     {
-        return Path.Combine(GetProfilesPath(), name + ProfileExtension);
+        return Path.Combine(GetProfilesPath(), name);
     }
 }

@@ -35,6 +35,7 @@ public class TruthTableWindow
     // Level mode
     private GameLevel? _currentLevel;
     private readonly List<bool> _rowMatchStatus = new(); // Track which rows match the expected output
+    private List<int>? _columnOrder; // Optional column reordering for truth table display
 
     // Bus info for header rows
     private readonly List<BusHeaderInfo> _inputBuses = new();
@@ -609,6 +610,9 @@ public class TruthTableWindow
         _rowMatchStatus.Clear();
         IsLevelPassed = false;
 
+        // Set column order if specified in level
+        _columnOrder = level?.TruthTableColumnOrder;
+
         // Initialize column widths based on level
         if (level != null)
         {
@@ -935,20 +939,21 @@ public class TruthTableWindow
         }
         spriteBatch.Draw(pixel, new Rectangle(x, y, width, RowHeight), rowColor);
 
-        // Draw input values using calculated bus widths
+        // Draw input values
         int cellX = x;
-        int valueIdx = 0;
-        for (int busIdx = 0; busIdx < _inputBuses.Count; busIdx++)
-        {
-            var bus = _inputBuses[busIdx];
-            int busWidth = busIdx < _inputBusWidths.Count ? _inputBusWidths[busIdx] : bus.BitCount * CellWidth;
-            int pinCellWidth = busWidth / bus.BitCount;
 
-            for (int i = 0; i < bus.BitCount; i++)
+        // If we have column ordering, use it
+        if (_columnOrder != null && _columnOrder.Count == _totalInputBits)
+        {
+            // Calculate uniform cell width for all input columns
+            int pinCellWidth = _inputColumnWidth / _totalInputBits;
+
+            // Draw in reordered sequence
+            foreach (int pinIndex in _columnOrder)
             {
-                if (valueIdx < row.InputValues.Count)
+                if (pinIndex < row.InputValues.Count)
                 {
-                    var value = row.InputValues[valueIdx];
+                    var value = row.InputValues[pinIndex];
                     var cellText = value ? "1" : "0";
                     var cellSize = font.MeasureString(cellText);
                     var cellColor = value ? HighColor : LowColor;
@@ -957,7 +962,33 @@ public class TruthTableWindow
                         cellColor);
                 }
                 cellX += pinCellWidth;
-                valueIdx++;
+            }
+        }
+        else
+        {
+            // No reordering - use calculated bus widths
+            int valueIdx = 0;
+            for (int busIdx = 0; busIdx < _inputBuses.Count; busIdx++)
+            {
+                var bus = _inputBuses[busIdx];
+                int busWidth = busIdx < _inputBusWidths.Count ? _inputBusWidths[busIdx] : bus.BitCount * CellWidth;
+                int pinCellWidth = busWidth / bus.BitCount;
+
+                for (int i = 0; i < bus.BitCount; i++)
+                {
+                    if (valueIdx < row.InputValues.Count)
+                    {
+                        var value = row.InputValues[valueIdx];
+                        var cellText = value ? "1" : "0";
+                        var cellSize = font.MeasureString(cellText);
+                        var cellColor = value ? HighColor : LowColor;
+                        font.DrawText(spriteBatch, cellText,
+                            new Vector2(cellX + (pinCellWidth - cellSize.X) / 2, y + (RowHeight - cellSize.Y) / 2),
+                            cellColor);
+                    }
+                    cellX += pinCellWidth;
+                    valueIdx++;
+                }
             }
         }
 
@@ -991,7 +1022,7 @@ public class TruthTableWindow
 
         // Draw output values using calculated bus widths
         cellX = separatorX + 2;
-        valueIdx = 0;
+        int outputValueIdx = 0;
         for (int busIdx = 0; busIdx < _outputBuses.Count; busIdx++)
         {
             var bus = _outputBuses[busIdx];
@@ -1000,9 +1031,9 @@ public class TruthTableWindow
 
             for (int i = 0; i < bus.BitCount; i++)
             {
-                if (valueIdx < row.OutputValues.Count)
+                if (outputValueIdx < row.OutputValues.Count)
                 {
-                    var value = row.OutputValues[valueIdx];
+                    var value = row.OutputValues[outputValueIdx];
                     var cellText = value ? "1" : "0";
                     var cellSize = font.MeasureString(cellText);
                     var cellColor = value ? HighColor : LowColor;
@@ -1011,7 +1042,7 @@ public class TruthTableWindow
                         cellColor);
                 }
                 cellX += pinCellWidth;
-                valueIdx++;
+                outputValueIdx++;
             }
         }
     }
@@ -1032,16 +1063,40 @@ public class TruthTableWindow
         // Draw input values
         int cellX = x;
         int pinCellWidth = _inputColumnWidth / Math.Max(1, levelRow.Inputs.Count);
-        for (int i = 0; i < levelRow.Inputs.Count; i++)
+
+        // If we have column ordering, use it
+        if (_columnOrder != null && _columnOrder.Count == levelRow.Inputs.Count)
         {
-            var value = levelRow.Inputs[i];
-            var cellText = value ? "1" : "0";
-            var cellSize = font.MeasureString(cellText);
-            var cellColor = value ? HighColor : LowColor;
-            font.DrawText(spriteBatch, cellText,
-                new Vector2(cellX + (pinCellWidth - cellSize.X) / 2, y + (RowHeight - cellSize.Y) / 2),
-                cellColor);
-            cellX += pinCellWidth;
+            // Draw in reordered sequence
+            foreach (int pinIndex in _columnOrder)
+            {
+                if (pinIndex < levelRow.Inputs.Count)
+                {
+                    var value = levelRow.Inputs[pinIndex];
+                    var cellText = value ? "1" : "0";
+                    var cellSize = font.MeasureString(cellText);
+                    var cellColor = value ? HighColor : LowColor;
+                    font.DrawText(spriteBatch, cellText,
+                        new Vector2(cellX + (pinCellWidth - cellSize.X) / 2, y + (RowHeight - cellSize.Y) / 2),
+                        cellColor);
+                }
+                cellX += pinCellWidth;
+            }
+        }
+        else
+        {
+            // No reordering - display in natural order
+            for (int i = 0; i < levelRow.Inputs.Count; i++)
+            {
+                var value = levelRow.Inputs[i];
+                var cellText = value ? "1" : "0";
+                var cellSize = font.MeasureString(cellText);
+                var cellColor = value ? HighColor : LowColor;
+                font.DrawText(spriteBatch, cellText,
+                    new Vector2(cellX + (pinCellWidth - cellSize.X) / 2, y + (RowHeight - cellSize.Y) / 2),
+                    cellColor);
+                cellX += pinCellWidth;
+            }
         }
 
         // Separator
@@ -1138,22 +1193,57 @@ public class TruthTableWindow
         // Row background - slightly highlighted
         spriteBatch.Draw(pixel, new Rectangle(x, y, width, PinNumberRowHeight), TableHeaderRowColor);
 
-        // Draw input pin titles using calculated bus widths (pin 0 first, left to right)
+        // Draw input pin titles
         int cellX = x;
-        for (int busIdx = 0; busIdx < _inputBuses.Count; busIdx++)
-        {
-            var bus = _inputBuses[busIdx];
-            int busWidth = busIdx < _inputBusWidths.Count ? _inputBusWidths[busIdx] : bus.BitCount * CellWidth;
-            int pinCellWidth = busWidth / bus.BitCount;
 
-            for (int i = 0; i < bus.BitCount; i++)
+        // If we have column ordering, use it
+        if (_columnOrder != null && _columnOrder.Count == _totalInputBits)
+        {
+            // Build flat list of all input pin titles
+            var allPinTitles = new List<string>();
+            foreach (var bus in _inputBuses)
             {
-                var pinText = bus.GetPinTitle(i);
-                var pinSize = font.MeasureString(pinText);
-                font.DrawText(spriteBatch, pinText,
-                    new Vector2(cellX + (pinCellWidth - pinSize.X) / 2, y + (PinNumberRowHeight - pinSize.Y) / 2),
-                    new Color(150, 150, 170));
+                for (int i = 0; i < bus.BitCount; i++)
+                {
+                    allPinTitles.Add(bus.GetPinTitle(i));
+                }
+            }
+
+            // Calculate uniform cell width for all input columns
+            int pinCellWidth = _inputColumnWidth / _totalInputBits;
+
+            // Draw in reordered sequence
+            foreach (int pinIndex in _columnOrder)
+            {
+                if (pinIndex < allPinTitles.Count)
+                {
+                    var pinText = allPinTitles[pinIndex];
+                    var pinSize = font.MeasureString(pinText);
+                    font.DrawText(spriteBatch, pinText,
+                        new Vector2(cellX + (pinCellWidth - pinSize.X) / 2, y + (PinNumberRowHeight - pinSize.Y) / 2),
+                        new Color(150, 150, 170));
+                }
                 cellX += pinCellWidth;
+            }
+        }
+        else
+        {
+            // No reordering - use calculated bus widths (pin 0 first, left to right)
+            for (int busIdx = 0; busIdx < _inputBuses.Count; busIdx++)
+            {
+                var bus = _inputBuses[busIdx];
+                int busWidth = busIdx < _inputBusWidths.Count ? _inputBusWidths[busIdx] : bus.BitCount * CellWidth;
+                int pinCellWidth = busWidth / bus.BitCount;
+
+                for (int i = 0; i < bus.BitCount; i++)
+                {
+                    var pinText = bus.GetPinTitle(i);
+                    var pinSize = font.MeasureString(pinText);
+                    font.DrawText(spriteBatch, pinText,
+                        new Vector2(cellX + (pinCellWidth - pinSize.X) / 2, y + (PinNumberRowHeight - pinSize.Y) / 2),
+                        new Color(150, 150, 170));
+                    cellX += pinCellWidth;
+                }
             }
         }
 

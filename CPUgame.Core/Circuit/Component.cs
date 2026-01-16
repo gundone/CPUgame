@@ -109,4 +109,43 @@ public abstract class Component
     }
 
     public int GridSize { get; set; } = 20;
+
+    /// <summary>
+    /// Creates a clone of this component with the same properties and pin titles.
+    /// </summary>
+    /// <param name="gridSize">Grid size for components that need it (BusInput, BusOutput)</param>
+    public virtual Component? Clone(int gridSize)
+    {
+        return null; // Override in derived classes
+    }
+
+    /// <summary>
+    /// Copies pin titles and component title from source to target component.
+    /// </summary>
+    protected static void CopyTitles(Component source, Component target)
+    {
+        // Copy input pin titles
+        for (int i = 0; i < Math.Min(source.Inputs.Count, target.Inputs.Count); i++)
+        {
+            if (!string.IsNullOrEmpty(source.Inputs[i].Title))
+            {
+                target.Inputs[i].Title = source.Inputs[i].Title;
+            }
+        }
+
+        // Copy output pin titles
+        for (int i = 0; i < Math.Min(source.Outputs.Count, target.Outputs.Count); i++)
+        {
+            if (!string.IsNullOrEmpty(source.Outputs[i].Title))
+            {
+                target.Outputs[i].Title = source.Outputs[i].Title;
+            }
+        }
+
+        // Copy component title
+        if (!string.IsNullOrEmpty(source.Title))
+        {
+            target.Title = source.Title;
+        }
+    }
 }

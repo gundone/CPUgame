@@ -1,5 +1,6 @@
 using CPUgame.Core.Circuit;
 using CPUgame.Core.Components;
+using CPUgame.Core.Designer;
 using CPUgame.Core.Serialization;
 
 namespace CPUgame.Core.Services;
@@ -18,7 +19,7 @@ public interface IComponentBuilder
     void LoadCustomComponents();
     bool ValidateSelection(List<Component> selected, out string? error);
     bool ValidateName(string name, out string? error);
-    bool BuildComponent(string name, List<Component> selected, int gridSize);
+    bool BuildComponent(string name, List<Component> selected, int gridSize, ComponentAppearance? appearance = null);
     bool DeleteComponent(string name);
     CustomComponent? CreateInstance(string name, int x, int y);
 }

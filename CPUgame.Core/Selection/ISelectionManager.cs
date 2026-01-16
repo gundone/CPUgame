@@ -20,6 +20,7 @@ public interface ISelectionManager
 
     void SetCircuit(Circuit.Circuit circuit);
     List<Component> GetSelectedComponents();
+    IReadOnlyList<WireNode> GetSelectedNodes();
     void SelectComponent(Component component);
     void StartSelectionRect(Point2 worldPos, bool addToSelection);
     void UpdateSelectionRect(Point2 worldPos);

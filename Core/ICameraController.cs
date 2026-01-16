@@ -11,6 +11,7 @@ public interface ICameraController
 {
     float Zoom { get; }
     Vector2 Offset { get; }
+    Vector2 ViewportOffset { get; set; }
     float MinZoom { get; set; }
     float MaxZoom { get; set; }
     float ZoomStep { get; set; }

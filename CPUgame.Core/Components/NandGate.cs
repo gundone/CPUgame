@@ -26,4 +26,11 @@ public class NandGate : Component
     {
         Output.Value = InputA.Value.Nand(InputB.Value);
     }
+
+    public override Component Clone(int gridSize)
+    {
+        var clone = new NandGate(X, Y);
+        CopyTitles(this, clone);
+        return clone;
+    }
 }

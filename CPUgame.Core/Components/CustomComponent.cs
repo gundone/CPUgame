@@ -1,4 +1,5 @@
 using CPUgame.Core.Circuit;
+using CPUgame.Core.Designer;
 
 namespace CPUgame.Core.Components;
 
@@ -18,13 +19,14 @@ public class CustomComponent : Component
     // Maps external pin index to (BusOutput index, bit index within that BusOutput)
     private readonly List<(int busIndex, int bitIndex)> _outputPinMap = new();
 
-    public CustomComponent(int x, int y, string name, Circuit.Circuit internalCircuit) : base(x, y)
+    public CustomComponent(int x, int y, string name, Circuit.Circuit internalCircuit, ComponentAppearance? appearance = null) : base(x, y)
     {
         ComponentName = name;
         Name = name;
         InternalCircuit = internalCircuit;
 
         // Find BusInputs and BusOutputs to create external pins
+        // Sort them by position (X then Y) to match the order used in appearance generation
         foreach (var component in internalCircuit.Components)
         {
             if (component is BusInput busIn)
@@ -37,15 +39,36 @@ public class CustomComponent : Component
             }
         }
 
+        // Sort by X, then Y to match appearance generation order
+        _busInputs.Sort((a, b) =>
+        {
+            int xCompare = a.X.CompareTo(b.X);
+            return xCompare != 0 ? xCompare : a.Y.CompareTo(b.Y);
+        });
+        _busOutputs.Sort((a, b) =>
+        {
+            int xCompare = a.X.CompareTo(b.X);
+            return xCompare != 0 ? xCompare : a.Y.CompareTo(b.Y);
+        });
+
         // Count total input pins (from all BusInputs)
         int totalInputPins = _busInputs.Sum(b => b.BitCount);
         // Count total output pins (from all BusOutputs)
         int totalOutputPins = _busOutputs.Sum(b => b.BitCount);
 
-        // Calculate dimensions based on pin count
-        int maxPins = Math.Max(totalInputPins, totalOutputPins);
-        Height = Math.Max(40, maxPins * 20 + 20);
-        Width = 80;
+        // Use appearance data if available, otherwise calculate defaults
+        if (appearance != null)
+        {
+            Width = appearance.Width;
+            Height = appearance.Height;
+        }
+        else
+        {
+            // Calculate dimensions based on pin count
+            int maxPins = Math.Max(totalInputPins, totalOutputPins);
+            Height = Math.Max(40, maxPins * 20 + 20);
+            Width = 60; // Default 3 cells
+        }
 
         // Create external input pins (one per bit across all BusInputs)
         int inputPinIndex = 0;
@@ -54,8 +77,25 @@ public class CustomComponent : Component
             var busInput = _busInputs[busIdx];
             for (int bitIdx = 0; bitIdx < busInput.BitCount; bitIdx++)
             {
-                int pinY = 20 + inputPinIndex * 20;
-                AddInput($"In{inputPinIndex}", 0, pinY);
+                // Get pin name and position from appearance if available
+                string pinName;
+                int pinX, pinY;
+
+                if (appearance != null && inputPinIndex < appearance.InputPins.Count)
+                {
+                    var pinAppearance = appearance.InputPins[inputPinIndex];
+                    pinName = pinAppearance.Name;
+                    pinX = pinAppearance.LocalX;
+                    pinY = pinAppearance.LocalY;
+                }
+                else
+                {
+                    pinName = $"In{inputPinIndex}";
+                    pinX = 0;
+                    pinY = 20 + inputPinIndex * 20;
+                }
+
+                AddInput(pinName, pinX, pinY);
                 _inputPinMap.Add((busIdx, bitIdx));
                 inputPinIndex++;
             }
@@ -68,8 +108,25 @@ public class CustomComponent : Component
             var busOutput = _busOutputs[busIdx];
             for (int bitIdx = 0; bitIdx < busOutput.BitCount; bitIdx++)
             {
-                int pinY = 20 + outputPinIndex * 20;
-                AddOutput($"Out{outputPinIndex}", Width, pinY);
+                // Get pin name and position from appearance if available
+                string pinName;
+                int pinX, pinY;
+
+                if (appearance != null && outputPinIndex < appearance.OutputPins.Count)
+                {
+                    var pinAppearance = appearance.OutputPins[outputPinIndex];
+                    pinName = pinAppearance.Name;
+                    pinX = pinAppearance.LocalX;
+                    pinY = pinAppearance.LocalY;
+                }
+                else
+                {
+                    pinName = $"Out{outputPinIndex}";
+                    pinX = Width;
+                    pinY = 20 + outputPinIndex * 20;
+                }
+
+                AddOutput(pinName, pinX, pinY);
                 _outputPinMap.Add((busIdx, bitIdx));
                 outputPinIndex++;
             }
@@ -102,5 +159,12 @@ public class CustomComponent : Component
                 Outputs[i].Value = bitValue ? Signal.High : Signal.Low;
             }
         }
+    }
+
+    public override Component? Clone(int gridSize)
+    {
+        // CustomComponent cloning requires access to ComponentBuilder
+        // This will be handled by ComponentBuilder.CloneComponent
+        return null;
     }
 }

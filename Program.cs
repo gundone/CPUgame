@@ -32,6 +32,7 @@ services.AddSingleton<ITruthTableService, TruthTableService>();
 services.AddSingleton<ILevelService, LevelService>();
 services.AddSingleton<IProfileService, ProfileService>();
 services.AddSingleton<IAppearanceService, AppearanceService>();
+services.AddSingleton<IPreferencesService, PreferencesService>();
 
 // Game
 services.AddSingleton<IGameField, GameField>();

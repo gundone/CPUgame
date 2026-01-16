@@ -233,5 +233,32 @@
   "designer.position_bottom": "Снизу",
   "designer.position_custom": "Произвольно",
   "designer.paste": "Вставить",
-  "designer.font_scale": "Размер шрифта"
+  "designer.font_scale": "Размер шрифта",
+
+  "mainmenu.title": "CPU Game",
+  "mainmenu.continue": "Продолжить",
+  "mainmenu.newgame": "Новая игра",
+  "mainmenu.sandbox": "Песочница",
+  "mainmenu.designer": "Конструктор",
+  "mainmenu.options": "Настройки",
+  "mainmenu.quit": "Выход",
+  "mainmenu.hint": "↑↓ Навигация | Enter Выбрать | ESC Отмена",
+
+  "options.title": "Настройки",
+  "options.titleFontSize": "Размер шрифта названий",
+  "options.language": "Язык",
+  "options.controls": "Показать управление",
+
+  "confirm.discard_title": "Отменить прогресс?",
+  "confirm.discard_progress": "Переход в режим песочницы отменит ваш текущий прогресс уровня. Продолжить?",
+  "confirm.save_title": "Сохранить схему?",
+  "confirm.save_before_designer": "Хотите сохранить схему перед переходом в режим конструктора?",
+  "confirm.save_before_close": "Сохранить изменения в '{0}' перед закрытием?",
+
+  "contextmenu.edit": "Редактировать",
+  "contextmenu.delete": "Удалить",
+
+  "status.profile_not_found": "Профиль не найден. Пожалуйста, выберите или создайте профиль.",
+  "status.editing_component": "Редактирование компонента: {0}",
+  "status.component_updated": "Компонент обновлён: {0}"
 }

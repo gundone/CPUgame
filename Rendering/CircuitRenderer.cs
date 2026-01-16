@@ -48,7 +48,6 @@ public class CircuitRenderer : ICircuitRenderer
     {
         _drawer.Initialize(graphicsDevice);
         _fontService = fontService;
-        _appearanceService.LoadAll();
     }
 
     /// <summary>
@@ -957,5 +956,13 @@ public class CircuitRenderer : ICircuitRenderer
                 _drawer.DrawCircle(spriteBatch, pos, 8, SelectedBorderColor);
             }
         }
+    }
+
+    public void DrawSelectedWireNode(SpriteBatch spriteBatch, int x, int y)
+    {
+        var pos = new Vector2(x, y);
+        var selectedNodeColor = new Color(100, 200, 255); // Blue color for selected nodes
+        _drawer.DrawFilledCircle(spriteBatch, pos, 7, selectedNodeColor);
+        _drawer.DrawCircle(spriteBatch, pos, 9, SelectedBorderColor);
     }
 }

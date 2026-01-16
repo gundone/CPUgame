@@ -11,6 +11,7 @@ public class CameraController : ICameraController
 {
     public float Zoom { get; private set; } = 1.0f;
     public Vector2 Offset { get; private set; } = Vector2.Zero;
+    public Vector2 ViewportOffset { get; set; } = Vector2.Zero;
 
     public float MinZoom { get; set; } = 0.25f;
     public float MaxZoom { get; set; } = 3.0f;
@@ -113,7 +114,8 @@ public class CameraController : ICameraController
     public Matrix GetTransform()
     {
         return Matrix.CreateTranslation(-Offset.X, -Offset.Y, 0) *
-               Matrix.CreateScale(Zoom, Zoom, 1);
+               Matrix.CreateScale(Zoom, Zoom, 1) *
+               Matrix.CreateTranslation(ViewportOffset.X, ViewportOffset.Y, 0);
     }
 
     /// <summary>
@@ -122,8 +124,8 @@ public class CameraController : ICameraController
     public Vector2 ScreenToWorld(Point2 screenPos)
     {
         return new Vector2(
-            screenPos.X / Zoom + Offset.X,
-            screenPos.Y / Zoom + Offset.Y);
+            (screenPos.X - ViewportOffset.X) / Zoom + Offset.X,
+            (screenPos.Y - ViewportOffset.Y) / Zoom + Offset.Y);
     }
 
     /// <summary>

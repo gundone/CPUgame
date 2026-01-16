@@ -45,4 +45,11 @@ public class Clock : Component
     {
         Output.Value = _state ? Signal.High : Signal.Low;
     }
+
+    public override Component Clone(int gridSize)
+    {
+        var clone = new Clock(X, Y) { Frequency = Frequency };
+        CopyTitles(this, clone);
+        return clone;
+    }
 }

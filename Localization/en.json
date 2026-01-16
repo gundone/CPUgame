@@ -233,5 +233,32 @@
   "designer.position_bottom": "Bottom",
   "designer.position_custom": "Custom",
   "designer.paste": "Paste",
-  "designer.font_scale": "Font Scale"
+  "designer.font_scale": "Font Scale",
+
+  "mainmenu.title": "CPU Game",
+  "mainmenu.continue": "Continue",
+  "mainmenu.newgame": "New Game",
+  "mainmenu.sandbox": "Sandbox",
+  "mainmenu.designer": "Designer",
+  "mainmenu.options": "Options",
+  "mainmenu.quit": "Quit",
+  "mainmenu.hint": "↑↓ Navigate | Enter Select | ESC Cancel",
+
+  "options.title": "Options",
+  "options.titleFontSize": "Title Font Size",
+  "options.language": "Language",
+  "options.controls": "Show Controls",
+
+  "confirm.discard_title": "Discard Progress?",
+  "confirm.discard_progress": "Switching to Sandbox mode will discard your current level progress. Continue?",
+  "confirm.save_title": "Save Circuit?",
+  "confirm.save_before_designer": "Would you like to save your circuit before switching to Designer mode?",
+  "confirm.save_before_close": "Save changes to '{0}' before closing?",
+
+  "contextmenu.edit": "Edit",
+  "contextmenu.delete": "Delete",
+
+  "status.profile_not_found": "Profile not found. Please select or create a profile.",
+  "status.editing_component": "Editing component: {0}",
+  "status.component_updated": "Component updated: {0}"
 }

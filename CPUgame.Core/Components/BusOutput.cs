@@ -26,7 +26,7 @@ public class BusOutput : Component
     private void SetupPins()
     {
         Name = $"Out{BitCount}";
-        Width = 4 * _gridSize; // 4 cells wide
+        Width = 3 * _gridSize; // 3 cells wide
         Height = (BitCount + 1) * _gridSize; // +1 cell for padding
 
         // Clear existing pins
@@ -145,5 +145,12 @@ public class BusOutput : Component
         {
             ResizeBits(false);
         }
+    }
+
+    public override Component Clone(int gridSize)
+    {
+        var clone = new BusOutput(X, Y, BitCount, gridSize);
+        CopyTitles(this, clone);
+        return clone;
     }
 }

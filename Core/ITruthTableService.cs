@@ -23,6 +23,7 @@ public interface ITruthTableService
     void Draw(SpriteBatch spriteBatch, Texture2D pixel, SpriteFontBase font, Point mousePos);
     bool ContainsPoint(Point p);
     void SetCurrentLevel(GameLevel? level);
+    void SetPosition(int x, int y);
 }
 
 public class TruthTableService : ITruthTableService
@@ -136,5 +137,10 @@ public class TruthTableService : ITruthTableService
     public bool ContainsPoint(Point p)
     {
         return _window?.ContainsPoint(p) ?? false;
+    }
+
+    public void SetPosition(int x, int y)
+    {
+        _window?.SetPosition(x, y);
     }
 }

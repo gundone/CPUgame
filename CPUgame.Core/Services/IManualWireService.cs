@@ -367,10 +367,9 @@ public class ManualWireService : IManualWireService
         var path = inputPin.ManualWirePath;
         var outputPin = inputPin.ConnectedTo;
 
-        // Update first point (output pin location)
+        // Only update endpoints, intermediate nodes stay in place
+        // Intermediate nodes are moved explicitly when selected and dragged
         path[0] = new Point2(outputPin.WorldX, outputPin.WorldY);
-
-        // Update last point (input pin location)
         path[^1] = new Point2(inputPin.WorldX, inputPin.WorldY);
     }
 

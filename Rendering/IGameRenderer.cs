@@ -20,7 +20,7 @@ public interface IGameRenderer
     float TitleFontScale { get; set; }
     void Initialize(GraphicsDevice graphicsDevice, IFontService fontService);
     void DrawWorld(SpriteBatch spriteBatch, Circuit circuit, ICameraController camera, ISelectionManager selection, IWireManager wireManager, IManualWireService manualWireService, Pin? hoveredPin, Point2 mousePos, int screenWidth, int screenHeight, bool isDraggingItem);
-    void DrawUI(SpriteBatch spriteBatch, IToolboxManager toolboxManager, MainMenu mainMenu, IStatusService statusService, IDialogService dialogService, ITruthTableService truthTableService, ICameraController camera, Point2 mousePos, int screenWidth, int screenHeight, SpriteFontBase font);
+    void DrawUI(SpriteBatch spriteBatch, IToolboxManager toolboxManager, MainMenu mainMenu, IStatusService statusService, IDialogService dialogService, ITruthTableService truthTableService, ICameraController camera, Point2 mousePos, int screenWidth, int screenHeight, SpriteFontBase font, bool isMenuVisible = true);
 }
 
 public class GameRenderer : IGameRenderer
@@ -90,6 +90,12 @@ public class GameRenderer : IGameRenderer
         {
             DrawSelectionRectangle(spriteBatch, selection, camera.Zoom);
         }
+
+        // Draw selected nodes
+        foreach (var node in selection.GetSelectedNodes())
+        {
+            _circuitRenderer.DrawSelectedWireNode(spriteBatch, node.X, node.Y);
+        }
     }
 
     private void DrawComponentTitles(SpriteBatch spriteBatch, Circuit circuit, float zoom)
@@ -116,15 +122,20 @@ public class GameRenderer : IGameRenderer
         }
     }
 
-    public void DrawUI(SpriteBatch spriteBatch, IToolboxManager toolboxManager, MainMenu mainMenu, IStatusService statusService, IDialogService dialogService, ITruthTableService truthTableService, ICameraController camera, Point2 mousePos, int screenWidth, int screenHeight, SpriteFontBase font)
+    public void DrawUI(SpriteBatch spriteBatch, IToolboxManager toolboxManager, MainMenu mainMenu, IStatusService statusService, IDialogService dialogService, ITruthTableService truthTableService, ICameraController camera, Point2 mousePos, int screenWidth, int screenHeight, SpriteFontBase font, bool isMenuVisible = true)
     {
         var mousePosMonoGame = mousePos.ToMonoGame();
-        DrawZoomIndicator(spriteBatch, camera.Zoom, mainMenu.Height);
+        int menuHeight = isMenuVisible ? mainMenu.Height : 0;
+        DrawZoomIndicator(spriteBatch, camera.Zoom, menuHeight);
         toolboxManager.MainToolbox.Draw(spriteBatch, Pixel, font, mousePosMonoGame);
         toolboxManager.UserToolbox.Draw(spriteBatch, Pixel, font, mousePosMonoGame);
         truthTableService.Draw(spriteBatch, Pixel, font, mousePosMonoGame);
         DrawStatusBar(spriteBatch, statusService.Message, screenWidth, screenHeight);
-        mainMenu.Draw(spriteBatch, Pixel, font, screenWidth, mousePosMonoGame);
+
+        if (isMenuVisible)
+        {
+            mainMenu.Draw(spriteBatch, Pixel, font, screenWidth, mousePosMonoGame);
+        }
 
         if (dialogService.IsActive)
         {
@@ -168,7 +179,8 @@ public class GameRenderer : IGameRenderer
     {
         var font = _fontService.GetFont();
         var zoomText = $"Zoom: {zoom:P0}";
-        font.DrawText(spriteBatch, zoomText, new Vector2(8, menuHeight + 8), new Color(150, 150, 170));
+        // Position below both menu (24px) and tab bar (32px)
+        font.DrawText(spriteBatch, zoomText, new Vector2(8, menuHeight + 40), new Color(150, 150, 170));
     }
 
     private void DrawInputDialog(SpriteBatch spriteBatch, string title, string inputText, int screenWidth, int screenHeight)

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using CPUgame.Core.Circuit;
 using CPUgame.Core.Components;
+using CPUgame.Core.Serialization;
 using CPUgame.Core.Services;
 
 namespace CPUgame.Core.Designer;
@@ -12,27 +13,52 @@ public class AppearanceService : IAppearanceService
 {
     private readonly IPlatformServices _platformServices;
     private readonly IComponentBuilder _componentBuilder;
+    private readonly IProfileService _profileService;
+    private readonly ICircuitManager _circuitManager;
     private readonly Dictionary<string, ComponentAppearance> _appearances = new();
-
-    private const string AppearancesFileName = "ComponentAppearances.json";
 
     public event Action<string>? OnAppearanceChanged;
 
-    public AppearanceService(IPlatformServices platformServices, IComponentBuilder componentBuilder)
+    public AppearanceService(IPlatformServices platformServices, IComponentBuilder componentBuilder, IProfileService profileService, ICircuitManager circuitManager)
     {
         _platformServices = platformServices;
         _componentBuilder = componentBuilder;
+        _profileService = profileService;
+        _circuitManager = circuitManager;
     }
 
     public ComponentAppearance? GetAppearance(string componentType)
     {
-        return _appearances.TryGetValue(componentType, out var appearance) ? appearance : null;
+        // Check in-memory cache first (for built-in components)
+        if (_appearances.TryGetValue(componentType, out var appearance))
+        {
+            return appearance;
+        }
+
+        // For custom components, check if appearance is stored in CircuitData
+        if (componentType.StartsWith("Custom:"))
+        {
+            var customName = componentType.Substring(7);
+            if (_componentBuilder.CustomComponents.TryGetValue(customName, out var circuitData))
+            {
+                return circuitData.Appearance;
+            }
+        }
+
+        return null;
     }
 
     public void SetAppearance(ComponentAppearance appearance)
     {
         _appearances[appearance.ComponentType] = appearance;
         OnAppearanceChanged?.Invoke(appearance.ComponentType);
+
+        // For custom components, also update the JSON file
+        if (appearance.ComponentType.StartsWith("Custom:"))
+        {
+            var customName = appearance.ComponentType.Substring(7);
+            UpdateCustomComponentAppearance(customName, appearance);
+        }
     }
 
     public void ResetAppearance(string componentType)
@@ -134,7 +160,7 @@ public class AppearanceService : IAppearanceService
         component.TitleOffsetX = appearance.TitleOffsetX;
         component.TitleOffsetY = appearance.TitleOffsetY;
 
-        // Apply input pin positions
+        // Apply input pin positions and titles
         foreach (var pinAppearance in appearance.InputPins)
         {
             var pin = component.Inputs.FirstOrDefault(p => p.Name == pinAppearance.Name);
@@ -142,10 +168,11 @@ public class AppearanceService : IAppearanceService
             {
                 pin.LocalX = pinAppearance.LocalX;
                 pin.LocalY = pinAppearance.LocalY;
+                pin.Title = pinAppearance.Name;
             }
         }
 
-        // Apply output pin positions
+        // Apply output pin positions and titles
         foreach (var pinAppearance in appearance.OutputPins)
         {
             var pin = component.Outputs.FirstOrDefault(p => p.Name == pinAppearance.Name);
@@ -153,6 +180,7 @@ public class AppearanceService : IAppearanceService
             {
                 pin.LocalX = pinAppearance.LocalX;
                 pin.LocalY = pinAppearance.LocalY;
+                pin.Title = pinAppearance.Name;
             }
         }
     }
@@ -189,64 +217,70 @@ public class AppearanceService : IAppearanceService
         }
     }
 
-    public void SaveAll()
+
+    public bool UpdateCustomComponentAppearance(string componentName, ComponentAppearance appearance)
     {
-        try
-        {
-            var filePath = GetAppearancesFilePath();
-            var data = new ComponentAppearanceData { Appearances = _appearances };
+        // Check both possible locations for the component file
+        var foldersToCheck = new List<string>();
 
-            var options = new JsonSerializerOptions
+        // Add profile folder if available
+        if (_profileService.HasProfile)
+        {
+            try
             {
-                WriteIndented = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            };
-
-            var json = JsonSerializer.Serialize(data, options);
-            File.WriteAllText(filePath, json);
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"Failed to save appearances: {ex.Message}");
-        }
-    }
-
-    public void LoadAll()
-    {
-        var filePath = GetAppearancesFilePath();
-
-        if (!File.Exists(filePath))
-        {
-            return;
-        }
-
-        try
-        {
-            var json = File.ReadAllText(filePath);
-            var options = new JsonSerializerOptions
+                foldersToCheck.Add(_profileService.GetProfileComponentsFolder());
+            }
+            catch
             {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            };
-
-            var data = JsonSerializer.Deserialize<ComponentAppearanceData>(json, options);
-            if (data?.Appearances != null)
-            {
-                _appearances.Clear();
-                foreach (var kvp in data.Appearances)
-                {
-                    _appearances[kvp.Key] = kvp.Value;
-                }
+                // Profile folder not accessible
             }
         }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"Failed to load appearances: {ex.Message}");
-        }
-    }
 
-    private string GetAppearancesFilePath()
-    {
-        var folder = _platformServices.GetComponentsFolder();
-        return Path.Combine(Path.GetDirectoryName(folder) ?? folder, AppearancesFileName);
+        // Always check global folder
+        foldersToCheck.Add(_platformServices.GetComponentsFolder());
+
+        // Find and update the component file in whichever folder it exists
+        foreach (var folder in foldersToCheck)
+        {
+            var filePath = Path.Combine(folder, $"{componentName}.json");
+            if (!File.Exists(filePath))
+            {
+                continue;
+            }
+
+            try
+            {
+                // Load existing component data
+                var circuitData = CircuitSerializer.LoadCustomComponentData(filePath);
+
+                // Update appearance
+                circuitData.Appearance = appearance;
+
+                // Save back to file
+                var options = new JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                };
+                var json = JsonSerializer.Serialize(circuitData, options);
+                File.WriteAllText(filePath, json);
+
+                // Update in-memory cache in CircuitManager
+                if (_circuitManager.CustomComponents.ContainsKey(componentName))
+                {
+                    _circuitManager.CustomComponents[componentName] = circuitData;
+                }
+
+                OnAppearanceChanged?.Invoke($"Custom:{componentName}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to update component appearance in {folder}: {ex.Message}");
+                // Continue to try next folder
+            }
+        }
+
+        return false;
     }
 }

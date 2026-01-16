@@ -28,10 +28,16 @@ public class SelectionManager : ISelectionManager
     // Wire selection
     public Pin? SelectedWire { get; set; }
 
+    // Node selection
+    private readonly List<WireNode> _selectedNodes = new();
+    private Dictionary<WireNode, Point2>? _nodeDragOffsets;
+
     public SelectionManager(Circuit.Circuit circuit)
     {
         _circuit = circuit;
     }
+
+    public IReadOnlyList<WireNode> GetSelectedNodes() => _selectedNodes;
 
     public void SetCircuit(Circuit.Circuit circuit)
     {
@@ -65,6 +71,7 @@ public class SelectionManager : ISelectionManager
         {
             _circuit.ClearSelection();
             SelectedWire = null;
+            _selectedNodes.Clear();
         }
 
         IsSelecting = true;
@@ -84,7 +91,7 @@ public class SelectionManager : ISelectionManager
     }
 
     /// <summary>
-    /// Complete selection rectangle and select components within
+    /// Complete selection rectangle and select components and wire nodes within
     /// </summary>
     public void CompleteSelectionRect()
     {
@@ -98,6 +105,7 @@ public class SelectionManager : ISelectionManager
         int minY = Math.Min(SelectionStart.Y, SelectionEnd.Y);
         int maxY = Math.Max(SelectionStart.Y, SelectionEnd.Y);
 
+        // Select components
         foreach (var component in _circuit.Components)
         {
             bool intersects = component.X < maxX && component.X + component.Width > minX &&
@@ -106,6 +114,30 @@ public class SelectionManager : ISelectionManager
             if (intersects)
             {
                 component.IsSelected = true;
+            }
+        }
+
+        // Select wire nodes (intermediate nodes only)
+        foreach (var component in _circuit.Components)
+        {
+            foreach (var input in component.Inputs)
+            {
+                if (input.ManualWirePath != null && input.ManualWirePath.Count > 2)
+                {
+                    // Check intermediate nodes (indices 1 to Count-2)
+                    for (int i = 1; i < input.ManualWirePath.Count - 1; i++)
+                    {
+                        var node = input.ManualWirePath[i];
+                        if (node.X >= minX && node.X <= maxX && node.Y >= minY && node.Y <= maxY)
+                        {
+                            var wireNode = new WireNode(input, i);
+                            if (!_selectedNodes.Any(n => n.Wire == input && n.NodeIndex == i))
+                            {
+                                _selectedNodes.Add(wireNode);
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -132,6 +164,7 @@ public class SelectionManager : ISelectionManager
             if (!addToSelection)
             {
                 _circuit.ClearSelection();
+                _selectedNodes.Clear();
             }
 
             component.IsSelected = !component.IsSelected || !addToSelection;
@@ -162,6 +195,7 @@ public class SelectionManager : ISelectionManager
         {
             _circuit.ClearSelection();
             SelectedWire = null;
+            _selectedNodes.Clear();
         }
     }
 
@@ -170,6 +204,14 @@ public class SelectionManager : ISelectionManager
         IsDraggingSingle = true;
         _draggingComponent = component;
         _dragOffset = new Point2(worldMousePos.X - component.X, worldMousePos.Y - component.Y);
+
+        // Store original positions of selected nodes for dragging
+        _multiDragStart = worldMousePos;
+        _nodeDragOffsets = new Dictionary<WireNode, Point2>();
+        foreach (var node in _selectedNodes)
+        {
+            _nodeDragOffsets[node] = new Point2(node.X, node.Y);
+        }
     }
 
     private void StartMultiDrag(Point2 worldMousePos)
@@ -182,6 +224,13 @@ public class SelectionManager : ISelectionManager
         {
             _multiDragOffsets[selected] = new Point2(selected.X, selected.Y);
         }
+
+        // Store original positions of selected nodes
+        _nodeDragOffsets = new Dictionary<WireNode, Point2>();
+        foreach (var node in _selectedNodes)
+        {
+            _nodeDragOffsets[node] = new Point2(node.X, node.Y);
+        }
     }
 
     /// <summary>
@@ -193,6 +242,22 @@ public class SelectionManager : ISelectionManager
         {
             _draggingComponent.X = ((worldMousePos.X - _dragOffset.X) / gridSize) * gridSize;
             _draggingComponent.Y = ((worldMousePos.Y - _dragOffset.Y) / gridSize) * gridSize;
+
+            // Move selected nodes along with the component
+            if (_nodeDragOffsets != null && _nodeDragOffsets.Count > 0)
+            {
+                int deltaX = worldMousePos.X - _multiDragStart.X;
+                int deltaY = worldMousePos.Y - _multiDragStart.Y;
+
+                foreach (var kvp in _nodeDragOffsets)
+                {
+                    var node = kvp.Key;
+                    var originalPos = kvp.Value;
+                    int newX = ((originalPos.X + deltaX) / gridSize) * gridSize;
+                    int newY = ((originalPos.Y + deltaY) / gridSize) * gridSize;
+                    node.SetPosition(newX, newY);
+                }
+            }
         }
         else if (IsDraggingMultiple && _multiDragOffsets != null)
         {
@@ -205,12 +270,26 @@ public class SelectionManager : ISelectionManager
                 _hasDragged = true;
             }
 
+            // Move components
             foreach (var kvp in _multiDragOffsets)
             {
                 var comp = kvp.Key;
                 var originalPos = kvp.Value;
                 comp.X = ((originalPos.X + deltaX) / gridSize) * gridSize;
                 comp.Y = ((originalPos.Y + deltaY) / gridSize) * gridSize;
+            }
+
+            // Move selected nodes
+            if (_nodeDragOffsets != null)
+            {
+                foreach (var kvp in _nodeDragOffsets)
+                {
+                    var node = kvp.Key;
+                    var originalPos = kvp.Value;
+                    int newX = ((originalPos.X + deltaX) / gridSize) * gridSize;
+                    int newY = ((originalPos.Y + deltaY) / gridSize) * gridSize;
+                    node.SetPosition(newX, newY);
+                }
             }
         }
     }
@@ -230,6 +309,7 @@ public class SelectionManager : ISelectionManager
         IsDraggingMultiple = false;
         _draggingComponent = null;
         _multiDragOffsets = null;
+        _nodeDragOffsets = null;
         _pendingDeselect = null;
         _hasDragged = false;
     }
@@ -243,6 +323,7 @@ public class SelectionManager : ISelectionManager
     {
         _circuit.ClearSelection();
         SelectedWire = null;
+        _selectedNodes.Clear();
         IsSelecting = false;
         EndDrag();
     }

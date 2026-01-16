@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using CPUgame.Core;
 using CPUgame.Core.Components;
@@ -9,6 +10,7 @@ using CPUgame.Core.Circuit;
 using CPUgame.Core.Levels;
 using CPUgame.Core.Localization;
 using CPUgame.Core.Selection;
+using CPUgame.Core.Serialization;
 using CPUgame.Core.Services;
 using CPUgame.Rendering;
 using CPUgame.UI;
@@ -41,6 +43,7 @@ public class GameField : Game, IGameField
     private readonly ILevelService _levelService;
     private readonly IProfileService _profileService;
     private readonly IAppearanceService _appearanceService;
+    private readonly IPreferencesService _preferencesService;
 
     private ISelectionManager _selection = null!;
     private DesignerMode _designerMode = null!;
@@ -52,6 +55,21 @@ public class GameField : Game, IGameField
     private ComponentEditDialog _componentEditDialog = null!;
     private ControlsPopup _controlsPopup = null!;
     private LevelInfoWindow _levelInfoWindow = null!;
+    private MainGameMenu _mainGameMenu = null!;
+    private OptionsDialog _optionsDialog = null!;
+    private ConfirmationDialog _confirmationDialog = null!;
+    private ComponentContextMenu _componentContextMenu = null!;
+    private TabBar _tabBar = null!;
+
+    // Component editing state
+    private CustomComponent? _componentBeingEdited;
+    private string? _editingComponentName;
+    private int _tabCloseRequestIndex = -1;
+
+    // Top menu visibility state (hidden by default, toggle with Ctrl+Shift+M)
+    private bool _isMenuVisible;
+    private const int _menuHeight = 24;
+    private const int _tabBarHeight = 32;
 
     // Text input from Window.TextInput event (supports Unicode)
     private char? _pendingTextInput;
@@ -65,7 +83,8 @@ public class GameField : Game, IGameField
         IComponentBuilder componentBuilder, IDialogService dialogService, IFontService fontService,
         IWireManager wireManager, IManualWireService manualWireService, ICommandHandler commandHandler,
         IToolboxManager toolboxManager, IGameRenderer gameRenderer, ITruthTableService truthTableService,
-        ILevelService levelService, IProfileService profileService, IAppearanceService appearanceService)
+        ILevelService levelService, IProfileService profileService, IAppearanceService appearanceService,
+        IPreferencesService preferencesService)
     {
         _inputHandler = inputHandler;
         _statusService = statusService;
@@ -83,6 +102,7 @@ public class GameField : Game, IGameField
         _levelService = levelService;
         _profileService = profileService;
         _appearanceService = appearanceService;
+        _preferencesService = preferencesService;
 
         _graphics = new GraphicsDeviceManager(this) { PreferredBackBufferWidth = 1280, PreferredBackBufferHeight = 720 };
         Content.RootDirectory = "Content";
@@ -112,10 +132,18 @@ public class GameField : Game, IGameField
 
         _commandHandler.OnBuildComponent += () =>
         {
-            _dialogService.StartNaming(_selection.GetSelectedComponents());
-            if (_dialogService.IsActive)
+            // Check if we're editing a component - if so, save it instead of creating new
+            if (_editingComponentName != null)
             {
-                _inputHandler.BeginTextInput();
+                SaveEditedComponent();
+            }
+            else
+            {
+                _dialogService.StartNaming(_selection.GetSelectedComponents());
+                if (_dialogService.IsActive)
+                {
+                    _inputHandler.BeginTextInput();
+                }
             }
         };
 
@@ -143,6 +171,16 @@ public class GameField : Game, IGameField
         // Use Window.TextInput for proper Unicode character input
         Window.TextInput += OnTextInput;
 
+        // Load preferences first to get the last used profile
+        _preferencesService.Load();
+
+        // If there's a last profile, load it so components from that profile are available
+        if (!string.IsNullOrEmpty(_preferencesService.LastProfile))
+        {
+            _profileService.LoadProfile(_preferencesService.LastProfile);
+        }
+
+        // Load components (will load from global folder + profile folder if profile is loaded)
         _componentBuilder.LoadCustomComponents();
         _statusService.Show(LocalizationManager.Get("help.drag"));
 
@@ -157,6 +195,9 @@ public class GameField : Game, IGameField
         _toolboxManager.Initialize(ScreenWidth, _componentBuilder, _appearanceService);
         _toolboxManager.LoadCustomComponents(_circuitManager.CustomComponents.Keys);
         _truthTableService.Initialize(ScreenWidth);
+
+        // Set camera viewport offset to position working area below tab bar (menu hidden by default)
+        UpdateViewportOffset();
 
         _mainMenu = new MainMenu();
         _mainMenu.OnNewCircuit += _circuitManager.NewCircuit;
@@ -198,15 +239,124 @@ public class GameField : Game, IGameField
 
         _circuitManager.OnCircuitChanged += ApplyAppearancesToCircuit;
 
+        // Initialize new game menu and dialogs
+        _mainGameMenu = new MainGameMenu(_preferencesService, _fontService);
+        _optionsDialog = new OptionsDialog();
+        _confirmationDialog = new ConfirmationDialog();
+        _componentContextMenu = new ComponentContextMenu();
+        _tabBar = new TabBar();
+
+        // Initialize main circuit tab (start in sandbox mode)
+        _tabBar.AddTab(new EditorTab("Sandbox", _circuitManager.Circuit, GameMode.Sandbox, level: null, isMainCircuit: true));
+
+        // Tab bar event handlers
+        _tabBar.OnTabSelected += HandleTabSelected;
+        _tabBar.OnTabCloseRequested += HandleTabCloseRequested;
+
+        // Update window title based on active tab
+        UpdateWindowTitle();
+
+        // Component context menu event handlers
+        _componentContextMenu.OnEdit += HandleEditComponent;
+        _componentContextMenu.OnDelete += HandleDeleteComponent;
+
+        // Confirmation dialog event handlers
+        _confirmationDialog.OnYes += () =>
+        {
+            _confirmationDialog.Hide();
+
+            // Handle tab close confirmation
+            if (_tabCloseRequestIndex >= 0)
+            {
+                // Save the tab before closing
+                var tab = _tabBar.GetTab(_tabCloseRequestIndex);
+                if (tab != null && !tab.IsMainCircuit)
+                {
+                    // Switch to the tab, save it, then close
+                    _tabBar.SetActiveTab(_tabCloseRequestIndex);
+                    SaveEditedComponent();
+                }
+                _tabBar.RemoveTab(_tabCloseRequestIndex);
+                _tabCloseRequestIndex = -1;
+            }
+        };
+
+        _confirmationDialog.OnNo += () =>
+        {
+            _confirmationDialog.Hide();
+
+            // Handle tab close confirmation - close without saving
+            if (_tabCloseRequestIndex >= 0)
+            {
+                _tabBar.RemoveTab(_tabCloseRequestIndex);
+                _tabCloseRequestIndex = -1;
+            }
+        };
+
+        // Main game menu event handlers
+        _mainGameMenu.OnContinue += HandleContinue;
+        _mainGameMenu.OnNewGame += () =>
+        {
+            _profileDialog.Show();
+            _mainGameMenu.Hide();
+        };
+        _mainGameMenu.OnSandbox += HandleSandboxSwitch;
+        _mainGameMenu.OnDesigner += HandleDesignerSwitch;
+        _mainGameMenu.OnOptions += () =>
+        {
+            _optionsDialog.SetCurrentFontSize(_gameRenderer.TitleFontScale);
+            _optionsDialog.Show();
+            _mainGameMenu.Hide();
+        };
+        _mainGameMenu.OnQuit += Exit;
+
+        // Options dialog event handlers
+        _optionsDialog.OnFontSizeChanged += scale =>
+        {
+            _gameRenderer.TitleFontScale = scale;
+        };
+        _optionsDialog.OnLanguageChanged += code =>
+        {
+            LocalizationManager.LoadLanguage(code);
+            Window.Title = LocalizationManager.Get("app.title");
+            _statusService.Show(LocalizationManager.Get("status.ready"));
+        };
+        _optionsDialog.OnShowControls += () =>
+        {
+            _controlsPopup.Show();
+        };
+        _optionsDialog.OnClose += () =>
+        {
+            _mainGameMenu.Show();
+        };
+
+        // Show main game menu at startup
+        _mainGameMenu.Show();
+
         _mainMenu.OnSandboxMode += () =>
         {
+            // Check if a sandbox tab already exists
+            for (int i = 0; i < _tabBar.Tabs.Count; i++)
+            {
+                if (_tabBar.Tabs[i].GameMode == GameMode.Sandbox)
+                {
+                    // Switch to existing sandbox tab
+                    _tabBar.SetActiveTab(i);
+                    return;
+                }
+            }
+
+            // Create new sandbox tab
+            _componentBuilder.LoadCustomComponents();
+            _toolboxManager.LoadCustomComponents(_circuitManager.CustomComponents.Keys);
             _designerMode.Deactivate();
-            _levelService.SetMode(GameMode.Sandbox);
-            _mainMenu.SetCurrentMode(GameMode.Sandbox);
+
+            var newCircuit = new CPUgame.Core.Circuit.Circuit();
+            var newTab = new EditorTab("Sandbox", newCircuit, GameMode.Sandbox, level: null, isMainCircuit: false);
+            _tabBar.AddTab(newTab);
+
             _mainMenu.SetProfileName(null);
-            _truthTableService.SetCurrentLevel(null);
             _toolboxManager.SetLevelModeFilter(false, null);
-            _levelInfoWindow.SetLevel(null, null);
             _statusService.Show(LocalizationManager.Get("status.mode_sandbox"));
         };
         _mainMenu.OnLevelsMode += () =>
@@ -217,17 +367,9 @@ public class GameField : Game, IGameField
                 _statusService.Show(LocalizationManager.Get("status.profile_required"));
                 return;
             }
-            _designerMode.Deactivate();
-            _levelService.SetMode(GameMode.Levels);
-            _mainMenu.SetCurrentMode(GameMode.Levels);
-            _mainMenu.SetProfileName(_profileService.CurrentProfile?.Name);
-            _toolboxManager.SetLevelModeFilter(true, _profileService.GetUnlockedComponents(_levelService));
-            if (_levelService.CurrentLevel != null)
-            {
-                _truthTableService.SetCurrentLevel(_levelService.CurrentLevel);
-                _truthTableService.Show(_circuitManager.Circuit, _fontService.GetFont());
-            }
-            _statusService.Show(LocalizationManager.Get("status.mode_levels"));
+
+            // Show level selection popup
+            _levelSelectionPopup.Show();
         };
         _mainMenu.OnSelectLevelPopup += () =>
         {
@@ -263,20 +405,74 @@ public class GameField : Game, IGameField
             }
         };
 
+        _levelService.OnLevelChanged += () =>
+        {
+            if (_levelService.CurrentLevel != null && _profileService.HasProfile)
+            {
+                int levelIndex = _levelService.Levels.FindIndex(l => l.Id == _levelService.CurrentLevel.Id);
+                if (levelIndex >= 0)
+                {
+                    _preferencesService.SetLastSession(_profileService.CurrentProfile!.Name, levelIndex);
+                }
+            }
+        };
+
+        _profileService.OnProfileChanged += () =>
+        {
+            if (_profileService.HasProfile && _profileService.CurrentProfile != null)
+            {
+                _preferencesService.LastProfile = _profileService.CurrentProfile.Name;
+            }
+        };
+
         _levelDescriptionPopup.OnStartLevel += () =>
         {
             if (_levelService.CurrentLevel != null)
             {
-                _levelService.SetupLevelCircuit(_circuitManager.Circuit, _gameRenderer.GridSize);
-                _selection = new SelectionManager(_circuitManager.Circuit);
-                _truthTableService.SetCurrentLevel(_levelService.CurrentLevel);
-                _truthTableService.Show(_circuitManager.Circuit, _fontService.GetFont());
-                _levelInfoWindow.SetLevel(_levelService.CurrentLevel, _fontService.GetFont());
+                var level = _levelService.CurrentLevel;
+
+                // Check if this level already has a tab open
+                for (int i = 0; i < _tabBar.Tabs.Count; i++)
+                {
+                    var tab = _tabBar.Tabs[i];
+                    if (tab.GameMode == GameMode.Levels && tab.Level?.Id == level.Id)
+                    {
+                        // Switch to existing level tab
+                        _tabBar.SetActiveTab(i);
+                        return;
+                    }
+                }
+
+                // Create new circuit for the level
+                var levelCircuit = new CPUgame.Core.Circuit.Circuit();
+                _levelService.SetupLevelCircuit(levelCircuit, _gameRenderer.GridSize);
+
+                // Create new tab for this level
+                var newTab = new EditorTab(level.Name, levelCircuit, GameMode.Levels, level, isMainCircuit: false);
+                _tabBar.AddTab(newTab);
+
+                _componentBuilder.LoadCustomComponents();
+                _toolboxManager.LoadCustomComponents(_circuitManager.CustomComponents.Keys);
+                _mainMenu.SetProfileName(_profileService.CurrentProfile?.Name);
+                _toolboxManager.SetLevelModeFilter(true, _profileService.GetUnlockedComponents(_levelService));
+                _truthTableService.SetCurrentLevel(level);
+                _truthTableService.Show(levelCircuit, _fontService.GetFont());
+                _levelInfoWindow.SetLevel(level, _fontService.GetFont());
+
+                // Position windows to avoid overlap
+                // Level info window: top-left, below the tab bar
+                int topOffset = _isMenuVisible ? _menuHeight + _tabBarHeight : _tabBarHeight;
+                _levelInfoWindow.SetPosition(8, topOffset + 8);
+
+                // Truth table window: top-right side of the screen
+                _truthTableService.SetPosition(ScreenWidth - 280, topOffset + 8);
             }
         };
 
         _profileDialog.OnProfileSelected += () =>
         {
+            _componentBuilder.LoadCustomComponents();
+            _toolboxManager.LoadCustomComponents(_circuitManager.CustomComponents.Keys);
             _mainMenu.SetProfileName(_profileService.CurrentProfile?.Name);
             _toolboxManager.SetLevelModeFilter(true, _profileService.GetUnlockedComponents(_levelService));
             _levelService.SetMode(GameMode.Levels);
@@ -308,10 +504,35 @@ public class GameField : Game, IGameField
 
         _levelCompletedPopup.OnNextLevel += () =>
         {
-            _levelService.NextLevel();
-            if (_levelService.CurrentLevel != null)
+            // Close current level tab
+            int currentTabIndex = _tabBar.ActiveTabIndex;
+            if (currentTabIndex >= 0)
             {
-                _levelDescriptionPopup.Show(_levelService.CurrentLevel);
+                _tabBar.RemoveTab(currentTabIndex);
+            }
+
+            // Find first uncompleted level that is unlocked
+            GameLevel? nextLevel = null;
+            int nextLevelIndex = -1;
+            for (int i = 0; i < _levelService.Levels.Count; i++)
+            {
+                var level = _levelService.Levels[i];
+                if (!_profileService.IsLevelCompleted(level.Id) &&
+                    _profileService.IsTierUnlocked(level.Tier, _levelService))
+                {
+                    nextLevel = level;
+                    nextLevelIndex = i;
+                    break;
+                }
+            }
+
+            // If there's an uncompleted level, open it
+            if (nextLevel != null && nextLevelIndex >= 0)
+            {
+                _levelService.SetMode(GameMode.Levels);
+                _mainMenu.SetCurrentMode(GameMode.Levels);
+                _levelService.SelectLevel(nextLevelIndex);
+                _levelDescriptionPopup.Show(nextLevel);
             }
         };
 
@@ -331,11 +552,49 @@ public class GameField : Game, IGameField
 
         _statusService.Update(gameTime.ElapsedGameTime.TotalSeconds);
 
+        // Handle toggle menu visibility (Ctrl+Shift+M)
+        if (_inputState.ToggleMenuCommand)
+        {
+            ToggleMenuVisibility();
+        }
+
         // Handle profile dialog (modal, blocks everything else)
         if (_profileDialog.IsVisible)
         {
             _profileDialog.HandleInput(_inputState, _inputHandler);
             _profileDialog.Update(mousePosMonoGame, _inputState.PrimaryJustPressed, ScreenWidth, ScreenHeight, _inputHandler);
+            base.Update(gameTime);
+            return;
+        }
+
+        // Handle main game menu (modal)
+        if (_mainGameMenu.IsVisible)
+        {
+            _mainGameMenu.Update(_inputState, ScreenWidth, ScreenHeight);
+            base.Update(gameTime);
+            return;
+        }
+
+        // Handle options dialog (modal)
+        if (_optionsDialog.IsVisible)
+        {
+            _optionsDialog.Update(_inputState, mousePosMonoGame, _inputState.PrimaryJustPressed, ScreenWidth, ScreenHeight);
+            base.Update(gameTime);
+            return;
+        }
+
+        // Handle confirmation dialog (modal)
+        if (_confirmationDialog.IsVisible)
+        {
+            _confirmationDialog.Update(mousePosMonoGame, _inputState.PrimaryJustPressed, ScreenWidth, ScreenHeight);
+            base.Update(gameTime);
+            return;
+        }
+
+        // Handle component context menu (modal)
+        if (_componentContextMenu.IsVisible)
+        {
+            _componentContextMenu.Update(mousePosMonoGame, _inputState.PrimaryJustPressed, _inputState.SecondaryJustPressed);
             base.Update(gameTime);
             return;
         }
@@ -388,8 +647,11 @@ public class GameField : Game, IGameField
             return;
         }
 
-        _mainMenu.Update(mousePosMonoGame, _inputState.PrimaryJustPressed, _inputState.PrimaryJustReleased, ScreenWidth);
-        if (_mainMenu.ContainsPoint(mousePosMonoGame)) { base.Update(gameTime); return; }
+        if (_isMenuVisible)
+        {
+            _mainMenu.Update(mousePosMonoGame, _inputState.PrimaryJustPressed, _inputState.PrimaryJustReleased, ScreenWidth);
+            if (_mainMenu.ContainsPoint(mousePosMonoGame)) { base.Update(gameTime); return; }
+        }
 
         // Handle Designer mode (full-screen UI, blocks other gameplay)
         if (_designerMode.IsActive)
@@ -427,6 +689,55 @@ public class GameField : Game, IGameField
         _levelInfoWindow.Update(mousePosMonoGame, _inputState.PrimaryPressed, _inputState.PrimaryJustPressed, _inputState.PrimaryJustReleased, ScreenWidth, ScreenHeight, _fontService.GetFont());
         if (_levelInfoWindow.ContainsPoint(mousePosMonoGame)) { base.Update(gameTime); return; }
 
+        // Update tab bar (position below main menu if visible)
+        int tabYOffset = GetTabBarYOffset();
+        _tabBar.Update(mousePosMonoGame, _inputState.PrimaryJustPressed, ScreenWidth, yOffset: tabYOffset);
+        if (_tabBar.ContainsPoint(mousePosMonoGame, yOffset: tabYOffset)) { base.Update(gameTime); return; }
+
+        // Handle ESC key to open/close main game menu
+        if (_inputState.EscapeCommand)
+        {
+            if (_wireManager.IsDraggingWire)
+            {
+                _wireManager.Cancel();
+            }
+            else if (_manualWireService.IsActive)
+            {
+                _manualWireService.Cancel();
+            }
+            else if (_manualWireService.IsEditingWire)
+            {
+                _manualWireService.StopEditingWire();
+            }
+            else if (_selection.GetSelectedComponents().Count > 0)
+            {
+                _selection.ClearAll();
+            }
+            else
+            {
+                _mainGameMenu.Show();
+            }
+            base.Update(gameTime);
+            return;
+        }
+
+        // Handle RMB to cancel wiring
+        if (_inputState.SecondaryJustPressed)
+        {
+            if (_wireManager.IsDraggingWire)
+            {
+                _wireManager.Cancel();
+                base.Update(gameTime);
+                return;
+            }
+            else if (_manualWireService.IsActive)
+            {
+                _manualWireService.Cancel();
+                base.Update(gameTime);
+                return;
+            }
+        }
+
         if (_inputState.CtrlHeld && _inputState.ScrollDelta != 0)
         {
             _camera.HandleZoom(_inputState.ScrollDelta, mousePos, _camera.ScreenToWorld);
@@ -437,6 +748,21 @@ public class GameField : Game, IGameField
                               !_levelInfoWindow.ContainsPoint(mousePosMonoGame) &&
                               circuit.GetComponentAt(worldMousePos.X, worldMousePos.Y) == null &&
                               circuit.GetPinAt(worldMousePos.X, worldMousePos.Y) == null;
+
+        // Show context menu on right-click on custom component (only in sandbox mode)
+        if (_inputState.SecondaryJustPressed && !_toolboxManager.ContainsPoint(mousePosMonoGame) &&
+            !_truthTableService.ContainsPoint(mousePosMonoGame) && _levelService.CurrentMode == GameMode.Sandbox)
+        {
+            var component = circuit.GetComponentAt(worldMousePos.X, worldMousePos.Y);
+            if (component is CustomComponent customComp)
+            {
+                _componentBeingEdited = customComp;
+                _editingComponentName = customComp.ComponentName;
+                _componentContextMenu.Show(mousePosMonoGame.X, mousePosMonoGame.Y, ScreenWidth, ScreenHeight);
+                base.Update(gameTime);
+                return;
+            }
+        }
 
         if ((_inputState.MiddleJustPressed || _inputState.SecondaryJustPressed) && !_toolboxManager.ContainsPoint(mousePosMonoGame) && !_truthTableService.ContainsPoint(mousePosMonoGame))
         {
@@ -460,7 +786,13 @@ public class GameField : Game, IGameField
             else _camera.EndPan();
         }
 
+        var componentsCountBefore = circuit.Components.Count;
         _commandHandler.HandleCommands(_inputState, _selection, circuit, _wireManager, _gameRenderer.GridSize);
+        if (circuit.Components.Count != componentsCountBefore)
+        {
+            MarkActiveTabDirty();
+        }
+
         _toolboxManager.Update(mousePosMonoGame, _inputState.PrimaryPressed, _inputState.PrimaryJustPressed, _inputState.PrimaryJustReleased);
 
         worldMousePos = _camera.ScreenToWorldPoint(mousePos);
@@ -468,6 +800,7 @@ public class GameField : Game, IGameField
         if (placedComponent != null)
         {
             _selection.SelectComponent(placedComponent);
+            MarkActiveTabDirty();
         }
 
         if (_toolboxManager.IsInteracting)
@@ -760,7 +1093,10 @@ public class GameField : Game, IGameField
             if (hoveredPin != null && hoveredPin != _manualWireService.StartPin)
             {
                 // Try to complete the connection
-                _manualWireService.Complete(hoveredPin);
+                if (_manualWireService.Complete(hoveredPin))
+                {
+                    MarkActiveTabDirty();
+                }
             }
             else
             {
@@ -768,6 +1104,200 @@ public class GameField : Game, IGameField
                 _manualWireService.AddPoint(worldMousePos);
             }
         }
+    }
+
+    private void HandleContinue()
+    {
+        var lastProfile = _preferencesService.LastProfile;
+
+        if (string.IsNullOrEmpty(lastProfile))
+        {
+            _profileDialog.Show();
+            _mainGameMenu.Hide();
+            return;
+        }
+
+        _profileService.LoadProfile(lastProfile);
+
+        if (!_profileService.HasProfile)
+        {
+            _statusService.Show(LocalizationManager.Get("status.profile_not_found"));
+            _profileDialog.Show();
+            _mainGameMenu.Hide();
+            return;
+        }
+
+        _componentBuilder.LoadCustomComponents();
+        _toolboxManager.LoadCustomComponents(_circuitManager.CustomComponents.Keys);
+        _levelService.SetMode(GameMode.Levels);
+        _mainMenu.SetCurrentMode(GameMode.Levels);
+        _mainMenu.SetProfileName(_profileService.CurrentProfile?.Name);
+        _toolboxManager.SetLevelModeFilter(true, _profileService.GetUnlockedComponents(_levelService));
+
+        int levelIndex = _preferencesService.LastLevelIndex;
+        if (levelIndex < 0 || levelIndex >= _levelService.Levels.Count)
+        {
+            levelIndex = FindFirstIncompleteLevel();
+        }
+
+        _levelService.SelectLevel(levelIndex);
+        if (_levelService.CurrentLevel != null)
+        {
+            _levelDescriptionPopup.Show(_levelService.CurrentLevel);
+        }
+
+        _mainGameMenu.Hide();
+    }
+
+    private int FindFirstIncompleteLevel()
+    {
+        for (int i = 0; i < _levelService.Levels.Count; i++)
+        {
+            var level = _levelService.Levels[i];
+            if (!_profileService.IsLevelCompleted(level.Id))
+            {
+                return i;
+            }
+        }
+        return 0;
+    }
+
+    private void HandleSandboxSwitch()
+    {
+        if (_levelService.CurrentMode == GameMode.Levels && _circuitManager.Circuit.Components.Count > 0)
+        {
+            Action? yesHandler = null;
+            Action? noHandler = null;
+
+            yesHandler = () =>
+            {
+                SwitchToSandboxMode();
+                _confirmationDialog.Hide();
+                if (yesHandler != null)
+                {
+                    _confirmationDialog.OnYes -= yesHandler;
+                }
+                if (noHandler != null)
+                {
+                    _confirmationDialog.OnNo -= noHandler;
+                }
+            };
+
+            noHandler = () =>
+            {
+                _confirmationDialog.Hide();
+                if (yesHandler != null)
+                {
+                    _confirmationDialog.OnYes -= yesHandler;
+                }
+                if (noHandler != null)
+                {
+                    _confirmationDialog.OnNo -= noHandler;
+                }
+            };
+
+            _confirmationDialog.OnYes += yesHandler;
+            _confirmationDialog.OnNo += noHandler;
+
+            _confirmationDialog.Show(
+                LocalizationManager.Get("confirm.discard_title"),
+                LocalizationManager.Get("confirm.discard_progress")
+            );
+        }
+        else
+        {
+            SwitchToSandboxMode();
+        }
+    }
+
+    private void SwitchToSandboxMode()
+    {
+        // Check if a sandbox tab already exists
+        for (int i = 0; i < _tabBar.Tabs.Count; i++)
+        {
+            if (_tabBar.Tabs[i].GameMode == GameMode.Sandbox)
+            {
+                // Switch to existing sandbox tab
+                _tabBar.SetActiveTab(i);
+                _mainGameMenu.Hide();
+                return;
+            }
+        }
+
+        // Create new sandbox tab
+        _componentBuilder.LoadCustomComponents();
+        _toolboxManager.LoadCustomComponents(_circuitManager.CustomComponents.Keys);
+        _designerMode.Deactivate();
+
+        var newCircuit = new CPUgame.Core.Circuit.Circuit();
+        var newTab = new EditorTab("Sandbox", newCircuit, GameMode.Sandbox, level: null, isMainCircuit: false);
+        _tabBar.AddTab(newTab);
+
+        _mainMenu.SetProfileName(null);
+        _toolboxManager.SetLevelModeFilter(false, null);
+        _statusService.Show(LocalizationManager.Get("status.mode_sandbox"));
+        _mainGameMenu.Hide();
+    }
+
+    private void HandleDesignerSwitch()
+    {
+        if (_circuitManager.Circuit.Components.Count > 0)
+        {
+            Action? yesHandler = null;
+            Action? noHandler = null;
+
+            yesHandler = () =>
+            {
+                _circuitManager.SaveCircuit();
+                SwitchToDesignerMode();
+                _confirmationDialog.Hide();
+                if (yesHandler != null)
+                {
+                    _confirmationDialog.OnYes -= yesHandler;
+                }
+                if (noHandler != null)
+                {
+                    _confirmationDialog.OnNo -= noHandler;
+                }
+            };
+
+            noHandler = () =>
+            {
+                SwitchToDesignerMode();
+                _confirmationDialog.Hide();
+                if (yesHandler != null)
+                {
+                    _confirmationDialog.OnYes -= yesHandler;
+                }
+                if (noHandler != null)
+                {
+                    _confirmationDialog.OnNo -= noHandler;
+                }
+            };
+
+            _confirmationDialog.OnYes += yesHandler;
+            _confirmationDialog.OnNo += noHandler;
+
+            _confirmationDialog.Show(
+                LocalizationManager.Get("confirm.save_title"),
+                LocalizationManager.Get("confirm.save_before_designer")
+            );
+        }
+        else
+        {
+            SwitchToDesignerMode();
+        }
+    }
+
+    private void SwitchToDesignerMode()
+    {
+        _levelService.SetMode(GameMode.Designer);
+        _mainMenu.SetCurrentMode(GameMode.Designer);
+        _mainMenu.SetProfileName(null);
+        _levelInfoWindow.SetLevel(null, null);
+        _designerMode.Activate();
+        _statusService.Show(LocalizationManager.Get("status.mode_designer"));
+        _mainGameMenu.Hide();
     }
 
     protected override void Draw(GameTime gameTime)
@@ -792,7 +1322,13 @@ public class GameField : Game, IGameField
 
         _spriteBatch.Begin(samplerState: SamplerState.LinearClamp);
         var uiFontNormal = _fontService.GetFont();
-        _gameRenderer.DrawUI(_spriteBatch, _toolboxManager, _mainMenu, _statusService, _dialogService, _truthTableService, _camera, _inputState.PointerPosition, ScreenWidth, ScreenHeight, uiFontNormal);
+        var menuFont = _fontService.GetFontAtSize(24);
+
+        // Draw tab bar (position below main menu if visible)
+        _tabBar.Draw(_spriteBatch, _gameRenderer.Pixel, uiFontNormal, ScreenWidth, yOffset: GetTabBarYOffset());
+
+        // Draw UI elements (main menu only if visible)
+        _gameRenderer.DrawUI(_spriteBatch, _toolboxManager, _mainMenu, _statusService, _dialogService, _truthTableService, _camera, _inputState.PointerPosition, ScreenWidth, ScreenHeight, uiFontNormal, _isMenuVisible);
 
         // Draw level info window (floating, non-modal)
         _levelInfoWindow.Draw(_spriteBatch, _gameRenderer.Pixel, uiFontNormal);
@@ -804,8 +1340,243 @@ public class GameField : Game, IGameField
         _levelCompletedPopup.Draw(_spriteBatch, _gameRenderer.Pixel, uiFontNormal, ScreenWidth, ScreenHeight);
         _componentEditDialog.Draw(_spriteBatch, _gameRenderer.Pixel, uiFontNormal, ScreenWidth, ScreenHeight);
         _controlsPopup.Draw(_spriteBatch, _gameRenderer.Pixel, uiFontNormal, ScreenWidth, ScreenHeight);
+        _mainGameMenu.Draw(_spriteBatch, _gameRenderer.Pixel, menuFont, ScreenWidth, ScreenHeight);
+        _optionsDialog.Draw(_spriteBatch, _gameRenderer.Pixel, uiFontNormal, ScreenWidth, ScreenHeight);
+        _confirmationDialog.Draw(_spriteBatch, _gameRenderer.Pixel, uiFontNormal, ScreenWidth, ScreenHeight);
+        _componentContextMenu.Draw(_spriteBatch, _gameRenderer.Pixel, uiFontNormal);
         _spriteBatch.End();
 
         base.Draw(gameTime);
+    }
+
+    private void HandleEditComponent()
+    {
+        if (_editingComponentName == null || _componentBeingEdited == null)
+        {
+            return;
+        }
+
+        // Load the component's internal circuit for editing
+        if (!_circuitManager.CustomComponents.TryGetValue(_editingComponentName, out var circuitData))
+        {
+            _statusService.Show("Component data not found");
+            return;
+        }
+
+        // Check if this component is already open in a tab
+        for (int i = 0; i < _tabBar.Tabs.Count; i++)
+        {
+            var tab = _tabBar.Tabs[i];
+            if (!tab.IsMainCircuit && tab.Name == _editingComponentName)
+            {
+                // Switch to existing tab
+                _tabBar.SetActiveTab(i);
+                _componentBeingEdited = null;
+                return;
+            }
+        }
+
+        // Load the component's internal circuit for editing
+        var internalCircuit = CircuitSerializer.DeserializeCircuit(circuitData, _circuitManager.CustomComponents);
+        internalCircuit.Name = _editingComponentName;
+
+        // Create a new tab for this component (use Designer mode for component editing)
+        var newTab = new EditorTab(_editingComponentName, internalCircuit, GameMode.Designer, level: null, isMainCircuit: false);
+        _tabBar.AddTab(newTab);
+
+        // The AddTab method automatically switches to the new tab and triggers OnTabSelected
+        _statusService.Show(LocalizationManager.Get("status.editing_component", _editingComponentName));
+
+        // Clear the component being edited reference
+        _componentBeingEdited = null;
+    }
+
+    private void HandleDeleteComponent()
+    {
+        if (_editingComponentName == null || _componentBeingEdited == null)
+        {
+            return;
+        }
+
+        // Remove the component from the circuit
+        _circuitManager.Circuit.RemoveComponent(_componentBeingEdited);
+
+        // Delete the component definition
+        _componentBuilder.DeleteComponent(_editingComponentName);
+
+        // Clear references
+        _editingComponentName = null;
+        _componentBeingEdited = null;
+    }
+
+    private void SaveEditedComponent()
+    {
+        if (_editingComponentName == null)
+        {
+            return;
+        }
+
+        // Get all components in the current circuit
+        var allComponents = _circuitManager.Circuit.Components.ToList();
+
+        // Get existing appearance
+        ComponentAppearance? existingAppearance = null;
+        if (_circuitManager.CustomComponents.TryGetValue(_editingComponentName, out var existingData))
+        {
+            existingAppearance = existingData.Appearance;
+        }
+
+        // Rebuild the component with the same name
+        bool success = _componentBuilder.BuildComponent(_editingComponentName, allComponents, _gameRenderer.GridSize, existingAppearance);
+
+        if (success)
+        {
+            _statusService.Show(LocalizationManager.Get("status.component_updated", _editingComponentName));
+
+            // Clear editing state and mark tab as clean
+            _editingComponentName = null;
+            if (_tabBar.ActiveTab != null)
+            {
+                _tabBar.ActiveTab.IsDirty = false;
+            }
+
+            // Update all other open tabs that use this component
+            UpdateComponentInAllTabs(_circuitManager.Circuit.Name);
+        }
+    }
+
+    private void HandleTabSelected(int tabIndex)
+    {
+        var tab = _tabBar.GetTab(tabIndex);
+        if (tab == null)
+        {
+            return;
+        }
+
+        // Switch to the tab's circuit
+        typeof(CircuitManager).GetProperty("Circuit")!.SetValue(_circuitManager, tab.Circuit);
+        _selection = new SelectionManager(_circuitManager.Circuit);
+
+        // Update game mode and level based on tab
+        _levelService.SetMode(tab.GameMode);
+        _mainMenu.SetCurrentMode(tab.GameMode);
+
+        if (tab.GameMode == GameMode.Levels && tab.Level != null)
+        {
+            // Restore level state
+            _truthTableService.SetCurrentLevel(tab.Level);
+            _levelInfoWindow.SetLevel(tab.Level, _fontService.GetFont());
+        }
+        else
+        {
+            _truthTableService.SetCurrentLevel(null);
+            _levelInfoWindow.SetLevel(null, null);
+        }
+
+        // Update editing state based on tab
+        if (tab.IsMainCircuit)
+        {
+            _editingComponentName = null;
+        }
+        else
+        {
+            _editingComponentName = tab.Name;
+        }
+
+        // Update window title
+        UpdateWindowTitle();
+    }
+
+    private void UpdateWindowTitle()
+    {
+        string baseTitle = LocalizationManager.Get("app.title");
+        var activeTab = _tabBar.ActiveTab;
+
+        if (activeTab != null)
+        {
+            string tabTitle = activeTab.GetDisplayName();
+            Window.Title = $"{baseTitle} - {tabTitle}";
+        }
+        else
+        {
+            Window.Title = baseTitle;
+        }
+    }
+
+    private void HandleTabCloseRequested(int tabIndex)
+    {
+        var tab = _tabBar.GetTab(tabIndex);
+        if (tab == null)
+        {
+            return;
+        }
+
+        // Don't allow closing the main circuit tab
+        if (tab.IsMainCircuit)
+        {
+            return;
+        }
+
+        // If tab has unsaved changes, ask for confirmation
+        if (tab.IsDirty)
+        {
+            _tabCloseRequestIndex = tabIndex;
+            _confirmationDialog.Show(
+                LocalizationManager.Get("confirm.save_title"),
+                LocalizationManager.Get("confirm.save_before_close", tab.Name)
+            );
+        }
+        else
+        {
+            // Close tab directly
+            _tabBar.RemoveTab(tabIndex);
+        }
+    }
+
+    private void UpdateComponentInAllTabs(string componentName)
+    {
+        // Reload the component data
+        if (!_circuitManager.CustomComponents.TryGetValue(componentName, out var circuitData))
+        {
+            return;
+        }
+
+        // Update all tabs that are editing this component (except the current one)
+        for (int i = 0; i < _tabBar.Tabs.Count; i++)
+        {
+            var tab = _tabBar.Tabs[i];
+            if (!tab.IsMainCircuit && tab.Name == componentName && i != _tabBar.ActiveTabIndex)
+            {
+                // Reload the circuit for this tab
+                var updatedCircuit = CircuitSerializer.DeserializeCircuit(circuitData, _circuitManager.CustomComponents);
+                updatedCircuit.Name = componentName;
+                tab.Circuit = updatedCircuit;
+            }
+        }
+    }
+
+    private void MarkActiveTabDirty()
+    {
+        if (_tabBar.ActiveTab != null && !_tabBar.ActiveTab.IsMainCircuit)
+        {
+            _tabBar.ActiveTab.IsDirty = true;
+        }
+    }
+
+    private void UpdateViewportOffset()
+    {
+        int yOffset = _isMenuVisible ? _menuHeight + _tabBarHeight : _tabBarHeight;
+        _camera.ViewportOffset = new Microsoft.Xna.Framework.Vector2(0, yOffset);
+    }
+
+    private int GetTabBarYOffset()
+    {
+        return _isMenuVisible ? _menuHeight : 0;
+    }
+
+    private void ToggleMenuVisibility()
+    {
+        _isMenuVisible = !_isMenuVisible;
+        UpdateViewportOffset();
     }
 }

@@ -45,6 +45,13 @@ public class GameLevel
     /// </summary>
     [JsonPropertyName("outputPinTitles")]
     public List<string> OutputPinTitles { get; set; } = new();
+
+    /// <summary>
+    /// Optional column order for truth table display (e.g., [2, 1, 0] to display columns in reverse)
+    /// If null or empty, columns are displayed in the default order (0, 1, 2, ...)
+    /// </summary>
+    [JsonPropertyName("truthTableColumnOrder")]
+    public List<int>? TruthTableColumnOrder { get; set; }
 }
 
 /// <summary>

@@ -34,6 +34,7 @@ public class InputState
     public bool BuildCommand { get; set; }
     public bool EscapeCommand { get; set; }
     public bool TogglePinValuesCommand { get; set; }
+    public bool ToggleMenuCommand { get; set; }
 
     // Text input (for dialogs)
     public bool EnterPressed { get; set; }
@@ -70,6 +71,7 @@ public class InputState
         BuildCommand = false;
         EscapeCommand = false;
         TogglePinValuesCommand = false;
+        ToggleMenuCommand = false;
         EnterPressed = false;
         BackspacePressed = false;
         TabPressed = false;
