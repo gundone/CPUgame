@@ -174,7 +174,7 @@ public class PropertiesPanel : IPropertiesPanel
     {
         // Panel background
         spriteBatch.Draw(pixel, rect, DesignerColors.PanelColor);
-        DrawBorder(spriteBatch, pixel, rect, DesignerColors.BorderColor, 1);
+        DesignerDrawing.DrawBorder(spriteBatch, pixel, rect, DesignerColors.BorderColor, 1);
 
         // Header
         var headerRect = new Rectangle(rect.X, rect.Y, rect.Width, DesignerLayout.HeaderHeight);
@@ -202,21 +202,21 @@ public class PropertiesPanel : IPropertiesPanel
         font.DrawText(spriteBatch, LocalizationManager.Get("designer.width"), new Vector2(rect.X + DesignerLayout.Padding, y + 4), DesignerColors.TextColor);
         var widthRect = new Rectangle(rect.X + labelWidth + DesignerLayout.Padding, y, rect.Width - labelWidth - DesignerLayout.Padding * 2, fieldHeight);
         string widthText = _editingFieldIndex == FieldWidth ? _editingFieldText : (_appearance.Width / DesignerLayout.GridSize).ToString();
-        DrawTextField(spriteBatch, pixel, font, widthRect, widthText, _editingFieldIndex == FieldWidth);
+        DesignerDrawing.DrawTextField(spriteBatch, pixel, font, widthRect, widthText, _editingFieldIndex == FieldWidth);
         y += fieldHeight + spacing;
 
         // Height (in grid cells)
         font.DrawText(spriteBatch, LocalizationManager.Get("designer.height"), new Vector2(rect.X + DesignerLayout.Padding, y + 4), DesignerColors.TextColor);
         var heightRect = new Rectangle(rect.X + labelWidth + DesignerLayout.Padding, y, rect.Width - labelWidth - DesignerLayout.Padding * 2, fieldHeight);
         string heightText = _editingFieldIndex == FieldHeight ? _editingFieldText : (_appearance.Height / DesignerLayout.GridSize).ToString();
-        DrawTextField(spriteBatch, pixel, font, heightRect, heightText, _editingFieldIndex == FieldHeight);
+        DesignerDrawing.DrawTextField(spriteBatch, pixel, font, heightRect, heightText, _editingFieldIndex == FieldHeight);
         y += fieldHeight + spacing;
 
         // Title
         font.DrawText(spriteBatch, "Title", new Vector2(rect.X + DesignerLayout.Padding, y + 4), DesignerColors.TextColor);
         var titleRect = new Rectangle(rect.X + labelWidth + DesignerLayout.Padding, y, rect.Width - labelWidth - DesignerLayout.Padding * 2, fieldHeight);
         string titleText = _editingFieldIndex == FieldTitle ? _editingFieldText : _appearance.Title;
-        DrawTextField(spriteBatch, pixel, font, titleRect, titleText, _editingFieldIndex == FieldTitle);
+        DesignerDrawing.DrawTextField(spriteBatch, pixel, font, titleRect, titleText, _editingFieldIndex == FieldTitle);
         y += fieldHeight + spacing;
 
         // Font Scale
@@ -225,7 +225,7 @@ public class PropertiesPanel : IPropertiesPanel
         string fontScaleText = _editingFieldIndex == FieldFontScale
             ? _editingFieldText
             : _appearance.TitleFontScale.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
-        DrawTextField(spriteBatch, pixel, font, fontScaleRect, fontScaleText, _editingFieldIndex == FieldFontScale);
+        DesignerDrawing.DrawTextField(spriteBatch, pixel, font, fontScaleRect, fontScaleText, _editingFieldIndex == FieldFontScale);
         y += fieldHeight + spacing;
 
         // Color label
@@ -250,11 +250,11 @@ public class PropertiesPanel : IPropertiesPanel
                               (i > 0 && _appearance.FillColor == DesignerColors.ColorToHex(DesignerColors.PresetColors[i].color));
             if (isSelected)
             {
-                DrawBorder(spriteBatch, pixel, swatchRect, DesignerColors.TextColor, 2);
+                DesignerDrawing.DrawBorder(spriteBatch, pixel, swatchRect, DesignerColors.TextColor, 2);
             }
             else
             {
-                DrawBorder(spriteBatch, pixel, swatchRect, DesignerColors.BorderColor, 1);
+                DesignerDrawing.DrawBorder(spriteBatch, pixel, swatchRect, DesignerColors.BorderColor, 1);
             }
 
             swatchX += swatchSize + swatchSpacing;
@@ -277,14 +277,14 @@ public class PropertiesPanel : IPropertiesPanel
         var previewRect = new Rectangle(rect.X + DesignerLayout.Padding, y + 2, previewSize, previewSize);
         var currentFillColor = GetCurrentFillColor();
         spriteBatch.Draw(pixel, previewRect, currentFillColor);
-        DrawBorder(spriteBatch, pixel, previewRect, DesignerColors.BorderColor, 1);
+        DesignerDrawing.DrawBorder(spriteBatch, pixel, previewRect, DesignerColors.BorderColor, 1);
 
         // Custom color text field
         var customColorRect = new Rectangle(rect.X + DesignerLayout.Padding + previewSize + 4, y, rect.Width - DesignerLayout.Padding * 2 - previewSize - 4, fieldHeight);
         string customColorText = _editingFieldIndex == FieldCustomColor
             ? _editingFieldText
             : (_appearance.FillColor ?? "#3C3C46");
-        DrawTextField(spriteBatch, pixel, font, customColorRect, customColorText, _editingFieldIndex == FieldCustomColor);
+        DesignerDrawing.DrawTextField(spriteBatch, pixel, font, customColorRect, customColorText, _editingFieldIndex == FieldCustomColor);
     }
 
     public void HandleTextInput(char character)
@@ -508,30 +508,5 @@ public class PropertiesPanel : IPropertiesPanel
             return DesignerColors.PresetColors[0].color;
         }
         return DesignerColors.HexToColor(_appearance.FillColor);
-    }
-
-    private static void DrawTextField(SpriteBatch spriteBatch, Texture2D pixel, SpriteFontBase font,
-        Rectangle rect, string text, bool isEditing)
-    {
-        spriteBatch.Draw(pixel, rect, DesignerColors.InputFieldColor);
-        DrawBorder(spriteBatch, pixel, rect, isEditing ? DesignerColors.SelectedColor : DesignerColors.BorderColor, 1);
-
-        var textSize = font.MeasureString(text);
-        font.DrawText(spriteBatch, text, new Vector2(rect.X + 4, rect.Y + (rect.Height - textSize.Y) / 2), DesignerColors.TextColor);
-
-        if (isEditing)
-        {
-            // Draw cursor
-            int cursorX = rect.X + 4 + (int)textSize.X;
-            spriteBatch.Draw(pixel, new Rectangle(cursorX, rect.Y + 4, 2, rect.Height - 8), DesignerColors.TextColor);
-        }
-    }
-
-    private static void DrawBorder(SpriteBatch spriteBatch, Texture2D pixel, Rectangle rect, Color color, int thickness)
-    {
-        spriteBatch.Draw(pixel, new Rectangle(rect.X, rect.Y, rect.Width, thickness), color);
-        spriteBatch.Draw(pixel, new Rectangle(rect.X, rect.Bottom - thickness, rect.Width, thickness), color);
-        spriteBatch.Draw(pixel, new Rectangle(rect.X, rect.Y, thickness, rect.Height), color);
-        spriteBatch.Draw(pixel, new Rectangle(rect.Right - thickness, rect.Y, thickness, rect.Height), color);
     }
 }

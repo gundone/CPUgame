@@ -133,7 +133,7 @@ public class PreviewPanel : IPreviewPanel
     {
         // Panel background
         spriteBatch.Draw(pixel, rect, DesignerColors.PanelColor);
-        DrawBorder(spriteBatch, pixel, rect, DesignerColors.BorderColor, 1);
+        DesignerDrawing.DrawBorder(spriteBatch, pixel, rect, DesignerColors.BorderColor, 1);
 
         if (_appearance == null)
         {
@@ -180,7 +180,7 @@ public class PreviewPanel : IPreviewPanel
         // Draw component body with selected fill color
         var fillColor = GetCurrentFillColor();
         spriteBatch.Draw(pixel, new Rectangle(compX, compY, compWidth, compHeight), fillColor);
-        DrawBorder(spriteBatch, pixel, new Rectangle(compX, compY, compWidth, compHeight), DesignerColors.BorderColor, 2);
+        DesignerDrawing.DrawBorder(spriteBatch, pixel, new Rectangle(compX, compY, compWidth, compHeight), DesignerColors.BorderColor, 2);
 
         // Draw title (use custom title if set, otherwise component type)
         string displayName = GetDisplayName();
@@ -208,7 +208,7 @@ public class PreviewPanel : IPreviewPanel
         if (_isDraggingTitle)
         {
             spriteBatch.Draw(pixel, _titleRect, new Color(100, 150, 200, 80));
-            DrawBorder(spriteBatch, pixel, _titleRect, DesignerColors.PinSelectedColor, 1);
+            DesignerDrawing.DrawBorder(spriteBatch, pixel, _titleRect, DesignerColors.PinSelectedColor, 1);
         }
 
         previewFont.DrawText(spriteBatch, displayName, new Vector2(nameX, nameY), DesignerColors.TextColor);
@@ -293,13 +293,5 @@ public class PreviewPanel : IPreviewPanel
         float nameX = isInput ? x - nameSize.X - offset : x + offset;
         float nameY = y - nameSize.Y / 2;
         font.DrawText(spriteBatch, name, new Vector2(nameX, nameY), DesignerColors.TextColor);
-    }
-
-    private static void DrawBorder(SpriteBatch spriteBatch, Texture2D pixel, Rectangle rect, Color color, int thickness)
-    {
-        spriteBatch.Draw(pixel, new Rectangle(rect.X, rect.Y, rect.Width, thickness), color);
-        spriteBatch.Draw(pixel, new Rectangle(rect.X, rect.Bottom - thickness, rect.Width, thickness), color);
-        spriteBatch.Draw(pixel, new Rectangle(rect.X, rect.Y, thickness, rect.Height), color);
-        spriteBatch.Draw(pixel, new Rectangle(rect.Right - thickness, rect.Y, thickness, rect.Height), color);
     }
 }

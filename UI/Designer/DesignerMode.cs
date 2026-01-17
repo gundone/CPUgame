@@ -370,8 +370,8 @@ public class DesignerMode : IDesignerMode
         _pinEditorPanel.Draw(spriteBatch, pixel, font, pinEditorRect);
 
         // Draw buttons
-        DrawButton(spriteBatch, pixel, font, _saveButtonRect, LocalizationManager.Get("designer.save"), _saveButtonHovered);
-        DrawButton(spriteBatch, pixel, font, _resetButtonRect, LocalizationManager.Get("designer.reset_default"), _resetButtonHovered);
+        DesignerDrawing.DrawButton(spriteBatch, pixel, font, _saveButtonRect, LocalizationManager.Get("designer.save"), _saveButtonHovered);
+        DesignerDrawing.DrawButton(spriteBatch, pixel, font, _resetButtonRect, LocalizationManager.Get("designer.reset_default"), _resetButtonHovered);
 
         // Draw save confirmation message (fading over 2 seconds) in bottom right corner
         if (_saveMessageTimer > 0)
@@ -401,7 +401,7 @@ public class DesignerMode : IDesignerMode
     {
         // Background with border
         spriteBatch.Draw(pixel, _contextMenuRect, DesignerColors.PanelColor);
-        DrawBorder(spriteBatch, pixel, _contextMenuRect, DesignerColors.BorderColor, 1);
+        DesignerDrawing.DrawBorder(spriteBatch, pixel, _contextMenuRect, DesignerColors.BorderColor, 1);
 
         // Paste item
         var itemRect = new Rectangle(_contextMenuRect.X, _contextMenuRect.Y, _contextMenuRect.Width, DesignerLayout.ContextMenuItemHeight);
@@ -415,22 +415,5 @@ public class DesignerMode : IDesignerMode
         float textX = itemRect.X + DesignerLayout.Padding;
         float textY = itemRect.Y + (itemRect.Height - pasteSize.Y) / 2;
         font.DrawText(spriteBatch, pasteText, new Vector2(textX, textY), DesignerColors.TextColor);
-    }
-
-    private static void DrawButton(SpriteBatch spriteBatch, Texture2D pixel, SpriteFontBase font, Rectangle rect, string text, bool isHovered)
-    {
-        spriteBatch.Draw(pixel, rect, isHovered ? DesignerColors.ButtonHoverColor : DesignerColors.ButtonColor);
-        DrawBorder(spriteBatch, pixel, rect, DesignerColors.BorderColor, 1);
-
-        var textSize = font.MeasureString(text);
-        font.DrawText(spriteBatch, text, new Vector2(rect.X + (rect.Width - textSize.X) / 2, rect.Y + (rect.Height - textSize.Y) / 2), DesignerColors.TextColor);
-    }
-
-    private static void DrawBorder(SpriteBatch spriteBatch, Texture2D pixel, Rectangle rect, Color color, int thickness)
-    {
-        spriteBatch.Draw(pixel, new Rectangle(rect.X, rect.Y, rect.Width, thickness), color);
-        spriteBatch.Draw(pixel, new Rectangle(rect.X, rect.Bottom - thickness, rect.Width, thickness), color);
-        spriteBatch.Draw(pixel, new Rectangle(rect.X, rect.Y, thickness, rect.Height), color);
-        spriteBatch.Draw(pixel, new Rectangle(rect.Right - thickness, rect.Y, thickness, rect.Height), color);
     }
 }

@@ -109,7 +109,7 @@ public class PinEditorPanel : IPinEditorPanel
     {
         // Panel background
         spriteBatch.Draw(pixel, rect, DesignerColors.PanelColor);
-        DrawBorder(spriteBatch, pixel, rect, DesignerColors.BorderColor, 1);
+        DesignerDrawing.DrawBorder(spriteBatch, pixel, rect, DesignerColors.BorderColor, 1);
 
         // Header
         var headerRect = new Rectangle(rect.X, rect.Y, rect.Width, DesignerLayout.HeaderHeight);
@@ -132,7 +132,6 @@ public class PinEditorPanel : IPinEditorPanel
         int x = rect.X + DesignerLayout.Padding;
         int y = rect.Y + DesignerLayout.HeaderHeight + DesignerLayout.Padding;
         int pinIndex = 0;
-        int inputCount = _appearance.InputPins.Count;
 
         foreach (var pin in _appearance.InputPins.Concat(_appearance.OutputPins))
         {
@@ -144,7 +143,7 @@ public class PinEditorPanel : IPinEditorPanel
                 // Draw pin name as editable field
                 var nameSize = font.MeasureString(_editingFieldText);
                 var nameRect = new Rectangle(x, y - 2, (int)nameSize.X + 8, 18);
-                DrawTextField(spriteBatch, pixel, font, nameRect, _editingFieldText, true);
+                DesignerDrawing.DrawTextField(spriteBatch, pixel, font, nameRect, _editingFieldText, true);
 
                 // Draw coordinates after the editable field
                 var coordText = $": X={pin.LocalX}, Y={pin.LocalY}";
@@ -302,28 +301,4 @@ public class PinEditorPanel : IPinEditorPanel
         }
     }
 
-    private static void DrawTextField(SpriteBatch spriteBatch, Texture2D pixel, SpriteFontBase font,
-        Rectangle rect, string text, bool isEditing)
-    {
-        spriteBatch.Draw(pixel, rect, DesignerColors.InputFieldColor);
-        DrawBorder(spriteBatch, pixel, rect, isEditing ? DesignerColors.SelectedColor : DesignerColors.BorderColor, 1);
-
-        var textSize = font.MeasureString(text);
-        font.DrawText(spriteBatch, text, new Vector2(rect.X + 4, rect.Y + (rect.Height - textSize.Y) / 2), DesignerColors.TextColor);
-
-        if (isEditing)
-        {
-            // Draw cursor
-            int cursorX = rect.X + 4 + (int)textSize.X;
-            spriteBatch.Draw(pixel, new Rectangle(cursorX, rect.Y + 4, 2, rect.Height - 8), DesignerColors.TextColor);
-        }
-    }
-
-    private static void DrawBorder(SpriteBatch spriteBatch, Texture2D pixel, Rectangle rect, Color color, int thickness)
-    {
-        spriteBatch.Draw(pixel, new Rectangle(rect.X, rect.Y, rect.Width, thickness), color);
-        spriteBatch.Draw(pixel, new Rectangle(rect.X, rect.Bottom - thickness, rect.Width, thickness), color);
-        spriteBatch.Draw(pixel, new Rectangle(rect.X, rect.Y, thickness, rect.Height), color);
-        spriteBatch.Draw(pixel, new Rectangle(rect.Right - thickness, rect.Y, thickness, rect.Height), color);
-    }
 }

@@ -96,7 +96,7 @@ public class ComponentSelectorPanel : IComponentSelectorPanel
     {
         // Panel background
         spriteBatch.Draw(pixel, rect, DesignerColors.PanelColor);
-        DrawBorder(spriteBatch, pixel, rect, DesignerColors.BorderColor, 1);
+        DesignerDrawing.DrawBorder(spriteBatch, pixel, rect, DesignerColors.BorderColor, 1);
 
         // Header
         var headerRect = new Rectangle(rect.X, rect.Y, rect.Width, DesignerLayout.HeaderHeight);
@@ -188,11 +188,4 @@ public class ComponentSelectorPanel : IComponentSelectorPanel
         _hoveredComponentIndex = -1;
     }
 
-    private static void DrawBorder(SpriteBatch spriteBatch, Texture2D pixel, Rectangle rect, Color color, int thickness)
-    {
-        spriteBatch.Draw(pixel, new Rectangle(rect.X, rect.Y, rect.Width, thickness), color);
-        spriteBatch.Draw(pixel, new Rectangle(rect.X, rect.Bottom - thickness, rect.Width, thickness), color);
-        spriteBatch.Draw(pixel, new Rectangle(rect.X, rect.Y, thickness, rect.Height), color);
-        spriteBatch.Draw(pixel, new Rectangle(rect.Right - thickness, rect.Y, thickness, rect.Height), color);
-    }
 }
