@@ -6,6 +6,7 @@ using CPUgame.Core.Services;
 using CPUgame.Input;
 using CPUgame.Platform;
 using CPUgame.Rendering;
+using CPUgame.UI.Designer;
 
 // Configure services
 var services = ServiceContainer.Instance;
@@ -33,6 +34,13 @@ services.AddSingleton<ILevelService, LevelService>();
 services.AddSingleton<IProfileService, ProfileService>();
 services.AddSingleton<IAppearanceService, AppearanceService>();
 services.AddSingleton<IPreferencesService, PreferencesService>();
+
+// Designer mode panels (transient - new instance each time)
+services.AddTransient<IComponentSelectorPanel, ComponentSelectorPanel>();
+services.AddTransient<IPropertiesPanel, PropertiesPanel>();
+services.AddTransient<IPreviewPanel, PreviewPanel>();
+services.AddTransient<IPinEditorPanel, PinEditorPanel>();
+services.AddSingleton<IDesignerMode, DesignerMode>();
 
 // Game
 services.AddSingleton<IGameField, GameField>();

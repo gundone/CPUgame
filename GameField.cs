@@ -46,7 +46,7 @@ public class GameField : Game, IGameField
     private readonly IPreferencesService _preferencesService;
 
     private ISelectionManager _selection = null!;
-    private DesignerMode _designerMode = null!;
+    private readonly IDesignerMode _designerMode;
     private MainMenu _mainMenu = null!;
     private ProfileDialog _profileDialog = null!;
     private LevelSelectionPopup _levelSelectionPopup = null!;
@@ -84,7 +84,7 @@ public class GameField : Game, IGameField
         IWireManager wireManager, IManualWireService manualWireService, ICommandHandler commandHandler,
         IToolboxManager toolboxManager, IGameRenderer gameRenderer, ITruthTableService truthTableService,
         ILevelService levelService, IProfileService profileService, IAppearanceService appearanceService,
-        IPreferencesService preferencesService)
+        IPreferencesService preferencesService, IDesignerMode designerMode)
     {
         _inputHandler = inputHandler;
         _statusService = statusService;
@@ -103,6 +103,7 @@ public class GameField : Game, IGameField
         _profileService = profileService;
         _appearanceService = appearanceService;
         _preferencesService = preferencesService;
+        _designerMode = designerMode;
 
         _graphics = new GraphicsDeviceManager(this) { PreferredBackBufferWidth = 1280, PreferredBackBufferHeight = 720 };
         Content.RootDirectory = "Content";
@@ -233,7 +234,6 @@ public class GameField : Game, IGameField
         _componentEditDialog = new ComponentEditDialog();
         _controlsPopup = new ControlsPopup();
         _levelInfoWindow = new LevelInfoWindow(50, 80);
-        _designerMode = new DesignerMode(_appearanceService, _componentBuilder, _fontService);
         _designerMode.SetClipboardGetter(GetClipboardText);
         _designerMode.OnAppearanceSaved += ApplyAppearancesToCircuit;
 
