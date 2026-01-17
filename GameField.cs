@@ -512,23 +512,12 @@ public class GameField : Game, IGameField
             }
 
             // Find first uncompleted level that is unlocked
-            GameLevel? nextLevel = null;
-            int nextLevelIndex = -1;
-            for (int i = 0; i < _levelService.Levels.Count; i++)
-            {
-                var level = _levelService.Levels[i];
-                if (!_profileService.IsLevelCompleted(level.Id) &&
-                    _profileService.IsTierUnlocked(level.Tier, _levelService))
-                {
-                    nextLevel = level;
-                    nextLevelIndex = i;
-                    break;
-                }
-            }
+            int nextLevelIndex = FindFirstIncompleteLevel();
 
             // If there's an uncompleted level, open it
-            if (nextLevel != null && nextLevelIndex >= 0)
+            if (nextLevelIndex >= 0)
             {
+                var nextLevel = _levelService.Levels[nextLevelIndex];
                 _levelService.SetMode(GameMode.Levels);
                 _mainMenu.SetCurrentMode(GameMode.Levels);
                 _levelService.SelectLevel(nextLevelIndex);
@@ -1134,18 +1123,7 @@ public class GameField : Game, IGameField
         _mainMenu.SetProfileName(_profileService.CurrentProfile?.Name);
         _toolboxManager.SetLevelModeFilter(true, _profileService.GetUnlockedComponents(_levelService));
 
-        int levelIndex = _preferencesService.LastLevelIndex;
-        if (levelIndex < 0 || levelIndex >= _levelService.Levels.Count)
-        {
-            levelIndex = FindFirstIncompleteLevel();
-        }
-
-        _levelService.SelectLevel(levelIndex);
-        if (_levelService.CurrentLevel != null)
-        {
-            _levelDescriptionPopup.Show(_levelService.CurrentLevel);
-        }
-
+        _levelSelectionPopup.Show();
         _mainGameMenu.Hide();
     }
 
@@ -1154,12 +1132,13 @@ public class GameField : Game, IGameField
         for (int i = 0; i < _levelService.Levels.Count; i++)
         {
             var level = _levelService.Levels[i];
-            if (!_profileService.IsLevelCompleted(level.Id))
+            if (!_profileService.IsLevelCompleted(level.Id) &&
+                _profileService.IsTierUnlocked(level.Tier, _levelService))
             {
                 return i;
             }
         }
-        return 0;
+        return -1;
     }
 
     private void HandleSandboxSwitch()
