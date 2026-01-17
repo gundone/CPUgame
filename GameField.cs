@@ -236,6 +236,7 @@ public class GameField : Game, IGameField
         _levelInfoWindow = new LevelInfoWindow(50, 80);
         _designerMode.SetClipboardGetter(GetClipboardText);
         _designerMode.OnAppearanceSaved += ApplyAppearancesToCircuit;
+        _designerMode.OnCloseRequested += HandleDesignerClose;
 
         _circuitManager.OnCircuitChanged += ApplyAppearancesToCircuit;
 
@@ -932,6 +933,18 @@ public class GameField : Game, IGameField
 
         // Update wire endpoints after pin positions may have changed
         UpdateAllWireEndpoints();
+    }
+
+    private void HandleDesignerClose()
+    {
+        _designerMode.Deactivate();
+        _componentBuilder.LoadCustomComponents();
+        _toolboxManager.LoadCustomComponents(_circuitManager.CustomComponents.Keys);
+        _levelService.SetMode(GameMode.Sandbox);
+        _mainMenu.SetCurrentMode(GameMode.Sandbox);
+        _mainMenu.SetProfileName(null);
+        _toolboxManager.SetLevelModeFilter(false, null);
+        _statusService.Show(LocalizationManager.Get("status.mode_sandbox"));
     }
 
     private void UpdateAllWireEndpoints()

@@ -23,4 +23,5 @@ public interface IDesignerMode
     void HandlePaste(string text);
 
     event Action? OnAppearanceSaved;
+    event Action? OnCloseRequested;
 }

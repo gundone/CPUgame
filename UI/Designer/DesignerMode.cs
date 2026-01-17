@@ -30,8 +30,10 @@ public class DesignerMode : IDesignerMode
     // Buttons
     private Rectangle _saveButtonRect;
     private Rectangle _resetButtonRect;
+    private Rectangle _closeButtonRect;
     private bool _saveButtonHovered;
     private bool _resetButtonHovered;
+    private bool _closeButtonHovered;
 
     // Save message feedback
     private double _saveMessageTimer;
@@ -46,6 +48,7 @@ public class DesignerMode : IDesignerMode
     public bool IsActive { get; private set; }
 
     public event Action? OnAppearanceSaved;
+    public event Action? OnCloseRequested;
 
     public DesignerMode(
         IAppearanceService appearanceService,
@@ -192,15 +195,19 @@ public class DesignerMode : IDesignerMode
         var previewRect = DesignerLayout.GetPreviewRect(screenWidth, screenHeight);
         var pinEditorRect = DesignerLayout.GetPinEditorRect(screenWidth, screenHeight);
 
-        // Update button rectangles
+        // Update button rectangles (3 buttons: Save, Reset, Close)
         int buttonWidth = 80;
         int buttonHeight = 28;
         int buttonsY = screenHeight - buttonHeight - DesignerLayout.Padding;
-        _saveButtonRect = new Rectangle(screenWidth / 2 - buttonWidth - DesignerLayout.Padding, buttonsY, buttonWidth, buttonHeight);
-        _resetButtonRect = new Rectangle(screenWidth / 2 + DesignerLayout.Padding, buttonsY, buttonWidth, buttonHeight);
+        int totalButtonsWidth = buttonWidth * 3 + DesignerLayout.Padding * 2;
+        int buttonsStartX = (screenWidth - totalButtonsWidth) / 2;
+        _saveButtonRect = new Rectangle(buttonsStartX, buttonsY, buttonWidth, buttonHeight);
+        _resetButtonRect = new Rectangle(buttonsStartX + buttonWidth + DesignerLayout.Padding, buttonsY, buttonWidth, buttonHeight);
+        _closeButtonRect = new Rectangle(buttonsStartX + (buttonWidth + DesignerLayout.Padding) * 2, buttonsY, buttonWidth, buttonHeight);
 
         _saveButtonHovered = _saveButtonRect.Contains(mousePos);
         _resetButtonHovered = _resetButtonRect.Contains(mousePos);
+        _closeButtonHovered = _closeButtonRect.Contains(mousePos);
 
         // Handle context menu
         if (_contextMenuVisible)
@@ -224,6 +231,10 @@ public class DesignerMode : IDesignerMode
                 _propertiesPanel.SetAppearance(_editingAppearance);
                 _previewPanel.SetAppearance(_editingAppearance, _selectedComponentType);
                 _pinEditorPanel.SetAppearance(_editingAppearance);
+            }
+            else if (_closeButtonHovered)
+            {
+                OnCloseRequested?.Invoke();
             }
         }
 
@@ -372,6 +383,7 @@ public class DesignerMode : IDesignerMode
         // Draw buttons
         DesignerDrawing.DrawButton(spriteBatch, pixel, font, _saveButtonRect, LocalizationManager.Get("designer.save"), _saveButtonHovered);
         DesignerDrawing.DrawButton(spriteBatch, pixel, font, _resetButtonRect, LocalizationManager.Get("designer.reset_default"), _resetButtonHovered);
+        DesignerDrawing.DrawButton(spriteBatch, pixel, font, _closeButtonRect, LocalizationManager.Get("designer.close"), _closeButtonHovered);
 
         // Draw save confirmation message (fading over 2 seconds) in bottom right corner
         if (_saveMessageTimer > 0)
