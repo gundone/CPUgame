@@ -1,11 +1,5 @@
 namespace CPUgame.Core;
 
-public interface IGameSettings
-{
-    float TitleFontScale { get; set; }
-    event Action? OnSettingsChanged;
-}
-
 public class GameSettings : IGameSettings
 {
     private float _titleFontScale = 0.8f;

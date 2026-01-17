@@ -53,25 +53,3 @@ public class GameLevel
     [JsonPropertyName("truthTableColumnOrder")]
     public List<int>? TruthTableColumnOrder { get; set; }
 }
-
-/// <summary>
-/// A single row in the level's truth table
-/// </summary>
-public class TruthTableEntry
-{
-    [JsonPropertyName("inputs")]
-    public List<bool> Inputs { get; set; } = new();
-
-    [JsonPropertyName("outputs")]
-    public List<bool> Outputs { get; set; } = new();
-}
-
-/// <summary>
-/// Game modes
-/// </summary>
-public enum GameMode
-{
-    Sandbox,
-    Levels,
-    Designer
-}

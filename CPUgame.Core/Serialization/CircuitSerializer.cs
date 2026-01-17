@@ -1,4 +1,3 @@
-using System.Linq;
 using System.Text.Json;
 using CPUgame.Core.Circuit;
 using CPUgame.Core.Components;
@@ -252,38 +251,4 @@ public static class CircuitSerializer
             _ => "Unknown"
         };
     }
-}
-
-public class CircuitData
-{
-    public string Name { get; set; } = "";
-    public bool IsCustomComponent { get; set; }
-    public List<ComponentData> Components { get; set; } = new();
-    public List<ConnectionData> Connections { get; set; } = new();
-    public ComponentAppearance? Appearance { get; set; }
-}
-
-public class ComponentData
-{
-    public int Id { get; set; }
-    public string Type { get; set; } = "";
-    public int X { get; set; }
-    public int Y { get; set; }
-    public string? Title { get; set; }
-    public bool? State { get; set; }
-    public double? Frequency { get; set; }
-    public string? CustomName { get; set; }
-    public int? BitCount { get; set; }
-    public int? Value { get; set; }
-    public List<string>? InputTitles { get; set; }
-    public List<string>? OutputTitles { get; set; }
-}
-
-public class ConnectionData
-{
-    public int FromComponentId { get; set; }
-    public int FromPinIndex { get; set; }
-    public int ToComponentId { get; set; }
-    public int ToPinIndex { get; set; }
-    public List<int[]>? ManualWirePath { get; set; }
 }

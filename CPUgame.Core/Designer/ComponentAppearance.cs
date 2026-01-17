@@ -95,12 +95,3 @@ public class ComponentAppearance
         };
     }
 }
-
-/// <summary>
-/// Container for all component appearances, used for JSON serialization
-/// </summary>
-public class ComponentAppearanceData
-{
-    [JsonPropertyName("appearances")]
-    public Dictionary<string, ComponentAppearance> Appearances { get; set; } = new();
-}

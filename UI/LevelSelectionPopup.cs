@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CPUgame.Core;
-using CPUgame.Core.Levels;
 using CPUgame.Core.Localization;
 using CPUgame.Core.Services;
 using FontStashSharp;
@@ -325,11 +324,4 @@ public class LevelSelectionPopup
         spriteBatch.Draw(pixel, new Rectangle(rect.X, rect.Y, thickness, rect.Height), color);
         spriteBatch.Draw(pixel, new Rectangle(rect.Right - thickness, rect.Y, thickness, rect.Height), color);
     }
-}
-
-internal class LevelTier
-{
-    public int TierNumber { get; set; }
-    public bool IsUnlocked { get; set; }
-    public List<GameLevel> Levels { get; set; } = new();
 }

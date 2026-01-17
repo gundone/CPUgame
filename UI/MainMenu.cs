@@ -386,18 +386,3 @@ public class MainMenu
         spriteBatch.Draw(pixel, new Rectangle(rect.Right - thickness, rect.Y, thickness, rect.Height), color);
     }
 }
-
-public class MenuItem
-{
-    public string Label { get; }
-    public Action? Action { get; }
-    public List<MenuItem> SubItems { get; } = new();
-    public bool IsSeparator => Label == "-";
-    public bool IsHeader => Label.StartsWith("--");
-
-    public MenuItem(string label, Action? action = null)
-    {
-        Label = label;
-        Action = action;
-    }
-}

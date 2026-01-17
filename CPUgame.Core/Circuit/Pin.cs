@@ -60,9 +60,3 @@ public class Pin
         ManualWirePath = null;
     }
 }
-
-public enum PinType
-{
-    Input,
-    Output
-}

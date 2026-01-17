@@ -1363,16 +1363,3 @@ public class TruthTableWindow
         spriteBatch.Draw(pixel, new Rectangle(rect.Right - thickness, rect.Y, thickness, rect.Height), color);
     }
 }
-
-
-
-/// <summary>
-/// Actions that can be triggered from truth table buttons
-/// </summary>
-public enum TruthTableAction
-{
-    None,
-    Play,
-    Stop,
-    Clear
-}

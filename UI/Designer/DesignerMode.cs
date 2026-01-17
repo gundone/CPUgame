@@ -695,7 +695,6 @@ public class DesignerMode
         int x = pinEditorRect.X + Padding;
         int y = pinEditorRect.Y + HeaderHeight + Padding;
         int pinIndex = 0;
-        int inputCount = _editingAppearance.InputPins.Count;
 
         // Get font for measuring text
         var font = _fontService.GetFont(1.0f);
@@ -1496,10 +1495,5 @@ public class DesignerMode
         spriteBatch.Draw(pixel, new Rectangle(rect.X, rect.Bottom - thickness, rect.Width, thickness), color);
         spriteBatch.Draw(pixel, new Rectangle(rect.X, rect.Y, thickness, rect.Height), color);
         spriteBatch.Draw(pixel, new Rectangle(rect.Right - thickness, rect.Y, thickness, rect.Height), color);
-    }
-
-    public bool ContainsPoint(Point p)
-    {
-        return IsActive;
     }
 }
